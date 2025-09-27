@@ -142,9 +142,6 @@ const adjustValorantTimezone = (timestamp) => {
 const ValorantAdapter = {
   // Helper function to process live matches  
   processLiveMatches(data) {
-    console.log('🔴 Processing LIVE Valorant matches:', data)
-    console.log('🔴 Live segments count:', data.data?.segments?.length)
-    
     if (!data.data?.segments) return []
     
     return data.data.segments
@@ -223,9 +220,6 @@ const ValorantAdapter = {
 
   // Helper function to process completed matches (results)
   processCompletedMatches(data) {
-    console.log('🔍 Processing completed Valorant matches:', data)
-    console.log('🔍 Segments count:', data.data?.segments?.length)
-    
     if (!data.data?.segments) return []
     
     const oneDayMs = 24 * 60 * 60 * 1000
@@ -236,19 +230,6 @@ const ValorantAdapter = {
         if (match.time_completed) {
           const timeCompletedMs = this.parseTimeAgo(match.time_completed)
           const withinOneDay = timeCompletedMs <= oneDayMs
-          
-          // Debug logging
-          console.log(`🔍 Valorant match: ${match.team1} vs ${match.team2}`)
-          console.log(`   Time completed: ${match.time_completed}`)
-          console.log(`   Parsed ms: ${timeCompletedMs}`)
-          console.log(`   One day ms: ${oneDayMs}`)
-          console.log(`   Within one day: ${withinOneDay}`)
-          
-          if (!withinOneDay) {
-            console.log(`🚫 Filtered out: ${match.team1} vs ${match.team2} (completed ${match.time_completed} ago - ${Math.round(timeCompletedMs / (24 * 60 * 60 * 1000))} days)`)
-          } else {
-            console.log(`✅ Included: ${match.team1} vs ${match.team2} (completed ${match.time_completed} ago)`)
-          }
           
           return withinOneDay
         }
@@ -279,7 +260,6 @@ const ValorantAdapter = {
 
   // Helper function to parse "4h 7m ago" or "2w 0d ago" format into milliseconds
   parseTimeAgo(timeString) {
-    console.log(`🔍 Parsing time: "${timeString}"`)
     if (!timeString) return 0
     
     const regex = /(\d+)([wdhm])/g
@@ -290,8 +270,6 @@ const ValorantAdapter = {
       const value = parseInt(match[1])
       const unit = match[2]
       
-      console.log(`  Found: ${value}${unit}`)
-      
       switch (unit) {
         case 'w': totalMs += value * 7 * 24 * 60 * 60 * 1000; break  // weeks
         case 'd': totalMs += value * 24 * 60 * 60 * 1000; break      // days
@@ -300,7 +278,6 @@ const ValorantAdapter = {
       }
     }
     
-    console.log(`  Total ms: ${totalMs}`)
     return totalMs
   },
 
@@ -329,21 +306,16 @@ const ValorantAdapter = {
 
   async fetch({ from, to }) {
     try {
-      console.log('🎯 Fetching Valorant matches via proxy...')
-      
       let allMatches = []
 
       // Fetch LIVE matches first (highest priority)
       try {
-        console.log('🔴 Fetching LIVE Valorant matches...')
         const liveResponse = await fetch('/api/valorant?q=live_score')
         
         if (liveResponse.ok) {
           const liveData = await liveResponse.json()
-          const totalLive = liveData.data?.segments?.length || 0
           const liveMatches = this.processLiveMatches(liveData)
           allMatches = [...allMatches, ...liveMatches]
-          console.log(`🔴 Found ${liveMatches.length}/${totalLive} LIVE Valorant matches`)
         } else {
           console.warn(`⚠️ Live Valorant API error: ${liveResponse.status}`)
         }
@@ -353,15 +325,12 @@ const ValorantAdapter = {
 
       // Fetch upcoming matches
       try {
-        console.log('📅 Fetching upcoming Valorant matches...')
         const upcomingResponse = await fetch('/api/valorant?q=upcoming')
         
         if (upcomingResponse.ok) {
           const upcomingData = await upcomingResponse.json()
-          const totalUpcoming = upcomingData.data?.segments?.length || 0
           const upcomingMatches = this.processUpcomingMatches(upcomingData)
           allMatches = [...allMatches, ...upcomingMatches]
-          console.log(`✅ Found ${upcomingMatches.length}/${totalUpcoming} upcoming Valorant matches (within 1 day)`)
         } else {
           console.warn(`⚠️ Upcoming Valorant API error: ${upcomingResponse.status}`)
         }
@@ -371,16 +340,12 @@ const ValorantAdapter = {
 
       // Fetch completed matches (results)
       try {
-        console.log('🏆 Fetching completed Valorant matches...')
         const resultsResponse = await fetch('/api/valorant?q=results')
         
         if (resultsResponse.ok) {
           const resultsData = await resultsResponse.json()
-          const totalCompleted = resultsData.data?.segments?.length || 0
           const completedMatches = this.processCompletedMatches(resultsData)
           allMatches = [...allMatches, ...completedMatches]
-          console.log(`✅ Found ${completedMatches.length}/${totalCompleted} completed Valorant matches (within 1 day)`)
-          console.log('🔍 Completed matches details:', completedMatches)
         } else {
           console.warn(`⚠️ Results Valorant API error: ${resultsResponse.status}`)
         }
@@ -389,25 +354,14 @@ const ValorantAdapter = {
       }
 
       // Filter matches by date range and remove duplicates
-      console.log('🔍 Before date range filtering - allMatches:', allMatches)
-      console.log('🔍 Date range filter - from:', from, 'to:', to)
-      
       const filteredMatches = allMatches
-        .filter(match => {
-          const inRange = withinRange(match.start, from, to)
-          console.log(`🔍 Date range check: ${match.home?.name} vs ${match.away?.name} - ${new Date(match.start)} - inRange: ${inRange}`)
-          return inRange
-        })
+        .filter(match => withinRange(match.start, from, to))
         .filter((match, index, self) => 
           index === self.findIndex(m => m.id === match.id)
         )
 
-      console.log(`🎯 Total Valorant matches after filtering: ${filteredMatches.length}`)
-      console.log('🔍 Final filtered matches:', filteredMatches)
-
       // If no matches found, return sample data
       if (filteredMatches.length === 0) {
-        console.log('📝 Using Valorant sample data - no matches found in date range')
         return createSampleData('valorant', from, to)
       }
 
@@ -422,11 +376,9 @@ const ValorantAdapter = {
         
         return aPriority - bPriority
       })
-      console.log('🔍 Final sorted Valorant matches (LIVE first):', sortedMatches)
       return sortedMatches
     } catch (error) {
       console.warn('⚠️ Valorant API error:', error)
-      console.log('📝 Using Valorant sample data due to API error')
       return createSampleData('valorant', from, to)
     }
   },
@@ -435,7 +387,6 @@ const ValorantAdapter = {
 const PubgAdapter = {
   async fetch({ from, to }) {
     try {
-      console.log('🎮 Fetching PUBG matches...')
       // Since Liquipedia API might not be accessible, we'll create realistic sample data
       return createSampleData('pubg', from, to)
     } catch (error) {
@@ -448,7 +399,6 @@ const PubgAdapter = {
 const LolAdapter = {
   async fetch({ from, to }) {
     try {
-      console.log('⚡ Fetching LoL matches via proxy...')
       const response = await fetch('/api/lol')
       
       if (!response.ok) {
@@ -506,7 +456,6 @@ const LolAdapter = {
       })
     } catch (error) {
       console.warn('⚠️ LoL API error:', error)
-      console.log('Using LoL sample data due to API error')
       return createSampleData('lol', from, to)
     }
   }
@@ -515,26 +464,21 @@ const LolAdapter = {
 const FootballAdapter = {
   async fetch({ from, to }) {
     try {
-      console.log('⚽ Fetching Football matches via Vite proxy...')
-      
       // Use Vite proxy instead of direct API calls
       const baseURL = '/api/football'
       
       // Test API connection first
       try {
-        const testResponse = await fetch('/api/football?competition=PL&dateFrom=2025-01-01&dateTo=2025-01-02')
-        console.log('API test response status:', testResponse.status)
+        const testResponse = await fetch('/api/football/competitions')
         if (!testResponse.ok) {
           const testError = await testResponse.text()
           console.warn('API test failed:', testError)
           // If test fails, return sample data immediately
-          console.log('Using sample data due to API connection failure')
           return createSampleData('football', from, to)
         }
       } catch (apiError) {
         console.warn('API connection failed:', apiError)
         // If API fails, return sample data immediately
-        console.log('Using sample data due to API failure')
         return createSampleData('football', from, to)
       }
       
@@ -557,9 +501,9 @@ const FootballAdapter = {
       
       for (const league of leagues) {
         try {
-          // Use Vercel serverless function
+          // Use proxy endpoint with correct URL structure
           const response = await fetch(
-            `/api/football?competition=${league.id}&dateFrom=${dateFrom}&dateTo=${dateTo}`
+            `/api/football/competitions/${league.id}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`
           )
           
           if (!response.ok) {
@@ -636,7 +580,6 @@ const FootballAdapter = {
         })
       
       if (filteredMatches.length === 0) {
-        console.log('No matches found, using sample data')
         return createSampleData('football', from, to)
       }
       
@@ -869,11 +812,8 @@ function useSchedule({ activeSport, from, to }) {
         
         let allMatches = []
         
-        console.log('🔍 useSchedule - Starting fetch with params:', { activeSport, from, to })
-        
         if (activeSport === 'all') {
           // Fetch from all adapters
-          console.log('🔍 useSchedule - Fetching from all adapters')
           const results = await Promise.allSettled([
             adapters.valorant.fetch({ from, to }),
             adapters.pubg.fetch({ from, to }),
@@ -883,9 +823,7 @@ function useSchedule({ activeSport, from, to }) {
           
           results.forEach((result, index) => {
             const adapterNames = ['valorant', 'pubg', 'lol', 'football']
-            console.log(`🔍 useSchedule - ${adapterNames[index]} adapter result:`, result)
             if (result.status === 'fulfilled') {
-              console.log(`🔍 useSchedule - Adding ${result.value.length} matches from ${adapterNames[index]}`)
               allMatches = [...allMatches, ...result.value]
             } else {
               console.warn(`🔍 useSchedule - ${adapterNames[index]} adapter failed:`, result.reason)
@@ -893,17 +831,13 @@ function useSchedule({ activeSport, from, to }) {
           })
         } else {
           // Fetch from specific adapter
-          console.log(`🔍 useSchedule - Fetching from ${activeSport} adapter only`)
           const adapter = adapters[activeSport]
           if (adapter) {
             allMatches = await adapter.fetch({ from, to })
-            console.log(`🔍 useSchedule - Got ${allMatches.length} matches from ${activeSport}`)
           } else {
             console.warn(`🔍 useSchedule - No adapter found for ${activeSport}`)
           }
         }
-        
-        console.log('🔍 useSchedule - Total matches before final processing:', allMatches.length)
         
         if (isMounted) {
           // Sort matches: LIVE first, then by start time
@@ -921,11 +855,6 @@ function useSchedule({ activeSport, from, to }) {
             return aPriority - bPriority
           })
           
-          console.log('🔍 useSchedule - Setting final data (LIVE first):', sortedMatches)
-          console.log('🔍 useSchedule - Final data length:', sortedMatches.length)
-          sortedMatches.forEach(match => {
-            console.log(`   Final: ${match.home?.name} vs ${match.away?.name} (${match.game}, ${match.status})`)
-          })
           setData(sortedMatches)
         }
       } catch (err) {
@@ -1183,22 +1112,11 @@ export default function App() {
     to: dateTo 
   })
 
-  console.log('🔍 Main App - Raw data from useSchedule:', data)
-  console.log('🔍 Main App - Data length:', data.length)
-  console.log('🔍 Main App - Active sport:', activeSport)
-  console.log('🔍 Main App - Date range:', { from: dateFrom, to: dateTo })
-
   // No additional filtering needed - just use the data as is
   const filteredData = data
-  
-  console.log('🔍 Main App - Filtered data:', filteredData)
-  console.log('🔍 Main App - Filtered data length:', filteredData.length)
 
   // Group by status: Live, Upcoming, Finished
   const groupedData = useMemo(() => {
-    console.log('🔍 Grouping data by status - Input filteredData:', filteredData)
-    console.log('🔍 Grouping data - Input length:', filteredData.length)
-    
     const groups = {
       live: [],
       upcoming: [],
@@ -1206,10 +1124,6 @@ export default function App() {
     }
     
     filteredData.forEach(match => {
-      console.log(`🔍 Processing match: ${match.home?.name} vs ${match.away?.name}`)
-      console.log(`   Status: ${match.status}`)
-      console.log(`   Game: ${match.game}`)
-      
       if (match.status === 'live') {
         groups.live.push(match)
       } else if (match.status === 'upcoming') {
@@ -1238,15 +1152,6 @@ export default function App() {
     if (groups.finished.length > 0) {
       result.push(['finished', groups.finished])
     }
-    
-    console.log('🔍 Grouped data by status result:', result)
-    console.log('🔍 Total groups:', result.length)
-    result.forEach(([status, matches]) => {
-      console.log(`   Group ${status}: ${matches.length} matches`)
-      matches.forEach(match => {
-        console.log(`     - ${match.home?.name} vs ${match.away?.name} (${match.game})`)
-      })
-    })
     
     return result
   }, [filteredData])
