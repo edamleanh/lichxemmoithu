@@ -487,7 +487,6 @@ const LolAdapter = {
         liveGameState: event.state === 'inProgress' ? 'In Progress' : undefined,
       })).filter(match => withinRange(match.start, from, to))
         .filter(match => {
-          // Filter out LIVE matches with TBD teams
           if (match.status === 'live') {
             return match.home?.name !== 'TBD' && match.away?.name !== 'TBD'
           }
