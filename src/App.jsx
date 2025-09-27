@@ -399,7 +399,13 @@ const PubgAdapter = {
 const LolAdapter = {
   async fetch({ from, to }) {
     try {
-      const response = await fetch('/api/lol')
+      // Add timeout for LoL API
+      const controller = new AbortController()
+      setTimeout(() => controller.abort(), 8000) // 8 second timeout
+      
+      const response = await fetch('/api/lol', {
+        signal: controller.signal
+      })
       
       if (!response.ok) {
         console.warn(`LoL API error: ${response.status}`)
@@ -467,17 +473,21 @@ const FootballAdapter = {
       // Use Vite proxy instead of direct API calls
       const baseURL = '/api/football'
       
-      // Test API connection first
+      // Test API connection first with timeout
       try {
-        const testResponse = await fetch('/api/football/competitions')
+        const controller = new AbortController()
+        setTimeout(() => controller.abort(), 5000) // 5 second timeout
+        
+        const testResponse = await fetch('/api/football/competitions', {
+          signal: controller.signal
+        })
         if (!testResponse.ok) {
-          const testError = await testResponse.text()
-          console.warn('API test failed:', testError)
+          console.warn('Football API test failed:', testResponse.status)
           // If test fails, return sample data immediately
           return createSampleData('football', from, to)
         }
       } catch (apiError) {
-        console.warn('API connection failed:', apiError)
+        console.warn('Football API connection failed:', apiError.message)
         // If API fails, return sample data immediately
         return createSampleData('football', from, to)
       }

@@ -11,10 +11,64 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Handle different endpoints
+    const urlPath = req.url.replace('/api/football', '');
+    
+    // Handle /competitions endpoint
+    if (urlPath === '/competitions' || urlPath.startsWith('/competitions/')) {
+      const segments = urlPath.split('/').filter(Boolean);
+      
+      if (segments[0] === 'competitions' && segments.length === 1) {
+        // GET /competitions - return available competitions
+        const competitions = [
+          { id: 'PL', name: 'Premier League', area: { name: 'England' } },
+          { id: 'PD', name: 'Primera División', area: { name: 'Spain' } },
+          { id: 'CL', name: 'UEFA Champions League', area: { name: 'Europe' } }
+        ];
+        res.status(200).json({ competitions });
+        return;
+      }
+      
+      if (segments[0] === 'competitions' && segments[1] && segments[2] === 'matches') {
+        // GET /competitions/{id}/matches
+        const competition = segments[1];
+        const { dateFrom, dateTo } = req.query;
+        
+        // Get API key from environment variables
+        const apiKey = process.env.VITE_FOOTBALL_API_KEY;
+        
+        if (!apiKey) {
+          res.status(500).json({ error: 'Football API key not configured' });
+          return;
+        }
+
+        const apiUrl = `https://api.football-data.org/v4/competitions/${competition}/matches${
+          dateFrom && dateTo ? `?dateFrom=${dateFrom}&dateTo=${dateTo}` : ''
+        }`;
+
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'X-Auth-Token': apiKey,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Football API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        res.status(200).json(data);
+        return;
+      }
+    }
+    
+    // Legacy support - direct competition parameter
     const { competition, dateFrom, dateTo } = req.query;
     
     if (!competition) {
-      res.status(400).json({ error: 'Competition parameter is required' });
+      res.status(400).json({ error: 'Competition parameter is required or use /competitions endpoint' });
       return;
     }
 
