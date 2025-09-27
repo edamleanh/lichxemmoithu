@@ -336,7 +336,7 @@ const ValorantAdapter = {
       // Fetch LIVE matches first (highest priority)
       try {
         console.log('🔴 Fetching LIVE Valorant matches...')
-        const liveResponse = await fetch('/api/valorant/match?q=live_score')
+        const liveResponse = await fetch('/api/valorant?q=live_score')
         
         if (liveResponse.ok) {
           const liveData = await liveResponse.json()
@@ -354,7 +354,7 @@ const ValorantAdapter = {
       // Fetch upcoming matches
       try {
         console.log('📅 Fetching upcoming Valorant matches...')
-        const upcomingResponse = await fetch('/api/valorant/match?q=upcoming')
+        const upcomingResponse = await fetch('/api/valorant?q=upcoming')
         
         if (upcomingResponse.ok) {
           const upcomingData = await upcomingResponse.json()
@@ -372,7 +372,7 @@ const ValorantAdapter = {
       // Fetch completed matches (results)
       try {
         console.log('🏆 Fetching completed Valorant matches...')
-        const resultsResponse = await fetch('/api/valorant/match?q=results')
+        const resultsResponse = await fetch('/api/valorant?q=results')
         
         if (resultsResponse.ok) {
           const resultsData = await resultsResponse.json()
@@ -449,7 +449,7 @@ const LolAdapter = {
   async fetch({ from, to }) {
     try {
       console.log('⚡ Fetching LoL matches via proxy...')
-      const response = await fetch('/api/lol/persisted/gw/getSchedule?hl=en-US')
+      const response = await fetch('/api/lol')
       
       if (!response.ok) {
         console.warn(`LoL API error: ${response.status}`)
@@ -521,21 +521,21 @@ const FootballAdapter = {
       // Use Vite proxy instead of direct API calls
       const baseURL = '/api/football'
       
-      // Test proxy connection first
+      // Test API connection first
       try {
-        const testResponse = await fetch(`${baseURL}/competitions`)
-        console.log('Proxy test response status:', testResponse.status)
+        const testResponse = await fetch('/api/football?competition=PL&dateFrom=2025-01-01&dateTo=2025-01-02')
+        console.log('API test response status:', testResponse.status)
         if (!testResponse.ok) {
           const testError = await testResponse.text()
-          console.warn('Proxy test failed:', testError)
+          console.warn('API test failed:', testError)
           // If test fails, return sample data immediately
           console.log('Using sample data due to API connection failure')
           return createSampleData('football', from, to)
         }
-      } catch (proxyError) {
-        console.warn('Proxy connection failed:', proxyError)
-        // If proxy fails, return sample data immediately
-        console.log('Using sample data due to proxy failure')
+      } catch (apiError) {
+        console.warn('API connection failed:', apiError)
+        // If API fails, return sample data immediately
+        console.log('Using sample data due to API failure')
         return createSampleData('football', from, to)
       }
       
@@ -558,9 +558,9 @@ const FootballAdapter = {
       
       for (const league of leagues) {
         try {
-          // Use proxy endpoint - no need for auth headers as they're handled by Vite proxy
+          // Use Vercel serverless function
           const response = await fetch(
-            `${baseURL}/competitions/${league.id}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`
+            `/api/football?competition=${league.id}&dateFrom=${dateFrom}&dateTo=${dateTo}`
           )
           
           if (!response.ok) {
