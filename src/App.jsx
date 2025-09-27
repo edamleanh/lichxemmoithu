@@ -902,7 +902,7 @@ function MatchCard({ match, isCompact }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       whileHover={{ y: -4 }}
-      className={`group relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg hover:shadow-xl transition-all duration-300 ${
+      className={`group relative overflow-hidden rounded-2xl bg-gray-100/90 backdrop-blur-sm border border-gray-300/50 shadow-lg hover:shadow-xl transition-all duration-300 ${
         isCompact ? 'p-4' : 'p-6'
       }`}
     >
