@@ -99,7 +99,7 @@ const Badge = ({ children, variant = 'default', className = '' }) => {
 // --- Utility Functions ---------------------------------------------------
 const toDate = (v) => (v instanceof Date ? v : new Date(v))
 const fmtTime = (d, opts = {}) => new Intl.DateTimeFormat('vi-VN', {
-  hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short', ...opts,
+  hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'numeric', ...opts,
 }).format(toDate(d))
 const fmtDay = (d) => new Intl.DateTimeFormat('vi-VN', { 
   weekday: 'long', day: '2-digit', month: 'long' 
