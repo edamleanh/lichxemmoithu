@@ -109,6 +109,76 @@ const withinRange = (d, from, to) => {
   return (!from || t >= toDate(from).getTime()) && (!to || t <= toDate(to).getTime())
 }
 
+// Team name abbreviation helper
+const abbreviateTeamName = (teamName) => {
+  if (!teamName || teamName === 'TBD') return teamName
+  
+  // Dictionary for common team abbreviations
+  const abbreviations = {
+    // Football teams
+    'Manchester United': 'MAN UTD',
+    'Manchester City': 'MAN CITY',
+    'Real Madrid': 'REAL',
+    'Barcelona': 'BARCA',
+    'Liverpool': 'LIV',
+    'Arsenal': 'ARS',
+    'Chelsea': 'CHE',
+    'Tottenham Hotspur': 'TOT',
+    'Bayern Munich': 'BAY',
+    'Paris Saint-Germain': 'PSG',
+    'Atletico Madrid': 'ATM',
+    'Borussia Dortmund': 'BVB',
+    'Juventus': 'JUVE',
+    'AC Milan': 'MILAN',
+    'Inter Milan': 'INTER',
+    
+    // Valorant teams
+    'Team Heretics': 'TH',
+    'Paper Rex': 'PRX',
+    'G2 Esports': 'G2',
+    'Team Liquid': 'TL',
+    'Sentinels': 'SEN',
+    'FNATIC': 'FNC',
+    
+    // LoL teams
+    'T1': 'T1',
+    'Gen.G': 'GEN',
+    'DRX': 'DRX',
+    'KT Rolster': 'KT',
+    'JD Gaming': 'JDG',
+    'Bilibili Gaming': 'BLG',
+    'DAMWON KIA': 'DK',
+    
+    // PUBG teams
+    'Gen.G': 'GEN'
+  }
+  
+  // Check if team has a predefined abbreviation
+  if (abbreviations[teamName]) {
+    return abbreviations[teamName]
+  }
+  
+  // Auto-generate abbreviation for unknown teams
+  // If team name has multiple words, take first letter of each word
+  const words = teamName.split(' ').filter(word => word.length > 0)
+  if (words.length > 1) {
+    // Take first letter of each significant word (skip common words)
+    const skipWords = ['the', 'of', 'and', 'fc', 'club', 'team', 'esports']
+    const significantWords = words.filter(word => !skipWords.includes(word.toLowerCase()))
+    
+    if (significantWords.length > 1) {
+      return significantWords.map(word => word[0].toUpperCase()).join('')
+    }
+  }
+  
+  // If single word or can't abbreviate, truncate if too long
+  if (teamName.length > 12) {
+    return teamName.substring(0, 12) + '...'
+  }
+  
+  return teamName
+}
+
 // Status helpers
 const getStatusInfo = (status) => {
   switch (status) {
@@ -939,7 +1009,7 @@ function MatchCard({ match, isCompact }) {
             {match.home?.logo && (
               <img src={match.home.logo} alt={match.home.name} className="h-8 w-8 rounded-full object-cover flex-shrink-0 mt-1" />
             )}
-            <span className="font-semibold text-gray-900 break-words leading-tight">{match.home?.name || 'TBD'}</span>
+            <span className="font-semibold text-gray-900 break-words leading-tight">{abbreviateTeamName(match.home?.name || 'TBD')}</span>
             {(match.status === 'finished' || match.status === 'live') && match.home?.score !== undefined && (
               <span className={`ml-2 px-2 py-1 rounded-lg text-sm font-bold flex-shrink-0 ${
                 match.status === 'live' 
@@ -975,7 +1045,7 @@ function MatchCard({ match, isCompact }) {
                 {match.away.score}
               </span>
             )}
-            <span className="font-semibold text-gray-900 break-words leading-tight text-right">{match.away?.name || 'TBD'}</span>
+            <span className="font-semibold text-gray-900 break-words leading-tight text-right">{abbreviateTeamName(match.away?.name || 'TBD')}</span>
             {match.away?.logo && (
               <img src={match.away.logo} alt={match.away.name} className="h-8 w-8 rounded-full object-cover flex-shrink-0 mt-1" />
             )}
