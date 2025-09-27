@@ -6,7 +6,11 @@
   },
   "rewrites": [
     {
-      "source": "/api/football/(.*)",
+      "source": "/api/football/competitions",
+      "destination": "/api/football"
+    },
+    {
+      "source": "/api/football/competitions/(.*)",
       "destination": "/api/football"
     }
   ],
