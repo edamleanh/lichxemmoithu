@@ -109,69 +109,56 @@ const withinRange = (d, from, to) => {
   return (!from || t >= toDate(from).getTime()) && (!to || t <= toDate(to).getTime())
 }
 
-// Helper function to shorten team names
+// Helper function to clean team names by removing unnecessary words
 const shortenTeamName = (teamName) => {
   if (!teamName || teamName === 'TBD') return teamName
   
-  // Football teams abbreviations
-  const footballAbbreviations = {
-    'Manchester United': 'MAN UTD',
-    'Manchester City': 'MAN CITY',
-    'Liverpool': 'LIV',
-    'Arsenal': 'ARS',
-    'Chelsea': 'CHE',
-    'Tottenham Hotspur': 'TOT',
-    'Real Madrid': 'RM',
-    'Barcelona': 'BAR',
-    'Atletico Madrid': 'ATM',
-    'Valencia': 'VAL',
-    'Sevilla': 'SEV',
-    'Bayern Munich': 'BAY',
-    'Borussia Dortmund': 'BVB',
-    'Paris Saint-Germain': 'PSG',
-    'Olympique Lyonnais': 'OL',
-    'Olympique Marseille': 'OM',
-    'Juventus': 'JUV',
-    'AC Milan': 'MIL',
-    'Inter Milan': 'INT',
-    'AS Roma': 'ROM',
-    'Napoli': 'NAP'
+  // Words to remove from team names
+  const wordsToRemove = [
+    'FC', 'CF', 'AC', 'SC', 'AS', 'RC', 'CD', 'CD.', 'C.D.',
+    'Esports', 'Esport', 'E-sports', 'Gaming', 'Team',
+    'Club', 'Football Club', 'Soccer Club',
+     'Athletic', 'Atletico',
+     'Town', 'County', 'Sport'
+  ]
+  
+  // Split team name into words
+  let words = teamName.split(' ')
+  
+  // Remove unnecessary words (case insensitive)
+  words = words.filter(word => {
+    const wordLower = word.toLowerCase().replace(/[.,]/g, '')
+    return !wordsToRemove.some(removeWord => 
+      removeWord.toLowerCase() === wordLower
+    )
+  })
+  
+  // If all words were removed, return original name
+  if (words.length === 0) {
+    return teamName
   }
   
-  // Esports teams abbreviations
-  const esportsAbbreviations = {
-    'Team Heretics': 'TH',
-    'Team Liquid': 'TL',
-    'Paper Rex': 'PRX',
-    'DAMWON KIA': 'DK',
-    'KT Rolster': 'KT',
-    'G2 Esports': 'G2',
-    'Sentinels': 'SEN',
-    'GIANTX': 'GX'
+  // Join remaining words
+  let cleanName = words.join(' ')
+  
+  // Special cases for common abbreviations
+  const specialCases = {
+    'Manchester Utd': 'Manchester United',
+    'Man Utd': 'Manchester United',
+    'Barcelona': 'Barça',
+    'Bayern München': 'Bayern Munich',
+    'Inter Milan': 'Inter',
+    'AC Milan': 'Milan'
   }
   
-  // Check football abbreviations first
-  if (footballAbbreviations[teamName]) {
-    return footballAbbreviations[teamName]
-  }
-  
-  // Check esports abbreviations
-  if (esportsAbbreviations[teamName]) {
-    return esportsAbbreviations[teamName]
-  }
-  
-  // If no specific abbreviation found, try to create one
-  if (teamName.length > 12) {
-    // For long names, take first letters of each word
-    const words = teamName.split(' ')
-    if (words.length > 1) {
-      return words.map(word => word.charAt(0).toUpperCase()).join('')
+  // Check if cleaned name matches any special case
+  for (const [key, value] of Object.entries(specialCases)) {
+    if (cleanName === key) {
+      return value
     }
-    // For single long word, take first 6 characters
-    return teamName.substring(0, 6).toUpperCase()
   }
   
-  return teamName
+  return cleanName
 }
 
 // Status helpers
