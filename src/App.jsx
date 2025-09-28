@@ -971,7 +971,6 @@ function MatchCard({ match, isCompact }) {
               <GameIcon className="h-4 w-4 text-white" />
             )}
           </div>
-          <Badge variant={gameInfo.variant}>{gameInfo.label}</Badge>
           <Badge variant={statusInfo.variant}>
             <StatusIcon className="h-3 w-3" />
             {statusInfo.label}
