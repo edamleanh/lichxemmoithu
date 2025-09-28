@@ -994,41 +994,37 @@ function MatchCard({ match, isCompact }) {
               <img src={match.home.logo} alt={match.home.name} className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" />
             )}
             <span className="font-semibold text-gray-900 break-words leading-tight">{shortenTeamName(match.home?.name) || 'TBD'}</span>
-            {(match.status === 'finished' || match.status === 'live') && match.home?.score !== undefined && (
-              <span className={`ml-2 px-2 py-1 rounded-lg text-sm font-bold flex-shrink-0 ${
-                match.status === 'live' 
-                  ? 'bg-red-100 text-red-800 animate-pulse' 
-                  : (match.home.score > (match.away?.score || 0)) 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-600'
-              }`}>
-                {match.home.score}
-              </span>
-            )}
           </div>
           
-          <div className="px-4">
+          <div className="flex items-center gap-3 min-w-0">
             {(match.status === 'finished' || match.status === 'live') && (match.home?.score !== undefined || match.away?.score !== undefined) ? (
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-bold ${match.status === 'live' ? 'text-red-600' : 'text-gray-600'}`}>-</span>
-              </div>
+              <>
+                <span className={`px-2 py-1 rounded-lg text-sm font-bold ${
+                  match.status === 'live' 
+                    ? 'bg-red-100 text-red-800 animate-pulse' 
+                    : (match.home?.score > (match.away?.score || 0)) 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {match.home?.score || 0}
+                </span>
+                <span className={`text-lg font-bold ${match.status === 'live' ? 'text-red-600' : 'text-gray-600'}`}>-</span>
+                <span className={`px-2 py-1 rounded-lg text-sm font-bold ${
+                  match.status === 'live' 
+                    ? 'bg-red-100 text-red-800 animate-pulse' 
+                    : (match.away?.score > (match.home?.score || 0)) 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {match.away?.score || 0}
+                </span>
+              </>
             ) : (
               <span className="text-gray-400 font-medium">VS</span>
             )}
           </div>
           
           <div className="flex items-start gap-3 flex-1 justify-end min-w-0">
-            {(match.status === 'finished' || match.status === 'live') && match.away?.score !== undefined && (
-              <span className={`mr-2 px-2 py-1 rounded-lg text-sm font-bold flex-shrink-0 ${
-                match.status === 'live' 
-                  ? 'bg-red-100 text-red-800 animate-pulse' 
-                  : (match.away.score > (match.home?.score || 0)) 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-gray-100 text-gray-600'
-              }`}>
-                {match.away.score}
-              </span>
-            )}
             <span className="font-semibold text-gray-900 break-words leading-tight text-right">{shortenTeamName(match.away?.name) || 'TBD'}</span>
             {match.away?.logo && (
               <img src={match.away.logo} alt={match.away.name} className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" />
