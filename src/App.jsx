@@ -962,7 +962,7 @@ function MatchCard({ match, isCompact }) {
       <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="grid grid-cols-3 items-center mb-4">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
             {gameInfo.isImage ? (
@@ -973,14 +973,14 @@ function MatchCard({ match, isCompact }) {
           </div>
         </div>
         
-        <div className="flex items-center justify-center flex-1">
+        <div className="flex items-center justify-center">
           <Badge variant={statusInfo.variant}>
             <StatusIcon className="h-3 w-3" />
             {statusInfo.label}
           </Badge>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-gray-500 justify-end">
           <Clock className="h-4 w-4" />
           {fmtTime(match.start)}
         </div>
