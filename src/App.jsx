@@ -961,14 +961,6 @@ function MatchCard({ match, isCompact }) {
       {/* Background Gradient */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
       
-      {/* Status Badge - Centered at Top */}
-      <div className="flex justify-center mb-4">
-        <Badge variant={statusInfo.variant}>
-          <StatusIcon className="h-3 w-3" />
-          {statusInfo.label}
-        </Badge>
-      </div>
-      
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -979,6 +971,13 @@ function MatchCard({ match, isCompact }) {
               <GameIcon className="h-4 w-4 text-white" />
             )}
           </div>
+        </div>
+        
+        <div className="flex items-center justify-center flex-1">
+          <Badge variant={statusInfo.variant}>
+            <StatusIcon className="h-3 w-3" />
+            {statusInfo.label}
+          </Badge>
         </div>
         
         <div className="flex items-center gap-2 text-sm text-gray-500">
