@@ -17,7 +17,7 @@ import {
   Trophy,
   List,
   Grid3X3,
-  Settings,
+
   Play,
   Users,
   Target,
@@ -1154,7 +1154,7 @@ export default function App() {
   // State management
   const [activeSport, setActiveSport] = useState('all')
   const [isCompactView, setIsCompactView] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
+
   
   // Time range: 24h before to 24h after current time
   const dateFrom = useMemo(() => {
@@ -1236,13 +1236,6 @@ export default function App() {
             </div>
             
             <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
-              
               <Button
                 variant="ghost"
                 onClick={refetch}
