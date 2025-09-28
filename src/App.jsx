@@ -165,8 +165,8 @@ const shortenTeamName = (teamName) => {
 const getStatusInfo = (status) => {
   switch (status) {
     case 'live': return { variant: 'live', label: 'LIVE', icon: Play }
-    case 'finished': return { variant: 'finished', label: 'KẾT THÚC', icon: Medal }
-    default: return { variant: 'upcoming', label: 'SẮP DIỄN RA', icon: Clock }
+    case 'finished': return { variant: 'finished', label: 'ENDED', icon: Medal }
+    default: return { variant: 'upcoming', label: 'COMMING', icon: Clock }
   }
 }
 
