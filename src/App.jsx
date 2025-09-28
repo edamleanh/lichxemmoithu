@@ -119,7 +119,7 @@ const shortenTeamName = (teamName) => {
     'Esports', 'Esport', 'E-sports', 'Gaming', 'Team',
     'Club', 'Football Club', 'Soccer Club',
      'Athletic', 'Atletico',
-     'Town', 'County', 'Sport'
+     'Town', 'County', 'Sport', 'de', 'Fútbol', 'Fútbol', 'Fútbol Club', 'F.C.', 'C.F.', 'A.C.', 'S.C.', 'A.S.', 'R.C.', 'C.D.', 'C.D',
   ]
   
   // Split team name into words
