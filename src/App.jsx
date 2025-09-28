@@ -109,6 +109,71 @@ const withinRange = (d, from, to) => {
   return (!from || t >= toDate(from).getTime()) && (!to || t <= toDate(to).getTime())
 }
 
+// Helper function to shorten team names
+const shortenTeamName = (teamName) => {
+  if (!teamName || teamName === 'TBD') return teamName
+  
+  // Football teams abbreviations
+  const footballAbbreviations = {
+    'Manchester United': 'MAN UTD',
+    'Manchester City': 'MAN CITY',
+    'Liverpool': 'LIV',
+    'Arsenal': 'ARS',
+    'Chelsea': 'CHE',
+    'Tottenham Hotspur': 'TOT',
+    'Real Madrid': 'RM',
+    'Barcelona': 'BAR',
+    'Atletico Madrid': 'ATM',
+    'Valencia': 'VAL',
+    'Sevilla': 'SEV',
+    'Bayern Munich': 'BAY',
+    'Borussia Dortmund': 'BVB',
+    'Paris Saint-Germain': 'PSG',
+    'Olympique Lyonnais': 'OL',
+    'Olympique Marseille': 'OM',
+    'Juventus': 'JUV',
+    'AC Milan': 'MIL',
+    'Inter Milan': 'INT',
+    'AS Roma': 'ROM',
+    'Napoli': 'NAP'
+  }
+  
+  // Esports teams abbreviations
+  const esportsAbbreviations = {
+    'Team Heretics': 'TH',
+    'Team Liquid': 'TL',
+    'Paper Rex': 'PRX',
+    'DAMWON KIA': 'DK',
+    'KT Rolster': 'KT',
+    'G2 Esports': 'G2',
+    'Sentinels': 'SEN',
+    'GIANTX': 'GX'
+  }
+  
+  // Check football abbreviations first
+  if (footballAbbreviations[teamName]) {
+    return footballAbbreviations[teamName]
+  }
+  
+  // Check esports abbreviations
+  if (esportsAbbreviations[teamName]) {
+    return esportsAbbreviations[teamName]
+  }
+  
+  // If no specific abbreviation found, try to create one
+  if (teamName.length > 12) {
+    // For long names, take first letters of each word
+    const words = teamName.split(' ')
+    if (words.length > 1) {
+      return words.map(word => word.charAt(0).toUpperCase()).join('')
+    }
+    // For single long word, take first 6 characters
+    return teamName.substring(0, 6).toUpperCase()
+  }
+  
+  return teamName
+}
+
 // Status helpers
 const getStatusInfo = (status) => {
   switch (status) {
@@ -939,7 +1004,7 @@ function MatchCard({ match, isCompact }) {
             {match.home?.logo && (
               <img src={match.home.logo} alt={match.home.name} className="h-8 w-8 rounded-full object-cover flex-shrink-0 mt-1" />
             )}
-            <span className="font-semibold text-gray-900 break-words leading-tight">{match.home?.name || 'TBD'}</span>
+            <span className="font-semibold text-gray-900 break-words leading-tight">{shortenTeamName(match.home?.name) || 'TBD'}</span>
             {(match.status === 'finished' || match.status === 'live') && match.home?.score !== undefined && (
               <span className={`ml-2 px-2 py-1 rounded-lg text-sm font-bold flex-shrink-0 ${
                 match.status === 'live' 
@@ -975,7 +1040,7 @@ function MatchCard({ match, isCompact }) {
                 {match.away.score}
               </span>
             )}
-            <span className="font-semibold text-gray-900 break-words leading-tight text-right">{match.away?.name || 'TBD'}</span>
+            <span className="font-semibold text-gray-900 break-words leading-tight text-right">{shortenTeamName(match.away?.name) || 'TBD'}</span>
             {match.away?.logo && (
               <img src={match.away.logo} alt={match.away.name} className="h-8 w-8 rounded-full object-cover flex-shrink-0 mt-1" />
             )}
