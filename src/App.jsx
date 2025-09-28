@@ -22,7 +22,7 @@ import {
   Users,
   Target,
   Zap,
-  Star,
+
   TrendingUp,
   Gamepad2,
   Medal,
@@ -1141,10 +1141,6 @@ function MatchCard({ match, isCompact }) {
         </div>
       </div>
 
-      {/* Hover Effect */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <Star className="h-5 w-5 text-yellow-400" />
-      </div>
     </motion.div>
   )
 }
