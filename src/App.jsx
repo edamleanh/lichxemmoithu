@@ -989,7 +989,7 @@ function MatchCard({ match, isCompact }) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {match.home?.logo && (
-              <img src={match.home.logo} alt={match.home.name} className="h-8 w-8 rounded-full object-cover flex-shrink-0 mt-1" />
+              <img src={match.home.logo} alt={match.home.name} className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" />
             )}
             <span className="font-semibold text-gray-900 break-words leading-tight">{shortenTeamName(match.home?.name) || 'TBD'}</span>
             {(match.status === 'finished' || match.status === 'live') && match.home?.score !== undefined && (
@@ -1029,7 +1029,7 @@ function MatchCard({ match, isCompact }) {
             )}
             <span className="font-semibold text-gray-900 break-words leading-tight text-right">{shortenTeamName(match.away?.name) || 'TBD'}</span>
             {match.away?.logo && (
-              <img src={match.away.logo} alt={match.away.name} className="h-8 w-8 rounded-full object-cover flex-shrink-0 mt-1" />
+              <img src={match.away.logo} alt={match.away.name} className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" />
             )}
           </div>
         </div>
