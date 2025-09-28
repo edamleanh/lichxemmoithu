@@ -971,10 +971,6 @@ function MatchCard({ match, isCompact }) {
               <GameIcon className="h-4 w-4 text-white" />
             )}
           </div>
-          <Badge variant={statusInfo.variant}>
-            <StatusIcon className="h-3 w-3" />
-            {statusInfo.label}
-          </Badge>
         </div>
         
         <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -1004,11 +1000,13 @@ function MatchCard({ match, isCompact }) {
             )}
           </div>
           
-          <div className="px-4">
+          <div className="px-4 flex flex-col items-center gap-2">
+            <Badge variant={statusInfo.variant}>
+              <StatusIcon className="h-3 w-3" />
+              {statusInfo.label}
+            </Badge>
             {(match.status === 'finished' || match.status === 'live') && (match.home?.score !== undefined || match.away?.score !== undefined) ? (
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-bold ${match.status === 'live' ? 'text-red-600' : 'text-gray-600'}`}>-</span>
-              </div>
+              <span className={`text-sm font-bold ${match.status === 'live' ? 'text-red-600' : 'text-gray-600'}`}>-</span>
             ) : (
               <span className="text-gray-400 font-medium">VS</span>
             )}
