@@ -1615,7 +1615,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
             </div>
             
             <div className="flex items-center justify-center">
-              
+
               <Badge variant={statusInfo.variant}>
                 <StatusIcon className="h-3 w-3" />
                 {statusInfo.label}
@@ -1678,7 +1678,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
           </div>
 
           {/* Live match info for PUBG */}
-          {match.status === 'live' && (
+          {/* {match.status === 'live' && (
             <div className={`p-3 rounded-lg ${
               isDarkMode 
                 ? 'bg-gray-700/80 border border-gray-600/60' 
@@ -1697,7 +1697,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
                 <WatchLiveButton match={match} />
               </div>
             </div>
-          )}
+          )} */}
         </div>
       </motion.div>
     )
