@@ -177,16 +177,18 @@ const searchYouTubeLiveStream = async (match) => {
     
     // Build search query: team1 + team2 + league + "live"
     const searchQuery = [
-      // shortenTeamName(match.home?.name) || '',
-      // 'vs',
-      // shortenTeamName(match.away?.name) || '',
-      match.league
+      shortenTeamName(match.home?.name) || '',
+      'vs',
+      shortenTeamName(match.away?.name) || '',
+      match.league,
+      'live'
     ].filter(Boolean).join(' ')
     
+    console.log('🔍 Searching YouTube for:', searchQuery)
     
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?` +
-      `part=snippet&type=video&eventType=live&maxResults=1&order=viewCount&` +
+      `part=snippet&type=video&eventType=live&maxResults=3&order=viewCount&` +
       `q=${encodeURIComponent(searchQuery)}&key=${YOUTUBE_API_KEY}`
     );
     
@@ -201,7 +203,8 @@ const searchYouTubeLiveStream = async (match) => {
       const video = data.items[0]
       const youtubeUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`
       
-      
+      console.log('✅ Found YouTube live stream:', youtubeUrl)
+      console.log('📺 Video title:', video.snippet.title)
       return youtubeUrl
     }
     
@@ -405,7 +408,7 @@ const ValorantAdapter = {
         },
         start: new Date(), // Live matches show current time
         region: 'International',
-        stream: match.match_page ? `${match.match_page}` : '',
+        stream: '', // Use YouTube search instead of API stream
         venue: match.match_event || '',
         status: 'live',
         // Live-specific data
@@ -469,7 +472,7 @@ const ValorantAdapter = {
         },
         start: match.unix_timestamp ? adjustValorantTimezone(match.unix_timestamp) : new Date(Date.now() + Math.random() * 86400000),
         region: 'International',
-        stream: match.match_page ? `${match.match_page}` : '',
+        stream: '', // Use YouTube search instead of API stream
         venue: match.match_event || '',
         status: 'upcoming',
       }))
@@ -531,7 +534,7 @@ const ValorantAdapter = {
         },
         start: new Date(), // Use current time for completed matches within 1 day
         region: 'International',
-        stream: match.match_page ? `https://www.vlr.gg${match.match_page}` : '',
+        stream: '', // Use YouTube search instead of API stream
         venue: match.tournament_name || '',
         status: 'finished',
       }))
@@ -759,7 +762,7 @@ const LolAdapter = {
         },
         start: new Date(event.startTime),
         region: event.league?.region || 'International',
-        stream: event.streams?.[0]?.parameter || '',
+        stream: '', // Use YouTube search instead of API stream
         venue: event.league?.name || '',
         status: event.state === 'inProgress' ? 'live' :
                 event.state === 'completed' ? 'finished' : 'upcoming',
@@ -927,7 +930,7 @@ const FootballAdapter = {
               start: new Date(match.utcDate),
               venue: match.venue || '',
               region: match.area?.name || match.competition?.area?.name || 'International',
-              stream: '',
+              stream: '', // Use YouTube search instead of API stream
               status: match.status === 'FINISHED' ? 'finished' :
                       match.status === 'IN_PLAY' || match.status === 'PAUSED' ? 'live' : 'upcoming',
               // Live-specific data for Football
@@ -1028,7 +1031,7 @@ function createSampleData(game, from, to) {
         },
         start: new Date(),
         region: 'International',
-        stream: 'https://www.vlr.gg/542274/team-heretics-vs-giantx-valorant-champions-2025-lr1',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'Valorant Champions 2025',
         status: 'live',
         currentMap: 'Lotus',
@@ -1043,7 +1046,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Paper Rex', score: 1 },
         start: new Date(now.getTime() - 3 * 60 * 60 * 1000),
         region: 'International',
-        stream: 'https://www.vlr.gg/542268/fnatic-vs-paper-rex-valorant-champions-2025-ubsf',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'Valorant Champions 2025',
         status: 'finished',
       },
@@ -1056,7 +1059,7 @@ function createSampleData(game, from, to) {
         away: { name: 'G2 Esports', score: 1 },
         start: new Date(now.getTime() - 4 * 60 * 60 * 1000),
         region: 'International',
-        stream: 'https://www.vlr.gg/542273/drx-vs-g2-esports-valorant-champions-2025-lr1',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'Valorant Champions 2025',
         status: 'finished',
       },
@@ -1069,7 +1072,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Team Liquid' },
         start: new Date(now.getTime() + 20 * 60 * 60 * 1000),
         region: 'International',
-        stream: 'https://www.vlr.gg/542269/sentinels-vs-team-liquid-valorant-champions-2025-ubsf',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'Valorant Champions 2025',
         status: 'upcoming',
       }
@@ -1084,7 +1087,7 @@ function createSampleData(game, from, to) {
         away: { name: 'DAMWON KIA', score: 0 },
         start: new Date(now.getTime() - 2 * 60 * 60 * 1000),
         region: 'Global',
-        stream: 'https://youtube.com/pubgesports',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'Seoul Arena',
         status: 'finished',
       }
@@ -1099,7 +1102,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Gen.G', score: 0 },
         start: new Date(),
         region: 'Korea',
-        stream: 'https://twitch.tv/lck',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'LoL Park',
         status: 'live',
         currentGame: 'Game 2',
@@ -1115,7 +1118,7 @@ function createSampleData(game, from, to) {
         away: { name: 'KT Rolster', score: 1 },
         start: new Date(now.getTime() - 4 * 60 * 60 * 1000),
         region: 'Korea',
-        stream: 'https://twitch.tv/lck',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'LoL Park',
         status: 'finished',
       },
@@ -1128,7 +1131,7 @@ function createSampleData(game, from, to) {
         away: { name: 'BLG' },
         start: new Date(now.getTime() + 26 * 60 * 60 * 1000),
         region: 'China',
-        stream: 'https://twitch.tv/lpl',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'LPL Arena',
         status: 'upcoming',
       }
@@ -1143,7 +1146,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Liverpool', score: 1 },
         start: new Date(),
         region: 'England',
-        stream: '',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'Old Trafford',
         status: 'live',
         currentMinute: 67,
@@ -1158,7 +1161,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Arsenal', score: 1 },
         start: new Date(now.getTime() - 5 * 60 * 60 * 1000),
         region: 'England',
-        stream: '',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'Etihad Stadium',
         status: 'finished',
       },
@@ -1171,7 +1174,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Barcelona' },
         start: new Date(now.getTime() + 72 * 60 * 60 * 1000),
         region: 'Spain',
-        stream: '',
+        stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'Santiago Bernabéu',
         status: 'upcoming',
       }
@@ -1306,12 +1309,15 @@ function WatchLiveButton({ match }) {
     // Search for YouTube live stream for other sports
     setIsSearching(true)
     try {
+      console.log(`🔍 Searching live stream for: ${match.home?.name} vs ${match.away?.name} - ${match.league}`)
       const youtubeUrl = await searchYouTubeLiveStream(match)
       if (youtubeUrl) {
         setFoundStream(youtubeUrl)
         window.open(youtubeUrl, '_blank')
+        console.log('✅ Opened live stream:', youtubeUrl)
       } else {
-        alert('Không tìm thấy live stream cho trận đấu này')
+        console.log('❌ No live stream found')
+        alert('Không tìm thấy live stream cho trận đấu này trên YouTube')
       }
     } catch (error) {
       console.error('Error searching for live stream:', error)
