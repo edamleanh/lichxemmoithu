@@ -19,28 +19,42 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Google Custom Search API configuration
-    const API_KEY = process.env.GOOGLE_SEARCH_API_KEY
-    const SEARCH_ENGINE_ID = process.env.GOOGLE_SEARCH_ENGINE_ID
-
-    if (!API_KEY || !SEARCH_ENGINE_ID) {
-      console.error('Google Search API credentials not configured')
-      return res.status(500).json({ error: 'Search service not configured' })
-    }
+    // Google Custom Search API configuration - sử dụng trực tiếp API keys
+    const API_KEY = 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294'
+    const SEARCH_ENGINE_ID = '514a4c5a5eb164ff0'
 
     // Build search query based on sport and team name
     let searchQuery = `${teamName} logo`
     
     // Add sport-specific terms to improve search accuracy
+    switch (sport?.toLowerCase()) {
+      case 'valorant':
+        searchQuery += ' valorant esports team'
+        break
+      case 'lol':
+        searchQuery += ' league of legends esports team'
+        break
+      case 'football':
+        searchQuery += ' football club soccer'
+        break
+      case 'pubg':
+        searchQuery += ' pubg esports team'
+        break
+      default:
+        searchQuery += ' esports team'
+    }
 
     // Google Custom Search API parameters
     const params = new URLSearchParams({
-      key: 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294',
-      cx: '514a4c5a5eb164ff0',
+      key: API_KEY,
+      cx: SEARCH_ENGINE_ID,
       q: searchQuery,
       searchType: 'image',
       num: '3', // Get top 3 results
       imgType: 'photo',
+      imgSize: 'medium',
+      safe: 'active',
+      fileType: 'png,jpg,jpeg', // Prefer common image formats
     })
 
     const searchUrl = `https://www.googleapis.com/customsearch/v1?${params}`
