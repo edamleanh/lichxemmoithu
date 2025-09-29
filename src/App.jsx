@@ -172,8 +172,7 @@ const searchYouTubeLiveStream = async (match) => {
       shortenTeamName(match.home?.name) || '',
       'vs',
       shortenTeamName(match.away?.name) || '',
-      match.league || '',
-      'live'
+      match.league
     ].filter(Boolean).join(' ')
     
     console.log('🔍 Searching YouTube for:', searchQuery)
