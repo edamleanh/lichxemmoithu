@@ -589,10 +589,21 @@ const FootballAdapter = {
           const data = await response.json()
           
           if (data.matches) {
-            const matches = data.matches.map(match => ({
-              id: `foot-${match.id}`,
-              game: 'football',
-              league: match.competition?.name || league.name,
+            const matches = data.matches.map(match => {
+              // Map competition names to preferred display names
+              const leagueNameMap = {
+                'Primera Division': 'LaLiga',
+                'Primera División': 'LaLiga',
+                'Premier League': 'Premier League',
+                'UEFA Champions League': 'Champions League'
+              }
+              
+              const displayLeagueName = leagueNameMap[match.competition?.name] || match.competition?.name || league.name
+              
+              return {
+                id: `foot-${match.id}`,
+                game: 'football',
+                league: displayLeagueName,
               stage: match.stage === 'REGULAR_SEASON' ? 
                 `Vòng ${match.matchday || ''}` : 
                 match.stage?.replace('_', ' ') || '',
@@ -616,7 +627,8 @@ const FootballAdapter = {
               currentMinute: (match.status === 'IN_PLAY' || match.status === 'PAUSED') ? match.minute : undefined,
               halfTime: match.status === 'PAUSED' ? 'Giờ nghỉ giải lao' : undefined,
               referee: match.referees?.[0]?.name || undefined,
-            }))
+            }
+            })
             
             allMatches = [...allMatches, ...matches]
           }
