@@ -1602,21 +1602,31 @@ function MatchCard({ match, isCompact, isDarkMode }) {
         
         {/* PUBG YouTube Video Layout */}
         <div className="space-y-4">
-          {/* Header with game icon and status */}
-          <div className="flex items-center justify-between">
+          {/* Header - Same format as other cards */}
+          <div className="grid grid-cols-3 items-center mb-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
-                <img src={gameInfo.icon} alt={gameInfo.label} className="h-5 w-5 object-contain" />
+                {gameInfo.isImage ? (
+                  <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
+                ) : (
+                  <GameIcon className="h-4 w-4 text-white" />
+                )}
               </div>
-              <span className={`font-bold text-lg ${
-                isDarkMode ? 'text-gray-100' : 'text-gray-900'
-              }`}>PUBG</span>
             </div>
             
-            <Badge variant={statusInfo.variant}>
-              <StatusIcon className="h-3 w-3" />
-              {statusInfo.label}
-            </Badge>
+            <div className="flex items-center justify-center">
+              <Badge variant={statusInfo.variant}>
+                <StatusIcon className="h-3 w-3" />
+                {statusInfo.label}
+              </Badge>
+            </div>
+            
+            <div className={`flex items-center gap-2 text-sm justify-end ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              <Clock className="h-4 w-4" />
+              {fmtTime(match.start)}
+            </div>
           </div>
 
           {/* Video Thumbnail */}
