@@ -1615,6 +1615,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
             </div>
             
             <div className="flex items-center justify-center">
+              
               <Badge variant={statusInfo.variant}>
                 <StatusIcon className="h-3 w-3" />
                 {statusInfo.label}
@@ -1631,7 +1632,19 @@ function MatchCard({ match, isCompact, isDarkMode }) {
 
           {/* Video Thumbnail */}
           {match.thumbnail && (
-            <div className="relative rounded-lg overflow-hidden aspect-video bg-gray-900">
+            <div 
+              className="relative rounded-lg overflow-hidden aspect-video bg-gray-900 cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => {
+                if (match.stream) {
+                  window.open(match.stream, '_blank')
+                } else {
+                  // Fallback to YouTube search if no direct stream URL
+                  const searchQuery = `${match.title || match.league} live stream`
+                  const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+                  window.open(youtubeSearchUrl, '_blank')
+                }
+              }}
+            >
               <img 
                 src={match.thumbnail} 
                 alt={match.title}
@@ -1646,6 +1659,12 @@ function MatchCard({ match, isCompact, isDarkMode }) {
                   </div>
                 </div>
               )}
+              {/* Click hint overlay */}
+              <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
+                <div className="bg-black/60 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                  Click để xem
+                </div>
+              </div>
             </div>
           )}
 
