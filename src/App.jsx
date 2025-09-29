@@ -26,6 +26,8 @@ import {
   TrendingUp,
   Gamepad2,
   Medal,
+  Moon,
+  Sun,
 } from 'lucide-react'
 
 // Import custom game icons
@@ -1207,9 +1209,6 @@ function MatchCard({ match, isCompact }) {
               </div>
               
               <div className="flex items-center gap-2">
-                <span className="text-red-600 font-medium animate-pulse">
-                  🔴 ĐANG LIVE
-                </span>
                 
                 {/* Watch Live Button */}
                 <WatchLiveButton match={match} />
