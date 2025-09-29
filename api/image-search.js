@@ -25,42 +25,18 @@ export default async function handler(req, res) {
 
     if (!API_KEY || !SEARCH_ENGINE_ID) {
       console.error('Google Search API credentials not configured')
-      // Trả về response rỗng thay vì lỗi 500
-      return res.status(200).json({
-        teamName,
-        sport,
-        searchQuery: `${teamName} logo`,
-        images: [],
-        totalResults: 0,
-        error: 'Google Search API not configured'
-      })
+      return res.status(500).json({ error: 'Search service not configured' })
     }
 
     // Build search query based on sport and team name
     let searchQuery = `${teamName} logo`
     
     // Add sport-specific terms to improve search accuracy
-    switch (sport?.toLowerCase()) {
-      case 'valorant':
-        searchQuery += ' valorant esports team'
-        break
-      case 'lol':
-        searchQuery += ' league of legends esports team'
-        break
-      case 'football':
-        searchQuery += ' football club soccer'
-        break
-      case 'pubg':
-        searchQuery += ' pubg esports team'
-        break
-      default:
-        searchQuery += ' esports team'
-    }
 
     // Google Custom Search API parameters
     const params = new URLSearchParams({
       key: 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294',
-      cx: '166bd52b2a2404003',
+      cx: '514a4c5a5eb164ff0',
       q: searchQuery,
       searchType: 'image',
       num: '3', // Get top 3 results
