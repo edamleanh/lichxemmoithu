@@ -932,40 +932,47 @@ const PubgAdapter = {
     return [topVideo] // Return array with only the top video
   },
 
-  // Process upcoming videos
+  // Process upcoming videos - return all upcoming videos
   processUpcomingVideos(items) {
-    return items
-      .map(item => ({
-        id: `pubg-upcoming-${item.id.videoId}`,
-        game: 'pubg',
-        league: this.extractLeague(item.snippet.title),
-        stage: this.extractStage(item.snippet.title),
-        title: item.snippet.title, // Full YouTube video title
-        description: item.snippet.description, // Video description
-        thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
-        channelTitle: item.snippet.channelTitle,
-        publishedAt: item.snippet.publishedAt,
-        // Use scheduled start time if available, otherwise fall back to publishedAt
-        scheduledStartTime: item.liveStreamingDetails?.scheduledStartTime,
-        home: { 
-          name: this.extractTeam1(item.snippet.title),
-          logo: null,
-          score: undefined
-        },
-        away: { 
-          name: this.extractTeam2(item.snippet.title),
-          logo: null,
-          score: undefined
-        },
-        start: item.liveStreamingDetails?.scheduledStartTime ? 
-               new Date(item.liveStreamingDetails.scheduledStartTime) : 
-               new Date(item.snippet.publishedAt),
-        region: 'Vietnam',
-        stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-        venue: 'PUBG BATTLEGROUNDS VIETNAM',
-        status: 'upcoming',
-        videoId: item.id.videoId
-      }))
+    const upcomingMatches = items.map(item => ({
+      id: `pubg-upcoming-${item.id.videoId}`,
+      game: 'pubg',
+      league: this.extractLeague(item.snippet.title),
+      stage: this.extractStage(item.snippet.title),
+      title: item.snippet.title, // Full YouTube video title
+      description: item.snippet.description, // Video description
+      thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
+      channelTitle: item.snippet.channelTitle,
+      publishedAt: item.snippet.publishedAt,
+      // Use scheduled start time if available, otherwise fall back to publishedAt
+      scheduledStartTime: item.liveStreamingDetails?.scheduledStartTime,
+      home: { 
+        name: this.extractTeam1(item.snippet.title),
+        logo: null,
+        score: undefined
+      },
+      away: { 
+        name: this.extractTeam2(item.snippet.title),
+        logo: null,
+        score: undefined
+      },
+      start: item.liveStreamingDetails?.scheduledStartTime ? 
+             new Date(item.liveStreamingDetails.scheduledStartTime) : 
+             new Date(item.snippet.publishedAt),
+      region: 'Vietnam',
+      stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      venue: 'PUBG BATTLEGROUNDS VIETNAM',
+      status: 'upcoming',
+      videoId: item.id.videoId
+    }))
+
+    console.log(`📅 Found ${upcomingMatches.length} upcoming PUBG videos`)
+    upcomingMatches.forEach(video => {
+      const startTime = video.start
+      console.log(`   "${video.title}" - scheduled for ${startTime.toLocaleString('vi-VN')}`)
+    })
+
+    return upcomingMatches // Return all upcoming videos
   },
 
   // Helper: Check if video title is a PUBG match
