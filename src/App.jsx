@@ -253,7 +253,7 @@ const TeamLogoSearchService = {
   
   // Configuration
   config: {
-    enabled: true, // Set to false to disable logo search
+    enabled: false, // TẮT tính năng tìm logo tạm thời
     maxCacheSize: 100, // Maximum number of cached results
     searchTimeout: 10000, // 10 seconds timeout for search requests
   },
