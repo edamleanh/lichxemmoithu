@@ -17,7 +17,7 @@ import {
   Trophy,
   List,
   Grid3X3,
-
+  Eye,
   Play,
   Users,
   Target,
@@ -713,7 +713,52 @@ const PubgAdapter = {
         
         if (liveResponse.ok) {
           const liveData = await liveResponse.json()
-          const liveMatches = this.processLiveVideos(liveData.items || [])
+          
+          // Get video IDs for additional details (view count, etc.)
+          const videoIds = liveData.items?.map(item => item.id.videoId).join(',')
+          
+          let liveVideosWithStats = liveData.items || []
+          
+          // Fetch video statistics if we have video IDs
+          if (videoIds) {
+            try {
+              const statsResponse = await fetch(
+                `https://www.googleapis.com/youtube/v3/videos?` +
+                `part=statistics,liveStreamingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+              )
+              
+              if (statsResponse.ok) {
+                const statsData = await statsResponse.json()
+                
+                // Merge statistics with video data
+                liveVideosWithStats = liveData.items.map(video => {
+                  const stats = statsData.items?.find(stat => stat.id === video.id.videoId)
+                  return {
+                    ...video,
+                    statistics: stats?.statistics,
+                    liveStreamingDetails: stats?.liveStreamingDetails
+                  }
+                })
+                
+                // Sort by view count (descending) - videos with more views first
+                liveVideosWithStats.sort((a, b) => {
+                  const viewsA = parseInt(a.statistics?.viewCount || '0')
+                  const viewsB = parseInt(b.statistics?.viewCount || '0')
+                  return viewsB - viewsA
+                })
+                
+                console.log('📊 Live videos sorted by view count:')
+                liveVideosWithStats.forEach(video => {
+                  const views = parseInt(video.statistics?.viewCount || '0')
+                  console.log(`   ${video.snippet.title}: ${views.toLocaleString()} views`)
+                })
+              }
+            } catch (statsError) {
+              console.warn('⚠️ Could not fetch video statistics:', statsError)
+            }
+          }
+          
+          const liveMatches = this.processLiveVideos(liveVideosWithStats)
           allMatches = [...allMatches, ...liveMatches]
           console.log(`✅ Found ${liveMatches.length} live PUBG streams`)
         }
@@ -752,12 +797,26 @@ const PubgAdapter = {
         return createSampleData('pubg', from, to)
       }
       
-      // Sort matches: LIVE first, then by start time
+      // Sort matches: LIVE first (with view count priority), then by start time
       return filteredMatches.sort((a, b) => {
         const aPriority = a.status === 'live' ? 0 : 1
         const bPriority = b.status === 'live' ? 0 : 1
         
         if (aPriority === bPriority) {
+          // If both are live, sort by view count (descending)
+          if (a.status === 'live' && b.status === 'live') {
+            const aViews = a.viewCount || 0
+            const bViews = b.viewCount || 0
+            if (aViews !== bViews) {
+              return bViews - aViews // Higher view count first
+            }
+            // If view counts are same, try concurrent viewers
+            const aConcurrent = a.concurrentViewers || 0
+            const bConcurrent = b.concurrentViewers || 0
+            if (aConcurrent !== bConcurrent) {
+              return bConcurrent - aConcurrent // Higher concurrent viewers first
+            }
+          }
           return new Date(a.start) - new Date(b.start)
         }
         
@@ -784,6 +843,11 @@ const PubgAdapter = {
         thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
         channelTitle: item.snippet.channelTitle,
         publishedAt: item.snippet.publishedAt,
+        // Add view count and live streaming details
+        viewCount: item.statistics?.viewCount ? parseInt(item.statistics.viewCount) : 0,
+        concurrentViewers: item.liveStreamingDetails?.concurrentViewers ? 
+          parseInt(item.liveStreamingDetails.concurrentViewers) : null,
+        actualStartTime: item.liveStreamingDetails?.actualStartTime,
         home: { 
           name: this.extractTeam1(item.snippet.title),
           logo: null,
@@ -1316,6 +1380,8 @@ function createSampleData(game, from, to) {
         description: 'Trực tiếp trận đấu PMPL Vietnam giữa Team Flash và Divine Esports. Đây là trận đấu quyết định vị trí đầu bảng!',
         thumbnail: 'https://i.ytimg.com/vi/live_stream/maxresdefault_live.jpg',
         channelTitle: 'PUBG BATTLEGROUNDS VIETNAM',
+        viewCount: 15420,
+        concurrentViewers: 8750,
         home: { name: 'Team Flash', score: 1 },
         away: { name: 'Divine Esports', score: 0 },
         start: new Date(),
@@ -1675,6 +1741,27 @@ function MatchCard({ match, isCompact, isDarkMode }) {
             }`}>
               {match.title || match.league || 'PUBG Tournament'}
             </h3>
+            
+            {/* View count and live viewers info */}
+            <div className={`flex items-center gap-4 mt-2 text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              {match.status === 'live' && match.concurrentViewers && (
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="font-medium">
+                    {match.concurrentViewers.toLocaleString()} đang xem
+                  </span>
+                </div>
+              )}
+              
+              {match.viewCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <Eye className="h-3 w-3" />
+                  <span>{match.viewCount.toLocaleString()} lượt xem</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Live match info for PUBG */}
