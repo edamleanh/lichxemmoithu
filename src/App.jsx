@@ -1186,21 +1186,29 @@ function MatchCard({ match, isCompact, isDarkMode }) {
 
         {/* Live Match Additional Info */}
         {match.status === 'live' && (
-          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div className={`mt-3 p-3 rounded-lg ${
+            isDarkMode 
+              ? 'bg-gray-700/80 border border-gray-600/60' 
+              : 'bg-red-50 border border-red-200'
+          }`}>
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                 
                 {/* Valorant LIVE info */}
                 {match.game === 'valorant' && match.currentMap && (
-                  <span className="font-semibold text-red-800">
+                  <span className={`font-semibold ${
+                    isDarkMode ? 'text-red-300' : 'text-red-800'
+                  }`}>
                     Map {match.mapNumber}: {match.currentMap}
                   </span>
                 )}
                 
                 {/* LoL LIVE info */}
                 {match.game === 'lol' && (
-                  <span className="font-semibold text-red-800">
+                  <span className={`font-semibold ${
+                    isDarkMode ? 'text-red-300' : 'text-red-800'
+                  }`}>
                     {match.currentGame && `${match.currentGame}`}
                     {match.bestOf && ` (Bo${match.bestOf})`}
                     {match.liveGameState && ` - ${match.liveGameState}`}
@@ -1209,7 +1217,9 @@ function MatchCard({ match, isCompact, isDarkMode }) {
                 
                 {/* Football LIVE info */}
                 {match.game === 'football' && (
-                  <span className="font-semibold text-red-800">
+                  <span className={`font-semibold ${
+                    isDarkMode ? 'text-red-300' : 'text-red-800'
+                  }`}>
                     {match.currentMinute ? `${match.currentMinute}'` : ''}
                     {match.halfTime ? match.halfTime : 'Đang thi đấu'}
                   </span>
@@ -1227,15 +1237,19 @@ function MatchCard({ match, isCompact, isDarkMode }) {
             {match.game === 'valorant' && (match.home?.roundsCT !== null || match.home?.roundsT !== null) && (
               <div className="mt-2 grid grid-cols-2 gap-4 text-xs">
                 <div className="text-center">
-                  <div className="font-medium text-gray-700">{match.home?.name}</div>
-                  <div className="text-gray-500">
+                  <div className={`font-medium ${
+                    isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                  }`}>{match.home?.name}</div>
+                  <div className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                     {match.home?.roundsCT !== null && `CT: ${match.home.roundsCT}`}
                     {match.home?.roundsT !== null && ` T: ${match.home.roundsT}`}
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="font-medium text-gray-700">{match.away?.name}</div>
-                  <div className="text-gray-500">
+                  <div className={`font-medium ${
+                    isDarkMode ? 'text-gray-200' : 'text-gray-700'
+                  }`}>{match.away?.name}</div>
+                  <div className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
                     {match.away?.roundsCT !== null && `CT: ${match.away.roundsCT}`}
                     {match.away?.roundsT !== null && ` T: ${match.away.roundsT}`}
                   </div>
@@ -1246,7 +1260,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
             {/* LoL Additional Info */}
             {match.game === 'lol' && (
               <div className="mt-2 text-xs text-center">
-                <div className="text-gray-600">
+                <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
                   {match.bestOf && `Best of ${match.bestOf} series`}
                 </div>
               </div>
@@ -1255,7 +1269,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
             {/* Football Additional Info */}
             {match.game === 'football' && (
               <div className="mt-2 text-xs text-center">
-                <div className="text-gray-600">
+                <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
                   {match.referee && `Trọng tài: ${match.referee}`}
                   {match.venue && match.referee && ' • '}
                   {match.venue && `Sân: ${match.venue}`}
