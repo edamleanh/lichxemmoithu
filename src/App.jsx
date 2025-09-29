@@ -777,46 +777,48 @@ const PubgAdapter = {
         if (upcomingResponse.ok) {
           const upcomingData = await upcomingResponse.json()
           
-          // Get video IDs for additional details (scheduled start time, etc.)
+          // Get video IDs for additional details (scheduled start time)
           const videoIds = upcomingData.items?.map(item => item.id.videoId).join(',')
           
-          let upcomingVideosWithStats = upcomingData.items || []
+          let upcomingVideosWithSchedule = upcomingData.items || []
           
-          // Fetch video statistics and live streaming details if we have video IDs
+          // Fetch scheduled start time if we have video IDs
           if (videoIds) {
             try {
-              const statsResponse = await fetch(
+              const scheduleResponse = await fetch(
                 `https://www.googleapis.com/youtube/v3/videos?` +
-                `part=statistics,liveStreamingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+                `part=liveStreamingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
               )
               
-              if (statsResponse.ok) {
-                const statsData = await statsResponse.json()
+              if (scheduleResponse.ok) {
+                const scheduleData = await scheduleResponse.json()
                 
-                // Merge statistics with video data
-                upcomingVideosWithStats = upcomingData.items.map(video => {
-                  const stats = statsData.items?.find(stat => stat.id === video.id.videoId)
+                // Merge schedule details with video data
+                upcomingVideosWithSchedule = upcomingData.items.map(video => {
+                  const schedule = scheduleData.items?.find(sched => sched.id === video.id.videoId)
                   return {
                     ...video,
-                    statistics: stats?.statistics,
-                    liveStreamingDetails: stats?.liveStreamingDetails
+                    liveStreamingDetails: schedule?.liveStreamingDetails
                   }
                 })
                 
                 console.log('📅 Upcoming videos with scheduled times:')
-                upcomingVideosWithStats.forEach(video => {
-                  const scheduledStart = video.liveStreamingDetails?.scheduledStartTime
-                  if (scheduledStart) {
-                    console.log(`   ${video.snippet.title}: ${new Date(scheduledStart).toLocaleString('vi-VN')}`)
+                upcomingVideosWithSchedule.forEach(video => {
+                  const scheduledTime = video.liveStreamingDetails?.scheduledStartTime
+                  if (scheduledTime) {
+                    const startTime = new Date(scheduledTime)
+                    console.log(`   ${video.snippet.title}: scheduled for ${startTime.toLocaleString('vi-VN')}`)
+                  } else {
+                    console.log(`   ${video.snippet.title}: no scheduled time found`)
                   }
                 })
               }
-            } catch (statsError) {
-              console.warn('⚠️ Could not fetch upcoming video details:', statsError)
+            } catch (scheduleError) {
+              console.warn('⚠️ Could not fetch video schedule details:', scheduleError)
             }
           }
           
-          const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithStats)
+          const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithSchedule)
           allMatches = [...allMatches, ...upcomingMatches]
           console.log(`✅ Found ${upcomingMatches.length} upcoming PUBG streams`)
         }
@@ -956,8 +958,8 @@ const PubgAdapter = {
           score: undefined
         },
         start: item.liveStreamingDetails?.scheduledStartTime ? 
-          new Date(item.liveStreamingDetails.scheduledStartTime) : 
-          new Date(item.snippet.publishedAt),
+               new Date(item.liveStreamingDetails.scheduledStartTime) : 
+               new Date(item.snippet.publishedAt),
         region: 'Vietnam',
         stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
         venue: 'PUBG BATTLEGROUNDS VIETNAM',
@@ -1456,24 +1458,6 @@ function createSampleData(game, from, to) {
         venue: 'PUBG BATTLEGROUNDS VIETNAM',
         status: 'live',
         videoId: 'live456'
-      },
-      {
-        id: `pubg-sample-upcoming`,
-        game: 'pubg',
-        league: 'PMPL Vietnam',
-        stage: 'Week 4',
-        title: 'PMPL Vietnam Season 5 - Team Secret vs Box Gaming',
-        description: 'Sắp diễn ra trận đấu PMPL Vietnam giữa Team Secret và Box Gaming.',
-        channelTitle: 'PUBG BATTLEGROUNDS VIETNAM',
-        scheduledStartTime: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString(), // 4 hours from now
-        home: { name: 'Team Secret' },
-        away: { name: 'Box Gaming' },
-        start: new Date(now.getTime() + 4 * 60 * 60 * 1000),
-        region: 'Vietnam',
-        stream: '',
-        venue: 'PUBG BATTLEGROUNDS VIETNAM',
-        status: 'upcoming',
-        videoId: 'upcoming789'
       }
     ],
     lol: [
@@ -1835,21 +1819,6 @@ function MatchCard({ match, isCompact, isDarkMode }) {
                   <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                   <span className="font-medium">
                     {match.concurrentViewers.toLocaleString()} đang xem
-                  </span>
-                </div>
-              )}
-              
-              {match.status === 'upcoming' && match.scheduledStartTime && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span className="font-medium">
-                    Dự kiến live: {new Date(match.scheduledStartTime).toLocaleString('vi-VN', {
-                      year: 'numeric',
-                      month: '2-digit', 
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
                   </span>
                 </div>
               )}
