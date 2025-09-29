@@ -1085,7 +1085,7 @@ function WatchLiveButton({ match }) {
 }
 
 // --- Match Card Component -------------------------------------------------
-function MatchCard({ match, isCompact }) {
+function MatchCard({ match, isCompact, isDarkMode }) {
   const statusInfo = getStatusInfo(match.status)
   const gameInfo = getGameInfo(match.game)
   const StatusIcon = statusInfo.icon
@@ -1098,9 +1098,11 @@ function MatchCard({ match, isCompact }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       whileHover={{ y: -4 }}
-      className={`group relative overflow-hidden rounded-2xl bg-gray-200/95 backdrop-blur-sm border border-gray-400/60 shadow-lg hover:shadow-xl transition-all duration-300 ${
-        isCompact ? 'p-4' : 'p-6'
-      }`}
+      className={`group relative overflow-hidden rounded-2xl backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 ${
+        isDarkMode 
+          ? 'bg-gray-800/95 border border-gray-600/60 hover:bg-gray-700/95' 
+          : 'bg-gray-200/95 border border-gray-400/60 hover:bg-gray-100/95'
+      } ${isCompact ? 'p-4' : 'p-6'}`}
     >
       {/* Background Gradient */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
@@ -1124,7 +1126,9 @@ function MatchCard({ match, isCompact }) {
           </Badge>
         </div>
         
-        <div className="flex items-center gap-2 text-sm text-gray-500 justify-end">
+        <div className={`flex items-center gap-2 text-sm justify-end ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+        }`}>
           <Clock className="h-4 w-4" />
           {fmtTime(match.start)}
         </div>
@@ -1137,7 +1141,9 @@ function MatchCard({ match, isCompact }) {
             {match.home?.logo && (
               <img src={match.home.logo} alt={match.home.name} className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" />
             )}
-            <span className="font-semibold text-gray-900 break-words leading-tight">{shortenTeamName(match.home?.name) || 'TBD'}</span>
+            <span className={`font-semibold break-words leading-tight ${
+              isDarkMode ? 'text-gray-100' : 'text-gray-900'
+            }`}>{shortenTeamName(match.home?.name) || 'TBD'}</span>
           </div>
           
           <div className="flex items-center gap-3 min-w-0">
@@ -1169,7 +1175,9 @@ function MatchCard({ match, isCompact }) {
           </div>
           
           <div className="flex items-start gap-3 flex-1 justify-end min-w-0">
-            <span className="font-semibold text-gray-900 break-words leading-tight text-right">{shortenTeamName(match.away?.name) || 'TBD'}</span>
+            <span className={`font-semibold break-words leading-tight text-right ${
+              isDarkMode ? 'text-gray-100' : 'text-gray-900'
+            }`}>{shortenTeamName(match.away?.name) || 'TBD'}</span>
             {match.away?.logo && (
               <img src={match.away.logo} alt={match.away.name} className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" />
             )}
@@ -1261,14 +1269,18 @@ function MatchCard({ match, isCompact }) {
       {/* Match Info */}
       <div className="mb-4 space-y-2">
         {match.league && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className={`flex items-center gap-2 text-sm ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}>
             <Trophy className="h-4 w-4" />
             <span className="font-medium">{match.league}</span>
-            {match.stage && <span className="text-gray-400">• {match.stage}</span>}
+            {match.stage && <span className={isDarkMode ? 'text-gray-500' : 'text-gray-400'}>• {match.stage}</span>}
           </div>
         )}
         
-        <div className="flex items-center gap-4 text-sm text-gray-500">
+        <div className={`flex items-center gap-4 text-sm ${
+          isDarkMode ? 'text-gray-400' : 'text-gray-500'
+        }`}>
           {match.region && (
             <div className="flex items-center gap-1">
               <Globe2 className="h-4 w-4" />
@@ -1294,6 +1306,16 @@ export default function App() {
   // State management
   const [activeSport, setActiveSport] = useState('all')
   const [isCompactView, setIsCompactView] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    // Check localStorage for saved preference
+    const saved = localStorage.getItem('darkMode')
+    return saved ? JSON.parse(saved) : false
+  })
+
+  // Save dark mode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode))
+  }, [isDarkMode])
 
   
   // Time range: 24h before to 24h after current time
@@ -1361,16 +1383,26 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className={`min-h-screen transition-colors duration-300 ${
+      isDarkMode 
+        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'
+    }`}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/50">
+      <header className={`sticky top-0 z-50 backdrop-blur-lg border-b transition-colors duration-300 ${
+        isDarkMode 
+          ? 'bg-gray-800/80 border-gray-700/50' 
+          : 'bg-white/80 border-gray-200/50'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 🏆 Lịch Thi Đấu Esports
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className={`mt-1 transition-colors duration-300 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
                 Theo dõi lịch thi đấu Valorant, PUBG, Liên Minh Huyền Thoại và Bóng đá
               </p>
             </div>
@@ -1378,7 +1410,17 @@ export default function App() {
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={isDarkMode ? 'text-gray-300 hover:text-white' : ''}
+              >
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                {isDarkMode ? 'Sáng' : 'Tối'}
+              </Button>
+              
+              <Button
+                variant="ghost"
                 onClick={refetch}
+                className={isDarkMode ? 'text-gray-300 hover:text-white' : ''}
               >
                 <RefreshCw className="h-5 w-5" />
                 Làm mới
@@ -1387,6 +1429,7 @@ export default function App() {
               <Button
                 variant="ghost"
                 onClick={() => setIsCompactView(!isCompactView)}
+                className={isDarkMode ? 'text-gray-300 hover:text-white' : ''}
               >
                 {isCompactView ? <Grid3X3 className="h-5 w-5" /> : <List className="h-5 w-5" />}
                 {isCompactView ? 'Lưới' : 'Danh sách'}
@@ -1527,6 +1570,7 @@ export default function App() {
                           key={match.id}
                           match={match}
                           isCompact={isCompactView}
+                          isDarkMode={isDarkMode}
                         />
                       ))}
                     </AnimatePresence>
