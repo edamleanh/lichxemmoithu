@@ -520,7 +520,7 @@ const LolAdapter = {
       const data = await response.json()
       
       // 🔍 DEBUG: Log toàn bộ response từ LoL API
-      
+      console.log('📊 LoL API Response:', data)
       // 🔍 DEBUG: Log cụ thể phần events
       if (data.data?.schedule?.events) {
         
