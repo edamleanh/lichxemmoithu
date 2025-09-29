@@ -219,7 +219,7 @@ const getStatusInfo = (status) => {
   switch (status) {
     case 'live': return { variant: 'live', label: 'LIVE', icon: Play }
     case 'finished': return { variant: 'finished', label: 'ENDED', icon: Medal }
-    default: return { variant: 'upcoming', label: 'COMMING', icon: Clock }
+    default: return { variant: 'upcoming', label: 'UPCOMING', icon: Clock }
   }
 }
 
@@ -409,9 +409,21 @@ const ValorantAdapter = {
     return totalMs
   },
 
+  // Enhanced fetch with Liquipedia integration
   async fetch({ from, to }) {
     try {
       let allMatches = []
+
+      // Try to get enhanced tournament info from Liquipedia first
+      try {
+        const liquipediaResponse = await fetch('/api/liquipedia?type=tournaments')
+        if (liquipediaResponse.ok) {
+          const liquipediaData = await liquipediaResponse.json()
+          console.log('📊 Liquipedia tournament data available:', liquipediaData.success)
+        }
+      } catch (error) {
+        console.warn('⚠️ Liquipedia API not available:', error.message)
+      }
 
       // Fetch LIVE matches first (highest priority)
       try {
@@ -421,6 +433,7 @@ const ValorantAdapter = {
           const liveData = await liveResponse.json()
           const liveMatches = this.processLiveMatches(liveData)
           allMatches = [...allMatches, ...liveMatches]
+          console.log('✅ VLR.gg Live matches:', liveMatches.length)
         } else {
           console.warn(`⚠️ Live Valorant API error: ${liveResponse.status}`)
         }
@@ -436,6 +449,7 @@ const ValorantAdapter = {
           const upcomingData = await upcomingResponse.json()
           const upcomingMatches = this.processUpcomingMatches(upcomingData)
           allMatches = [...allMatches, ...upcomingMatches]
+          console.log('✅ VLR.gg Upcoming matches:', upcomingMatches.length)
         } else {
           console.warn(`⚠️ Upcoming Valorant API error: ${upcomingResponse.status}`)
         }
@@ -451,6 +465,7 @@ const ValorantAdapter = {
           const resultsData = await resultsResponse.json()
           const completedMatches = this.processCompletedMatches(resultsData)
           allMatches = [...allMatches, ...completedMatches]
+          console.log('✅ VLR.gg Completed matches:', completedMatches.length)
         } else {
           console.warn(`⚠️ Results Valorant API error: ${resultsResponse.status}`)
         }
@@ -467,6 +482,7 @@ const ValorantAdapter = {
 
       // If no matches found, return sample data
       if (filteredMatches.length === 0) {
+        console.log('📝 Using fallback sample data for Valorant')
         return createSampleData('valorant', from, to)
       }
 
@@ -481,6 +497,8 @@ const ValorantAdapter = {
         
         return aPriority - bPriority
       })
+      
+      console.log('🎯 Total Valorant matches processed:', sortedMatches.length)
       return sortedMatches
     } catch (error) {
       console.warn('⚠️ Valorant API error:', error)
