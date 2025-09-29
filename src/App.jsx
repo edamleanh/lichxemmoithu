@@ -501,7 +501,7 @@ const LolAdapter = {
         status: event.state === 'inProgress' ? 'live' :
                 event.state === 'completed' ? 'finished' : 'upcoming',
         // Live-specific data for LoL
-        currentGame: event.state === 'inProgress' ? (event.match?.games?.find(game => game.state === 'inProgress')?.number || 'Game in progress') : undefined,
+        currentGame: event.state === 'inProgress' ? (event.match?.games?.find(game => game.state === 'inProgress')?.number || '') : undefined,
         bestOf: event.match?.strategy?.count || undefined,
         liveGameState: event.state === 'inProgress' ? 'In Progress' : undefined,
       })).filter(match => withinRange(match.start, from, to))
