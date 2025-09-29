@@ -777,10 +777,24 @@ const PubgAdapter = {
         if (upcomingResponse.ok) {
           const upcomingData = await upcomingResponse.json()
           
-          // Get video IDs for additional details (scheduled start time)
-          const videoIds = upcomingData.items?.map(item => item.id.videoId).join(',')
+          // Filter out videos that are not truly upcoming
+          const trulyUpcomingVideos = upcomingData.items?.filter(item => {
+            // Only include videos with liveBroadcastContent: "upcoming"
+            const isUpcoming = item.snippet.liveBroadcastContent === 'upcoming'
+            
+            if (!isUpcoming) {
+              console.log(`🚫 Filtered out non-upcoming video: "${item.snippet.title}" (liveBroadcastContent: ${item.snippet.liveBroadcastContent})`)
+            }
+            
+            return isUpcoming
+          }) || []
           
-          let upcomingVideosWithSchedule = upcomingData.items || []
+          console.log(`📋 Found ${trulyUpcomingVideos.length} truly upcoming videos out of ${upcomingData.items?.length || 0} total`)
+          
+          // Get video IDs for additional details (scheduled start time)
+          const videoIds = trulyUpcomingVideos?.map(item => item.id.videoId).join(',')
+          
+          let upcomingVideosWithSchedule = trulyUpcomingVideos || []
           
           // Fetch scheduled start time if we have video IDs
           if (videoIds) {
@@ -794,7 +808,7 @@ const PubgAdapter = {
                 const scheduleData = await scheduleResponse.json()
                 
                 // Merge schedule details with video data
-                upcomingVideosWithSchedule = upcomingData.items.map(video => {
+                upcomingVideosWithSchedule = trulyUpcomingVideos.map(video => {
                   const schedule = scheduleData.items?.find(sched => sched.id === video.id.videoId)
                   return {
                     ...video,
@@ -816,6 +830,8 @@ const PubgAdapter = {
             } catch (scheduleError) {
               console.warn('⚠️ Could not fetch video schedule details:', scheduleError)
             }
+          } else {
+            console.log('📅 No upcoming video IDs found to fetch schedule details')
           }
           
           const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithSchedule)
