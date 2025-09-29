@@ -245,195 +245,245 @@ const adjustValorantTimezone = (timestamp) => {
 
 // --- API Adapters --------------------------------------------------------
 const ValorantAdapter = {
-  // Helper function to process Liquipedia match data
-  processLiquipediaMatches(data) {
-    console.log('🔍 Processing Liquipedia data:', data)
+  // Helper function to process live matches  
+  processLiveMatches(data) {
+    if (!data.data?.segments) return []
     
-    if (!data.query?.pages) {
-      console.warn('❌ No pages found in Liquipedia data')
-      return []
-    }
+    return data.data.segments
+      .filter(match => match.time_until_match === 'LIVE')
+      .filter(match => match.team1 && match.team1 !== 'TBD' && match.team2 && match.team2 !== 'TBD') // Filter out TBD teams for LIVE matches
+      .map(match => ({
+        id: `val-live-${match.match_page?.split('/')[1] || Math.random()}`,
+        game: 'valorant',
+        league: match.match_event || 'VCT',
+        stage: match.match_series || '',
+        home: { 
+          name: match.team1 || 'TBD', 
+          logo: match.team1_logo || null,
+          score: parseInt(match.score1) || 0,
+          // Additional live data
+          roundsCT: match.team1_round_ct !== 'N/A' ? parseInt(match.team1_round_ct) || 0 : null,
+          roundsT: match.team1_round_t !== 'N/A' ? parseInt(match.team1_round_t) || 0 : null,
+        },
+        away: { 
+          name: match.team2 || 'TBD', 
+          logo: match.team2_logo || null,
+          score: parseInt(match.score2) || 0,
+          // Additional live data
+          roundsCT: match.team2_round_ct !== 'N/A' ? parseInt(match.team2_round_ct) || 0 : null,
+          roundsT: match.team2_round_t !== 'N/A' ? parseInt(match.team2_round_t) || 0 : null,
+        },
+        start: new Date(), // Live matches show current time
+        region: 'International',
+        stream: match.match_page ? `${match.match_page}` : '',
+        venue: match.match_event || '',
+        status: 'live',
+        // Live-specific data
+        currentMap: match.current_map || '',
+        mapNumber: match.map_number || '',
+      }))
+  },
+
+  // Helper function to process upcoming matches
+  processUpcomingMatches(data) {
+    if (!data.data?.segments) return []
     
-    const matches = []
-    const pages = Object.values(data.query.pages)
+    const now = Date.now()
+    const oneDayMs = 24 * 60 * 60 * 1000
     
-    pages.forEach(page => {
-      console.log('📄 Processing page:', page.title, page)
-      
-      if (page.missing) {
-        console.warn(`⚠️ Page "${page.title}" is missing`)
-        return
-      }
-      
-      if (page.revisions && page.revisions[0] && page.revisions[0]['*']) {
-        const content = page.revisions[0]['*']
-        console.log('📝 Page content length:', content.length)
-        
-        // Improved regex to match MatchMaps template with more flexible parsing
-        const matchRegex = /\{\{MatchMaps\s*\n([\s\S]*?)\}\}/g
-        
-        let match
-        while ((match = matchRegex.exec(content)) !== null) {
-          const matchContent = match[1]
-          console.log('🎯 Found match content:', matchContent)
-          
-          // Extract individual parameters
-          const params = this.parseMatchParams(matchContent)
-          console.log('📊 Parsed params:', params)
-          
-          if (params.team1 && params.team2 && params.team1 !== '' && params.team2 !== '') {
-            const matchDate = this.parseDate(params.date, params.time)
-            const isFinished = params.finished === 'true' || (params.team1score && params.team2score)
-            
-            matches.push({
-              id: `val-liqui-${Math.random().toString(36).substr(2, 9)}`,
-              game: 'valorant',
-              league: params.tournament || 'VCT 2025',
-              stage: isFinished ? 'Completed' : 'Scheduled',
-              home: { 
-                name: params.team1, 
-                logo: null,
-                score: params.team1score ? parseInt(params.team1score) : undefined
-              },
-              away: { 
-                name: params.team2, 
-                logo: null,
-                score: params.team2score ? parseInt(params.team2score) : undefined
-              },
-              start: matchDate,
-              region: 'International',
-              stream: params.twitch ? `https://twitch.tv/${params.twitch}` : '',
-              venue: params.tournament || 'VCT',
-              status: this.getMatchStatus(matchDate, isFinished),
-            })
-            
-            console.log('✅ Created match:', matches[matches.length - 1])
-          }
+    return data.data.segments
+      .filter(match => {
+        // Only include matches within 1 day
+        if (match.time_until_match) {
+          const timeUntilMs = this.parseTimeUntil(match.time_until_match)
+          return timeUntilMs <= oneDayMs
         }
-      } else {
-        console.warn('❌ No content found in page revisions')
-      }
-    })
-    
-    console.log('🏁 Total matches processed:', matches.length)
-    return matches
+        return true // Include if no time info
+      })
+      .map(match => ({
+        id: `val-upcoming-${match.match_page?.split('/')[1] || Math.random()}`,
+        game: 'valorant',
+        league: match.match_event || 'VCT',
+        stage: match.match_series || '',
+        home: { 
+          name: match.team1 || 'TBD', 
+          logo: match.team1_logo || null,
+          score: undefined // upcoming matches don't have scores
+        },
+        away: { 
+          name: match.team2 || 'TBD', 
+          logo: match.team2_logo || null,
+          score: undefined // upcoming matches don't have scores
+        },
+        start: match.unix_timestamp ? adjustValorantTimezone(match.unix_timestamp) : new Date(Date.now() + Math.random() * 86400000),
+        region: 'International',
+        stream: match.match_page ? `${match.match_page}` : '',
+        venue: match.match_event || '',
+        status: 'upcoming',
+      }))
   },
 
-  // Helper to parse match parameters from wikitext
-  parseMatchParams(content) {
-    const params = {}
-    const lines = content.split('\n')
+  // Helper function to process completed matches (results)
+  processCompletedMatches(data) {
+    if (!data.data?.segments) return []
     
-    lines.forEach(line => {
-      const trimmed = line.trim()
-      if (trimmed.includes('=') && trimmed.startsWith('|')) {
-        const [key, ...valueParts] = trimmed.substring(1).split('=')
-        const value = valueParts.join('=').trim()
-        if (key && value) {
-          params[key.trim()] = value
+    const oneDayMs = 24 * 60 * 60 * 1000
+    
+    return data.data.segments
+      .filter(match => {
+        // Only include matches completed within 1 day
+        if (match.time_completed) {
+          const timeCompletedMs = this.parseTimeAgo(match.time_completed)
+          const withinOneDay = timeCompletedMs <= oneDayMs
+          
+          return withinOneDay
         }
-      }
-    })
-    
-    return params
+        return true // Include if no time info
+      })
+      .map(match => ({
+        id: `val-completed-${match.match_page?.split('/')[1] || Math.random()}`,
+        game: 'valorant',
+        league: match.tournament_name || 'VCT',
+        stage: match.round_info || '',
+        home: { 
+          name: match.team1 || 'TBD', 
+          logo: null, // API doesn't provide team logos for results
+          score: parseInt(match.score1) || 0
+        },
+        away: { 
+          name: match.team2 || 'TBD', 
+          logo: null, // API doesn't provide team logos for results
+          score: parseInt(match.score2) || 0
+        },
+        start: new Date(), // Use current time for completed matches within 1 day
+        region: 'International',
+        stream: match.match_page ? `https://www.vlr.gg${match.match_page}` : '',
+        venue: match.tournament_name || '',
+        status: 'finished',
+      }))
   },
 
-  // Helper function to parse Liquipedia date format
-  parseDate(dateStr, timeStr) {
-    try {
-      if (!dateStr) return new Date()
+  // Helper function to parse "4h 7m ago" or "2w 0d ago" format into milliseconds
+  parseTimeAgo(timeString) {
+    if (!timeString) return 0
+    
+    const regex = /(\d+)([wdhm])/g
+    let totalMs = 0
+    let match
+    
+    while ((match = regex.exec(timeString)) !== null) {
+      const value = parseInt(match[1])
+      const unit = match[2]
       
-      // Clean the date string (remove wiki markup)
-      const cleanDate = dateStr.replace(/\[\[|\]\]/g, '').trim()
-      const cleanTime = timeStr ? timeStr.replace(/\[\[|\]\]/g, '').trim() : '00:00'
-      
-      // Try to parse various date formats used in Liquipedia
-      const dateTimeStr = `${cleanDate} ${cleanTime}`
-      const parsedDate = new Date(dateTimeStr)
-      
-      if (isNaN(parsedDate.getTime())) {
-        // Fallback to current date if parsing fails
-        return new Date()
+      switch (unit) {
+        case 'w': totalMs += value * 7 * 24 * 60 * 60 * 1000; break  // weeks
+        case 'd': totalMs += value * 24 * 60 * 60 * 1000; break      // days
+        case 'h': totalMs += value * 60 * 60 * 1000; break          // hours
+        case 'm': totalMs += value * 60 * 1000; break               // minutes
       }
-      
-      return parsedDate
-    } catch (error) {
-      console.warn('Date parsing error:', error)
-      return new Date()
     }
+    
+    return totalMs
   },
 
-  // Helper function to determine match status based on date
-  getMatchStatus(matchDate, isFinished = false) {
-    if (isFinished) return 'finished'
+  // Helper function to parse "20h 0m from now" or "1w 2d from now" format into milliseconds
+  parseTimeUntil(timeString) {
+    if (!timeString) return 0
     
-    const now = new Date()
-    const matchTime = matchDate.getTime()
-    const currentTime = now.getTime()
-    const oneHour = 60 * 60 * 1000
+    const regex = /(\d+)([wdhm])/g
+    let totalMs = 0
+    let match
     
-    // Check if match is currently live (within 1 hour of scheduled time)
-    if (Math.abs(currentTime - matchTime) <= oneHour) {
-      return 'live'
-    } else if (matchTime > currentTime) {
-      return 'upcoming'
-    } else {
-      return 'finished'
+    while ((match = regex.exec(timeString)) !== null) {
+      const value = parseInt(match[1])
+      const unit = match[2]
+      
+      switch (unit) {
+        case 'w': totalMs += value * 7 * 24 * 60 * 60 * 1000; break  // weeks
+        case 'd': totalMs += value * 24 * 60 * 60 * 1000; break      // days
+        case 'h': totalMs += value * 60 * 60 * 1000; break          // hours
+        case 'm': totalMs += value * 60 * 1000; break               // minutes
+      }
     }
+    
+    return totalMs
   },
 
   async fetch({ from, to }) {
     try {
-      console.log('🔍 Fetching Valorant data from Liquipedia via proxy...')
-      
-      // Use our Vercel proxy to fetch Liquipedia data
-      const controller = new AbortController()
-      setTimeout(() => controller.abort(), 10000) // 10 second timeout
-      
-      const response = await fetch('/api/valorant?tournament=VCT_2025', {
-        signal: controller.signal
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('📊 Liquipedia Response via proxy:', data)
-        
-        const matches = this.processLiquipediaMatches(data)
-        
-        // Filter matches by date range and remove duplicates
-        const filteredMatches = matches
-          .filter(match => withinRange(match.start, from, to))
-          .filter((match, index, self) => 
-            index === self.findIndex(m => m.id === match.id)
-          )
+      let allMatches = []
 
-        // If matches found, return them
-        if (filteredMatches.length > 0) {
-          // Sort matches: LIVE first, then by start time
-          const sortedMatches = filteredMatches.sort((a, b) => {
-            const aPriority = a.status === 'live' ? 0 : 1
-            const bPriority = b.status === 'live' ? 0 : 1
-            
-            if (aPriority === bPriority) {
-              return new Date(a.start) - new Date(b.start)
-            }
-            
-            return aPriority - bPriority
-          })
-          
-          console.log('✅ Processed Liquipedia matches:', sortedMatches.length)
-          return sortedMatches
+      // Fetch LIVE matches first (highest priority)
+      try {
+        const liveResponse = await fetch('/api/valorant?q=live_score')
+        
+        if (liveResponse.ok) {
+          const liveData = await liveResponse.json()
+          const liveMatches = this.processLiveMatches(liveData)
+          allMatches = [...allMatches, ...liveMatches]
+        } else {
+          console.warn(`⚠️ Live Valorant API error: ${liveResponse.status}`)
         }
-      } else {
-        console.warn(`⚠️ Liquipedia proxy API error: ${response.status}`)
+      } catch (error) {
+        console.warn('⚠️ Error fetching LIVE Valorant matches:', error)
       }
 
-      // If no matches found from Liquipedia, return sample data
-      console.log('🔄 No Liquipedia data found, using sample data')
-      return createSampleData('valorant', from, to)
-      
+      // Fetch upcoming matches
+      try {
+        const upcomingResponse = await fetch('/api/valorant?q=upcoming')
+        
+        if (upcomingResponse.ok) {
+          const upcomingData = await upcomingResponse.json()
+          const upcomingMatches = this.processUpcomingMatches(upcomingData)
+          allMatches = [...allMatches, ...upcomingMatches]
+        } else {
+          console.warn(`⚠️ Upcoming Valorant API error: ${upcomingResponse.status}`)
+        }
+      } catch (error) {
+        console.warn('⚠️ Error fetching upcoming Valorant matches:', error)
+      }
+
+      // Fetch completed matches (results)
+      try {
+        const resultsResponse = await fetch('/api/valorant?q=results')
+        
+        if (resultsResponse.ok) {
+          const resultsData = await resultsResponse.json()
+          const completedMatches = this.processCompletedMatches(resultsData)
+          allMatches = [...allMatches, ...completedMatches]
+        } else {
+          console.warn(`⚠️ Results Valorant API error: ${resultsResponse.status}`)
+        }
+      } catch (error) {
+        console.warn('⚠️ Error fetching completed Valorant matches:', error)
+      }
+
+      // Filter matches by date range and remove duplicates
+      const filteredMatches = allMatches
+        .filter(match => withinRange(match.start, from, to))
+        .filter((match, index, self) => 
+          index === self.findIndex(m => m.id === match.id)
+        )
+
+      // If no matches found, return sample data
+      if (filteredMatches.length === 0) {
+        return createSampleData('valorant', from, to)
+      }
+
+      const sortedMatches = filteredMatches.sort((a, b) => {
+        // LIVE matches get highest priority
+        const aPriority = a.status === 'live' ? 0 : 1
+        const bPriority = b.status === 'live' ? 0 : 1
+        
+        if (aPriority === bPriority) {
+          return new Date(a.start) - new Date(b.start)
+        }
+        
+        return aPriority - bPriority
+      })
+      return sortedMatches
     } catch (error) {
-      console.warn('⚠️ Valorant Liquipedia API error:', error)
+      console.warn('⚠️ Valorant API error:', error)
       return createSampleData('valorant', from, to)
     }
   },
@@ -740,7 +790,7 @@ function createSampleData(game, from, to) {
         },
         start: new Date(),
         region: 'International',
-        stream: 'https://liquipedia.net/valorant/VCT_2025/Champions',
+        stream: 'https://www.vlr.gg/542274/team-heretics-vs-giantx-valorant-champions-2025-lr1',
         venue: 'Valorant Champions 2025',
         status: 'live',
         currentMap: 'Lotus',
@@ -755,7 +805,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Paper Rex', score: 1 },
         start: new Date(now.getTime() - 3 * 60 * 60 * 1000),
         region: 'International',
-        stream: 'https://liquipedia.net/valorant/VCT_2025/Champions',
+        stream: 'https://www.vlr.gg/542268/fnatic-vs-paper-rex-valorant-champions-2025-ubsf',
         venue: 'Valorant Champions 2025',
         status: 'finished',
       },
@@ -768,7 +818,7 @@ function createSampleData(game, from, to) {
         away: { name: 'G2 Esports', score: 1 },
         start: new Date(now.getTime() - 4 * 60 * 60 * 1000),
         region: 'International',
-        stream: 'https://liquipedia.net/valorant/VCT_2025/Champions',
+        stream: 'https://www.vlr.gg/542273/drx-vs-g2-esports-valorant-champions-2025-lr1',
         venue: 'Valorant Champions 2025',
         status: 'finished',
       },
@@ -781,7 +831,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Team Liquid' },
         start: new Date(now.getTime() + 20 * 60 * 60 * 1000),
         region: 'International',
-        stream: 'https://liquipedia.net/valorant/VCT_2025/Champions',
+        stream: 'https://www.vlr.gg/542269/sentinels-vs-team-liquid-valorant-champions-2025-ubsf',
         venue: 'Valorant Champions 2025',
         status: 'upcoming',
       }
@@ -1576,7 +1626,7 @@ export default function App() {
             
             <div className="flex items-center gap-4 text-sm text-gray-500">
               <span>Nguồn dữ liệu:</span>
-              <Badge variant="valorant">Liquipedia</Badge>
+              <Badge variant="valorant">VLR.gg</Badge>
               <Badge variant="lol">LoL Esports</Badge>
               <Badge variant="football">Football-data.org</Badge>
             </div>

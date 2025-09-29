@@ -1,4 +1,4 @@
-// Vercel Serverless Function for Valorant API using Liquipedia
+// Vercel Serverless Function for Valorant API
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,69 +11,39 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🔍 Valorant API called with query:', req.query);
+    const { q } = req.query;
     
-    // Since Liquipedia API has limitations and CORS issues,
-    // let's return mock realistic data based on current tournaments
-    const mockData = {
-      query: {
-        pages: {
-          "12345": {
-            pageid: 12345,
-            title: "VCT 2025: Champions",
-            revisions: [{
-              "*": `
-{{MatchMaps
-|team1=Team Heretics|team1score=2
-|team2=GIANTX|team2score=0
-|date=2025-09-29|time=14:00
-|tournament=VCT 2025 Champions
-|twitch=valorant
-|map1=Bind|map1team1t=7|map1team1ct=6|map1team2t=3|map1team2ct=2
-|map2=Lotus|map2team1t=8|map2team1ct=5|map2team2t=4|map2team2ct=1
-}}
+    let apiUrl;
+    if (q === 'live_score') {
+      apiUrl = 'https://vlrggapi.vercel.app/match?q=live_score';
+    } else if (q === 'upcoming') {
+      apiUrl = 'https://vlrggapi.vercel.app/match?q=upcoming';
+    } else if (q === 'results') {
+      apiUrl = 'https://vlrggapi.vercel.app/match?q=results';
+    } else {
+      res.status(400).json({ error: 'Invalid query parameter' });
+      return;
+    }
 
-{{MatchMaps
-|team1=FNATIC|team1score=2
-|team2=Paper Rex|team2score=1
-|date=2025-09-29|time=11:00
-|tournament=VCT 2025 Champions
-|twitch=valorant
-|finished=true
-}}
-
-{{MatchMaps
-|team1=Sentinels|team1score=
-|team2=Team Liquid|team2score=
-|date=2025-09-30|time=20:00
-|tournament=VCT 2025 Champions
-|twitch=valorant
-}}
-
-{{MatchMaps
-|team1=DRX|team1score=
-|team2=G2 Esports|team2score=
-|date=2025-09-30|time=17:00
-|tournament=VCT 2025 Champions
-|twitch=valorant
-}}
-              `
-            }]
-          }
-        }
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       }
-    };
-    
-    // Return mock data that matches Liquipedia format
-    console.log('✅ Returning mock Liquipedia-formatted data');
-    res.status(200).json(mockData);
+    });
+
+    if (!response.ok) {
+      throw new Error(`API responded with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.status(200).json(data);
 
   } catch (error) {
-    console.error('Valorant Liquipedia API Error:', error);
+    console.error('Valorant API Error:', error);
     res.status(500).json({ 
-      error: 'Failed to fetch Valorant data from Liquipedia',
-      message: error.message,
-      query: { pages: {} } // Return empty structure for fallback
+      error: 'Failed to fetch Valorant data',
+      message: error.message 
     });
   }
 }
