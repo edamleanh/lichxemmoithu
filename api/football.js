@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       // GET /competitions - return available competitions
       const competitions = [
         { id: 'PL', name: 'Premier League', area: { name: 'England' } },
-        { id: 'PD', name: 'Primera División', area: { name: 'Spain' } },
+        { id: 'PD', name: 'LaLiga', area: { name: 'Spain' } },
         { id: 'CL', name: 'UEFA Champions League', area: { name: 'Europe' } }
       ];
       res.status(200).json({ competitions });

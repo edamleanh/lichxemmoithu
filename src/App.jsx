@@ -547,7 +547,7 @@ const FootballAdapter = {
       // Major league IDs on football-data.org (reduced list to avoid rate limits)
       const leagues = [
         { id: 'PL', name: 'Premier League' },
-        { id: 'PD', name: 'La Liga' },
+        { id: 'PD', name: 'LaLiga' },
         { id: 'CL', name: 'Champions League' },
       ]
       
@@ -826,7 +826,7 @@ function createSampleData(game, from, to) {
       {
         id: `foot-sample-2`,
         game: 'football',
-        league: 'La Liga',
+        league: 'LaLiga',
         stage: 'Vòng 9',
         home: { name: 'Real Madrid' },
         away: { name: 'Barcelona' },
