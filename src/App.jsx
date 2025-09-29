@@ -832,7 +832,6 @@ const PubgAdapter = {
   // Process live videos - only return the one with highest view count
   processLiveVideos(items) {
     const liveMatches = items
-      .filter(item => this.isPUBGMatch(item.snippet.title))
       .map(item => ({
         id: `pubg-live-${item.id.videoId}`,
         game: 'pubg',
@@ -894,7 +893,6 @@ const PubgAdapter = {
   // Process upcoming videos
   processUpcomingVideos(items) {
     return items
-      .filter(item => this.isPUBGMatch(item.snippet.title))
       .map(item => ({
         id: `pubg-upcoming-${item.id.videoId}`,
         game: 'pubg',
