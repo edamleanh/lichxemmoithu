@@ -1,0 +1,33 @@
+{
+  "continue": {
+    "rvcontinue": "20250503143257|1118761",
+    "continue": "||"
+  },
+  "query": {
+    "normalized": [
+      {
+        "fromencoded": false,
+        "from": "Main_Page",
+        "to": "Main Page"
+      }
+    ],
+    "pages": [
+      {
+        "pageid": 1,
+        "ns": 0,
+        "title": "Main Page",
+        "revisions": [
+          {
+            "slots": {
+              "main": {
+                "contentmodel": "wikitext",
+                "contentformat": "text/x-wiki",
+                "content": "{{In memory of|CeVSUD}}\n\n{{#invoke:Lua|invoke|module=MainPageLayout|fn=make|layout=main}}"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "parse": {
+    "title": "Main Page",
+    "pageid": 1,
+    "sections": [
+      {
+        "toclevel": 1,
+        "level": "3",
+        "line": "Tournaments",
+        "number": "1",
+        "index": "",
+        "fromtitle": false,
+        "byteoffset": null,
+        "anchor": "Tournaments",
+        "linkAnchor": "Tournaments"
+      },
+      {
+        "toclevel": 1,
+        "level": "3",
+        "line": "Birthdays",
+        "number": "2",
+        "index": "",
+        "fromtitle": false,
+        "byteoffset": null,
+        "anchor": "Birthdays",
+        "linkAnchor": "Birthdays"
+      },
+      {
+        "toclevel": 2,
+        "level": "4",
+        "line": "Game Info",
+        "number": "2.1",
+        "index": "",
+        "fromtitle": false,
+        "byteoffset": null,
+        "anchor": "Game_Info",
+        "linkAnchor": "Game_Info"
+      },
+      {
+        "toclevel": 2,
+        "level": "4",
+        "line": "Links",
+        "number": "2.2",
+        "index": "",
+        "fromtitle": false,
+        "byteoffset": null,
+        "anchor": "Links",
+        "linkAnchor": "Links"
+      },
+      {
+        "toclevel": 2,
+        "level": "4",
+        "line": "Portals",
+        "number": "2.3",
+        "index": "",
+        "fromtitle": false,
+        "byteoffset": null,
+        "anchor": "Portals",
+        "linkAnchor": "Portals"
+      },
+      {
+        "toclevel": 2,
+        "level": "4",
+        "line": "Latest Patches",
+        "number": "2.4",
+        "index": "",
+        "fromtitle": false,
+        "byteoffset": null,
+        "anchor": "Latest_Patches",
+        "linkAnchor": "Latest_Patches"
+      }
+    ],
+    "showtoc": false
+  }
+}
