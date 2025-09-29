@@ -571,6 +571,13 @@ const LolAdapter = {
         liveGameState: event.state === 'inProgress' ? 'In Progress' : undefined,
       })).filter(match => withinRange(match.start, from, to))
         .filter(match => {
+          // Filter out EMEA Masters league
+          if (match.league === 'EMEA Masters') {
+            return false
+          }
+          return true
+        })
+        .filter(match => {
           if (match.status === 'live') {
             return match.home?.name !== 'TBD' && match.away?.name !== 'TBD'
           }
