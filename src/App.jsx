@@ -219,7 +219,7 @@ const getStatusInfo = (status) => {
   switch (status) {
     case 'live': return { variant: 'live', label: 'LIVE', icon: Play }
     case 'finished': return { variant: 'finished', label: 'ENDED', icon: Medal }
-    default: return { variant: 'upcoming', label: 'COMING', icon: Clock }
+    default: return { variant: 'upcoming', label: 'COMMING', icon: Clock }
   }
 }
 
@@ -243,69 +243,143 @@ const adjustValorantTimezone = (timestamp) => {
   return new Date(date.getTime() + 7 * 60 * 60 * 1000)
 }
 
-// Helper function to generate team logo URL when not available
-const getTeamLogoFromGoogle = (teamName) => {
-  if (!teamName || teamName === 'TBD') return null
+// --- Team Logo Search Service --------------------------------------------
+const TeamLogoSearchService = {
+  // Cache to store team logo search results to avoid repeated API calls
+  cache: new Map(),
   
-  // Known team logo mappings (you can expand this list)
-  const knownLogos = {
-    'Sentinels': 'https://owcdn.net/img/61048c65e3d3e.png',
-    'Team Liquid': 'https://owcdn.net/img/5f88ff81c3be8.png', 
-    'LOUD': 'https://owcdn.net/img/626ae8a2b1c6c.png',
-    'FNATIC': 'https://owcdn.net/img/60f87b30b9a21.png',
-    'Paper Rex': 'https://owcdn.net/img/62674e8b9d19b.png',
-    'NRG': 'https://owcdn.net/img/61048c65e3d3f.png',
-    'Cloud9': 'https://owcdn.net/img/5f88ff81c3be9.png',
-    'NAVI': 'https://owcdn.net/img/6062b9e0b9a22.png',
-    'FUT Esports': 'https://owcdn.net/img/63674e8b9d19c.png',
-    'DRX': 'https://owcdn.net/img/61048c65e3d3g.png',
-    'EDward Gaming': 'https://owcdn.net/img/62674e8b9d19d.png',
-    'PRX': 'https://owcdn.net/img/62674e8b9d19b.png', // Paper Rex shorthand
-    'Evil Geniuses': 'https://owcdn.net/img/61048c65e3d3h.png',
-    '100 Thieves': 'https://owcdn.net/img/61048c65e3d3i.png',
-    'OpTic Gaming': 'https://owcdn.net/img/61048c65e3d3j.png',
-    'Team Heretics': 'https://owcdn.net/img/64674e8b9d19e.png',
-    'Karmine Corp': 'https://owcdn.net/img/65674e8b9d19f.png',
-    'BBL Esports': 'https://owcdn.net/img/66674e8b9d19g.png',
-    'KOI': 'https://owcdn.net/img/67674e8b9d19h.png',
-    'Giants': 'https://owcdn.net/img/68674e8b9d19i.png',
-    'T1': 'https://owcdn.net/img/69674e8b9d19j.png',
-    'Gen.G': 'https://owcdn.net/img/70674e8b9d19k.png',
-    'ZETA DIVISION': 'https://owcdn.net/img/71674e8b9d19l.png',
-    'DetonationFocusMe': 'https://owcdn.net/img/72674e8b9d19m.png',
+  // Configuration
+  config: {
+    enabled: true, // Set to false to disable logo search
+    maxCacheSize: 100, // Maximum number of cached results
+    searchTimeout: 10000, // 10 seconds timeout for search requests
+  },
+  
+  // Search for team logo using Google Custom Search API
+  async searchTeamLogo(teamName, sport) {
+    if (!teamName || !this.config.enabled) return null
+    
+    // Create cache key
+    const cacheKey = `${sport}-${teamName.toLowerCase().trim()}`
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      const cachedResult = this.cache.get(cacheKey)
+      console.log(`💾 Using cached logo for ${teamName}:`, cachedResult || 'No logo found')
+      return cachedResult
+    }
+    
+    try {
+      console.log(`🔍 Searching logo for ${teamName} (${sport})...`)
+      
+      // Clean team name for better search results
+      const cleanTeamName = teamName
+        .replace(/\s*(Gaming|Esports|E-sports|Team|Club|FC|United)$/i, '')
+        .trim()
+      
+      // Call our image search API with timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), this.config.searchTimeout)
+      
+      const response = await fetch(`/api/image-search?teamName=${encodeURIComponent(cleanTeamName)}&sport=${encodeURIComponent(sport)}`, {
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+      
+      if (!response.ok) {
+        throw new Error(`Search API error: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      // Extract the best logo URL from search results
+      let logoUrl = null
+      if (data.images && data.images.length > 0) {
+        // Prefer images with smaller dimensions (likely logos) and from official sources
+        const bestImage = data.images.find(img => {
+          const domain = img.displayLink?.toLowerCase() || ''
+          const isOfficialSource = domain.includes('liquipedia') || 
+                                 domain.includes('vlr.gg') || 
+                                 domain.includes('leaguepedia') ||
+                                 domain.includes('lolesports') ||
+                                 domain.includes('valorant') ||
+                                 domain.includes('riotgames') ||
+                                 domain.includes('fifa.com') ||
+                                 domain.includes('uefa.com')
+          
+          const hasGoodDimensions = img.width && img.height && 
+                                  img.width >= 64 && img.height >= 64 &&
+                                  img.width <= 512 && img.height <= 512
+          
+          return isOfficialSource || hasGoodDimensions
+        }) || data.images[0] // Fall back to first result
+        
+        logoUrl = bestImage.url
+      }
+      
+      // Cache the result (even if null to avoid repeated failed searches)
+      this.addToCache(cacheKey, logoUrl)
+      
+      console.log(`✅ Found logo for ${teamName} (${sport}):`, logoUrl || 'No logo found')
+      return logoUrl
+      
+    } catch (error) {
+      console.error(`❌ Error searching logo for ${teamName}:`, error.name === 'AbortError' ? 'Request timeout' : error.message)
+      
+      // Cache null result to avoid repeated failed searches
+      this.addToCache(cacheKey, null)
+      return null
+    }
+  },
+  
+  // Enhanced cache management with size limit
+  addToCache(key, value) {
+    // Remove oldest entries if cache is full
+    if (this.cache.size >= this.config.maxCacheSize) {
+      const firstKey = this.cache.keys().next().value
+      this.cache.delete(firstKey)
+    }
+    
+    this.cache.set(key, value)
+  },
+  
+  // Enhance team object with logo if missing
+  async enhanceTeamWithLogo(team, sport) {
+    if (!team || !team.name || team.logo) {
+      return team // Already has logo or no team name
+    }
+    
+    const logoUrl = await this.searchTeamLogo(team.name, sport)
+    return {
+      ...team,
+      logo: logoUrl || team.logo
+    }
+  },
+  
+  // Clear cache (useful for testing or memory management)
+  clearCache() {
+    this.cache.clear()
+    console.log('🗑️ Team logo cache cleared')
+  },
+  
+  // Get cache statistics
+  getCacheStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.config.maxCacheSize,
+      enabled: this.config.enabled
+    }
   }
-  
-  // Check if we have a known logo
-  if (knownLogos[teamName]) {
-    return knownLogos[teamName]
-  }
-  
-  // Fallback: Generate a placeholder with team initial and nice colors
-  const initial = teamName.charAt(0).toUpperCase()
-  const colors = [
-    { bg: '1f2937', fg: 'ffffff' }, // gray
-    { bg: 'dc2626', fg: 'ffffff' }, // red
-    { bg: '2563eb', fg: 'ffffff' }, // blue
-    { bg: '16a34a', fg: 'ffffff' }, // green
-    { bg: 'ca8a04', fg: 'ffffff' }, // yellow
-    { bg: '9333ea', fg: 'ffffff' }, // purple
-    { bg: 'c2410c', fg: 'ffffff' }, // orange
-  ]
-  
-  // Use team name hash to consistently pick a color
-  const hash = teamName.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
-  const color = colors[hash % colors.length]
-  
-  return `https://via.placeholder.com/64x64/${color.bg}/${color.fg}?text=${initial}`
 }
 
 // --- API Adapters --------------------------------------------------------
 const ValorantAdapter = {
   // Helper function to process live matches  
-  processLiveMatches(data) {
+  async processLiveMatches(data) {
     if (!data.data?.segments) return []
     
-    return data.data.segments
+    const matches = data.data.segments
       .filter(match => match.time_until_match === 'LIVE')
       .filter(match => match.team1 && match.team1 !== 'TBD' && match.team2 && match.team2 !== 'TBD') // Filter out TBD teams for LIVE matches
       .map(match => ({
@@ -315,7 +389,7 @@ const ValorantAdapter = {
         stage: match.match_series || '',
         home: { 
           name: match.team1 || 'TBD', 
-          logo: match.team1_logo || getTeamLogoFromGoogle(match.team1),
+          logo: match.team1_logo || null,
           score: parseInt(match.score1) || 0,
           // Additional live data
           roundsCT: match.team1_round_ct !== 'N/A' ? parseInt(match.team1_round_ct) || 0 : null,
@@ -323,7 +397,7 @@ const ValorantAdapter = {
         },
         away: { 
           name: match.team2 || 'TBD', 
-          logo: match.team2_logo || getTeamLogoFromGoogle(match.team2),
+          logo: match.team2_logo || null,
           score: parseInt(match.score2) || 0,
           // Additional live data
           roundsCT: match.team2_round_ct !== 'N/A' ? parseInt(match.team2_round_ct) || 0 : null,
@@ -338,16 +412,38 @@ const ValorantAdapter = {
         currentMap: match.current_map || '',
         mapNumber: match.map_number || '',
       }))
+
+    // Enhance matches with team logos for teams that don't have logos
+    const enhancedMatches = await Promise.all(
+      matches.map(async (match) => {
+        try {
+          // Only search for logos if they're missing
+          const enhancedHome = match.home.logo ? match.home : await TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'valorant')
+          const enhancedAway = match.away.logo ? match.away : await TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'valorant')
+          
+          return {
+            ...match,
+            home: enhancedHome,
+            away: enhancedAway
+          }
+        } catch (error) {
+          console.error('Error enhancing logos for live match:', match.id, error)
+          return match // Return original match if enhancement fails
+        }
+      })
+    )
+
+    return enhancedMatches
   },
 
   // Helper function to process upcoming matches
-  processUpcomingMatches(data) {
+  async processUpcomingMatches(data) {
     if (!data.data?.segments) return []
     
     const now = Date.now()
     const oneDayMs = 24 * 60 * 60 * 1000
     
-    return data.data.segments
+    const matches = data.data.segments
       .filter(match => {
         // Only include matches within 1 day
         if (match.time_until_match) {
@@ -363,12 +459,12 @@ const ValorantAdapter = {
         stage: match.match_series || '',
         home: { 
           name: match.team1 || 'TBD', 
-          logo: match.team1_logo || getTeamLogoFromGoogle(match.team1),
+          logo: match.team1_logo || null,
           score: undefined // upcoming matches don't have scores
         },
         away: { 
           name: match.team2 || 'TBD', 
-          logo: match.team2_logo || getTeamLogoFromGoogle(match.team2),
+          logo: match.team2_logo || null,
           score: undefined // upcoming matches don't have scores
         },
         start: match.unix_timestamp ? adjustValorantTimezone(match.unix_timestamp) : new Date(Date.now() + Math.random() * 86400000),
@@ -377,15 +473,37 @@ const ValorantAdapter = {
         venue: match.match_event || '',
         status: 'upcoming',
       }))
+
+    // Enhance matches with team logos for teams that don't have logos
+    const enhancedMatches = await Promise.all(
+      matches.map(async (match) => {
+        try {
+          // Only search for logos if they're missing
+          const enhancedHome = match.home.logo ? match.home : await TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'valorant')
+          const enhancedAway = match.away.logo ? match.away : await TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'valorant')
+          
+          return {
+            ...match,
+            home: enhancedHome,
+            away: enhancedAway
+          }
+        } catch (error) {
+          console.error('Error enhancing logos for upcoming match:', match.id, error)
+          return match // Return original match if enhancement fails
+        }
+      })
+    )
+
+    return enhancedMatches
   },
 
   // Helper function to process completed matches (results)
-  processCompletedMatches(data) {
+  async processCompletedMatches(data) {
     if (!data.data?.segments) return []
     
     const oneDayMs = 24 * 60 * 60 * 1000
     
-    return data.data.segments
+    const matches = data.data.segments
       .filter(match => {
         // Only include matches completed within 1 day
         if (match.time_completed) {
@@ -403,12 +521,12 @@ const ValorantAdapter = {
         stage: match.round_info || '',
         home: { 
           name: match.team1 || 'TBD', 
-          logo: getTeamLogoFromGoogle(match.team1), // Generate logo since API doesn't provide for results
+          logo: null, // Will be enhanced with logo search
           score: parseInt(match.score1) || 0
         },
         away: { 
           name: match.team2 || 'TBD', 
-          logo: getTeamLogoFromGoogle(match.team2), // Generate logo since API doesn't provide for results
+          logo: null, // Will be enhanced with logo search
           score: parseInt(match.score2) || 0
         },
         start: new Date(), // Use current time for completed matches within 1 day
@@ -417,6 +535,30 @@ const ValorantAdapter = {
         venue: match.tournament_name || '',
         status: 'finished',
       }))
+
+    // Enhance matches with team logos asynchronously
+    const enhancedMatches = await Promise.all(
+      matches.map(async (match) => {
+        try {
+          // Search for team logos if missing
+          const [enhancedHome, enhancedAway] = await Promise.all([
+            TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'valorant'),
+            TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'valorant')
+          ])
+          
+          return {
+            ...match,
+            home: enhancedHome,
+            away: enhancedAway
+          }
+        } catch (error) {
+          console.error('Error enhancing logos for match:', match.id, error)
+          return match // Return original match if enhancement fails
+        }
+      })
+    )
+
+    return enhancedMatches
   },
 
   // Helper function to parse "4h 7m ago" or "2w 0d ago" format into milliseconds
@@ -475,7 +617,7 @@ const ValorantAdapter = {
         
         if (liveResponse.ok) {
           const liveData = await liveResponse.json()
-          const liveMatches = this.processLiveMatches(liveData)
+          const liveMatches = await this.processLiveMatches(liveData)
           allMatches = [...allMatches, ...liveMatches]
         } else {
           console.warn(`⚠️ Live Valorant API error: ${liveResponse.status}`)
@@ -490,7 +632,7 @@ const ValorantAdapter = {
         
         if (upcomingResponse.ok) {
           const upcomingData = await upcomingResponse.json()
-          const upcomingMatches = this.processUpcomingMatches(upcomingData)
+          const upcomingMatches = await this.processUpcomingMatches(upcomingData)
           allMatches = [...allMatches, ...upcomingMatches]
         } else {
           console.warn(`⚠️ Upcoming Valorant API error: ${upcomingResponse.status}`)
@@ -505,7 +647,7 @@ const ValorantAdapter = {
         
         if (resultsResponse.ok) {
           const resultsData = await resultsResponse.json()
-          const completedMatches = this.processCompletedMatches(resultsData)
+          const completedMatches = await this.processCompletedMatches(resultsData)
           allMatches = [...allMatches, ...completedMatches]
         } else {
           console.warn(`⚠️ Results Valorant API error: ${resultsResponse.status}`)
@@ -607,12 +749,12 @@ const LolAdapter = {
         stage: event.match?.strategy?.count ? `Bo${event.match.strategy.count}` : (event.match?.strategy?.type || event.blockName || ''),
         home: { 
           name: event.match?.teams?.[0]?.name || 'TBD', 
-          logo: event.match?.teams?.[0]?.image,
+          logo: event.match?.teams?.[0]?.image || null, // Will be enhanced if null
           score: (event.state === 'completed' || event.state === 'inProgress') ? event.match?.teams?.[0]?.result?.gameWins : undefined
         },
         away: { 
           name: event.match?.teams?.[1]?.name || 'TBD', 
-          logo: event.match?.teams?.[1]?.image,
+          logo: event.match?.teams?.[1]?.image || null, // Will be enhanced if null
           score: (event.state === 'completed' || event.state === 'inProgress') ? event.match?.teams?.[1]?.result?.gameWins : undefined
         },
         start: new Date(event.startTime),
@@ -639,11 +781,31 @@ const LolAdapter = {
           }
           return true // Keep all non-live matches
         })
+
+      // Enhance matches with team logos for teams that don't have logos
+      const enhancedMatches = await Promise.all(
+        matches.map(async (match) => {
+          try {
+            // Only search for logos if they're missing
+            const enhancedHome = match.home.logo ? match.home : await TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'lol')
+            const enhancedAway = match.away.logo ? match.away : await TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'lol')
+            
+            return {
+              ...match,
+              home: enhancedHome,
+              away: enhancedAway
+            }
+          } catch (error) {
+            console.error('Error enhancing logos for LoL match:', match.id, error)
+            return match // Return original match if enhancement fails
+          }
+        })
+      )
       
       // 🔍 DEBUG: Log processed matches
       
       // Sort LoL matches: LIVE first, then by start time
-      const sortedMatches = matches.sort((a, b) => {
+      const sortedMatches = enhancedMatches.sort((a, b) => {
         const aPriority = a.status === 'live' ? 0 : 1
         const bPriority = b.status === 'live' ? 0 : 1
         
@@ -754,12 +916,12 @@ const FootballAdapter = {
                 match.stage?.replace('_', ' ') || '',
               home: { 
                 name: match.homeTeam?.name || 'Home',
-                logo: match.homeTeam?.crest,
+                logo: match.homeTeam?.crest || null, // Will be enhanced if null
                 score: (match.status === 'FINISHED' || match.status === 'IN_PLAY' || match.status === 'PAUSED') ? match.score?.fullTime?.home : undefined
               },
               away: { 
                 name: match.awayTeam?.name || 'Away',
-                logo: match.awayTeam?.crest,
+                logo: match.awayTeam?.crest || null, // Will be enhanced if null
                 score: (match.status === 'FINISHED' || match.status === 'IN_PLAY' || match.status === 'PAUSED') ? match.score?.fullTime?.away : undefined
               },
               start: new Date(match.utcDate),
@@ -775,7 +937,27 @@ const FootballAdapter = {
             }
             })
             
-            allMatches = [...allMatches, ...matches]
+            // Enhance matches with team logos for teams that don't have logos
+            const enhancedMatches = await Promise.all(
+              matches.map(async (match) => {
+                try {
+                  // Only search for logos if they're missing
+                  const enhancedHome = match.home.logo ? match.home : await TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'football')
+                  const enhancedAway = match.away.logo ? match.away : await TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'football')
+                  
+                  return {
+                    ...match,
+                    home: enhancedHome,
+                    away: enhancedAway
+                  }
+                } catch (error) {
+                  console.error('Error enhancing logos for football match:', match.id, error)
+                  return match // Return original match if enhancement fails
+                }
+              })
+            )
+            
+            allMatches = [...allMatches, ...enhancedMatches]
           }
         } catch (err) {
           console.warn(`Failed to fetch ${league.name}:`, err)

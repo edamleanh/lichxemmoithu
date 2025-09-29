@@ -6,9 +6,11 @@
 
 - **Multi-sport support**: Valorant, PUBG, League of Legends, Football
 - **Real-time updates**: Live matches với status updates
+- **Intelligent logo search**: Tự động tìm logo đội từ Google khi API không cung cấp
 - **Beautiful UI**: Modern design với animations
 - **Mobile responsive**: Hoạt động tốt trên mọi thiết bị
 - **API Integration**: Kết nối với các API chính thức
+- **Smart caching**: Cache logo search để tăng performance
 
 ## 🚀 Tech Stack
 
@@ -42,7 +44,20 @@ cp .env.example .env
    - Get your API token
    - Add to `.env`: `VITE_FOOTBALL_API_KEY=your_actual_key`
 
-5. Start development server:
+5. Setup Google Custom Search API (for team logo search):
+   - Go to https://developers.google.com/custom-search/v1/introduction
+   - Create a Google Cloud Project and enable Custom Search API
+   - Get your API key from Google Cloud Console
+   - Go to https://cse.google.com/cse/ and create a Custom Search Engine
+   - Configure to search the entire web
+   - Get your Search Engine ID
+   - Add to `.env`:
+     ```bash
+     GOOGLE_SEARCH_API_KEY=your_google_api_key
+     GOOGLE_SEARCH_ENGINE_ID=your_search_engine_id
+     ```
+
+6. Start development server:
 ```bash
 npm run dev
 ```
