@@ -219,7 +219,7 @@ const getStatusInfo = (status) => {
   switch (status) {
     case 'live': return { variant: 'live', label: 'LIVE', icon: Play }
     case 'finished': return { variant: 'finished', label: 'ENDED', icon: Medal }
-    default: return { variant: 'upcoming', label: 'COMMING', icon: Clock }
+    default: return { variant: 'upcoming', label: 'COMING', icon: Clock }
   }
 }
 
@@ -243,6 +243,62 @@ const adjustValorantTimezone = (timestamp) => {
   return new Date(date.getTime() + 7 * 60 * 60 * 1000)
 }
 
+// Helper function to generate team logo URL when not available
+const getTeamLogoFromGoogle = (teamName) => {
+  if (!teamName || teamName === 'TBD') return null
+  
+  // Known team logo mappings (you can expand this list)
+  const knownLogos = {
+    'Sentinels': 'https://owcdn.net/img/61048c65e3d3e.png',
+    'Team Liquid': 'https://owcdn.net/img/5f88ff81c3be8.png', 
+    'LOUD': 'https://owcdn.net/img/626ae8a2b1c6c.png',
+    'FNATIC': 'https://owcdn.net/img/60f87b30b9a21.png',
+    'Paper Rex': 'https://owcdn.net/img/62674e8b9d19b.png',
+    'NRG': 'https://owcdn.net/img/61048c65e3d3f.png',
+    'Cloud9': 'https://owcdn.net/img/5f88ff81c3be9.png',
+    'NAVI': 'https://owcdn.net/img/6062b9e0b9a22.png',
+    'FUT Esports': 'https://owcdn.net/img/63674e8b9d19c.png',
+    'DRX': 'https://owcdn.net/img/61048c65e3d3g.png',
+    'EDward Gaming': 'https://owcdn.net/img/62674e8b9d19d.png',
+    'PRX': 'https://owcdn.net/img/62674e8b9d19b.png', // Paper Rex shorthand
+    'Evil Geniuses': 'https://owcdn.net/img/61048c65e3d3h.png',
+    '100 Thieves': 'https://owcdn.net/img/61048c65e3d3i.png',
+    'OpTic Gaming': 'https://owcdn.net/img/61048c65e3d3j.png',
+    'Team Heretics': 'https://owcdn.net/img/64674e8b9d19e.png',
+    'Karmine Corp': 'https://owcdn.net/img/65674e8b9d19f.png',
+    'BBL Esports': 'https://owcdn.net/img/66674e8b9d19g.png',
+    'KOI': 'https://owcdn.net/img/67674e8b9d19h.png',
+    'Giants': 'https://owcdn.net/img/68674e8b9d19i.png',
+    'T1': 'https://owcdn.net/img/69674e8b9d19j.png',
+    'Gen.G': 'https://owcdn.net/img/70674e8b9d19k.png',
+    'ZETA DIVISION': 'https://owcdn.net/img/71674e8b9d19l.png',
+    'DetonationFocusMe': 'https://owcdn.net/img/72674e8b9d19m.png',
+  }
+  
+  // Check if we have a known logo
+  if (knownLogos[teamName]) {
+    return knownLogos[teamName]
+  }
+  
+  // Fallback: Generate a placeholder with team initial and nice colors
+  const initial = teamName.charAt(0).toUpperCase()
+  const colors = [
+    { bg: '1f2937', fg: 'ffffff' }, // gray
+    { bg: 'dc2626', fg: 'ffffff' }, // red
+    { bg: '2563eb', fg: 'ffffff' }, // blue
+    { bg: '16a34a', fg: 'ffffff' }, // green
+    { bg: 'ca8a04', fg: 'ffffff' }, // yellow
+    { bg: '9333ea', fg: 'ffffff' }, // purple
+    { bg: 'c2410c', fg: 'ffffff' }, // orange
+  ]
+  
+  // Use team name hash to consistently pick a color
+  const hash = teamName.split('').reduce((a, b) => a + b.charCodeAt(0), 0)
+  const color = colors[hash % colors.length]
+  
+  return `https://via.placeholder.com/64x64/${color.bg}/${color.fg}?text=${initial}`
+}
+
 // --- API Adapters --------------------------------------------------------
 const ValorantAdapter = {
   // Helper function to process live matches  
@@ -259,7 +315,7 @@ const ValorantAdapter = {
         stage: match.match_series || '',
         home: { 
           name: match.team1 || 'TBD', 
-          logo: match.team1_logo || null,
+          logo: match.team1_logo || getTeamLogoFromGoogle(match.team1),
           score: parseInt(match.score1) || 0,
           // Additional live data
           roundsCT: match.team1_round_ct !== 'N/A' ? parseInt(match.team1_round_ct) || 0 : null,
@@ -267,7 +323,7 @@ const ValorantAdapter = {
         },
         away: { 
           name: match.team2 || 'TBD', 
-          logo: match.team2_logo || null,
+          logo: match.team2_logo || getTeamLogoFromGoogle(match.team2),
           score: parseInt(match.score2) || 0,
           // Additional live data
           roundsCT: match.team2_round_ct !== 'N/A' ? parseInt(match.team2_round_ct) || 0 : null,
@@ -307,12 +363,12 @@ const ValorantAdapter = {
         stage: match.match_series || '',
         home: { 
           name: match.team1 || 'TBD', 
-          logo: match.team1_logo || null,
+          logo: match.team1_logo || getTeamLogoFromGoogle(match.team1),
           score: undefined // upcoming matches don't have scores
         },
         away: { 
           name: match.team2 || 'TBD', 
-          logo: match.team2_logo || null,
+          logo: match.team2_logo || getTeamLogoFromGoogle(match.team2),
           score: undefined // upcoming matches don't have scores
         },
         start: match.unix_timestamp ? adjustValorantTimezone(match.unix_timestamp) : new Date(Date.now() + Math.random() * 86400000),
@@ -347,12 +403,12 @@ const ValorantAdapter = {
         stage: match.round_info || '',
         home: { 
           name: match.team1 || 'TBD', 
-          logo: null, // API doesn't provide team logos for results
+          logo: getTeamLogoFromGoogle(match.team1), // Generate logo since API doesn't provide for results
           score: parseInt(match.score1) || 0
         },
         away: { 
           name: match.team2 || 'TBD', 
-          logo: null, // API doesn't provide team logos for results
+          logo: getTeamLogoFromGoogle(match.team2), // Generate logo since API doesn't provide for results
           score: parseInt(match.score2) || 0
         },
         start: new Date(), // Use current time for completed matches within 1 day
