@@ -37,13 +37,19 @@ import footballIcon from './images/football.png'
 import pubgIcon from './images/pubg.png'
 
 // --- Styled Components ---------------------------------------------------
-const Button = ({ className = '', children, variant = 'default', size = 'default', ...props }) => {
+const Button = ({ className = '', children, variant = 'default', size = 'default', isDarkMode = false, ...props }) => {
   const variants = {
-    default: 'bg-white/80 hover:bg-white border border-gray-200 text-gray-700 hover:text-gray-900',
+    default: isDarkMode 
+      ? 'bg-gray-700/80 hover:bg-gray-600/80 border border-gray-600 text-gray-200 hover:text-white'
+      : 'bg-white/80 hover:bg-white border border-gray-200 text-gray-700 hover:text-gray-900',
     primary: 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0',
-    secondary: 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200',
+    secondary: isDarkMode
+      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600'
+      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200',
     outline: 'border-2 border-current bg-transparent hover:bg-current/10',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-700',
+    ghost: isDarkMode
+      ? 'bg-transparent hover:bg-gray-700/50 text-gray-300'
+      : 'bg-transparent hover:bg-gray-100 text-gray-700',
     danger: 'bg-red-500 hover:bg-red-600 text-white border-0',
   }
   
@@ -1424,8 +1430,8 @@ export default function App() {
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
+                isDarkMode={isDarkMode}
                 onClick={() => setIsDarkMode(!isDarkMode)}
-                className={isDarkMode ? 'text-gray-300 hover:text-white' : ''}
               >
                 {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                 {isDarkMode ? 'Sáng' : 'Tối'}
@@ -1433,8 +1439,8 @@ export default function App() {
               
               <Button
                 variant="ghost"
+                isDarkMode={isDarkMode}
                 onClick={refetch}
-                className={isDarkMode ? 'text-gray-300 hover:text-white' : ''}
               >
                 <RefreshCw className="h-5 w-5" />
                 Làm mới
@@ -1442,8 +1448,8 @@ export default function App() {
               
               <Button
                 variant="ghost"
+                isDarkMode={isDarkMode}
                 onClick={() => setIsCompactView(!isCompactView)}
-                className={isDarkMode ? 'text-gray-300 hover:text-white' : ''}
               >
                 {isCompactView ? <Grid3X3 className="h-5 w-5" /> : <List className="h-5 w-5" />}
                 {isCompactView ? 'Lưới' : 'Danh sách'}
@@ -1463,8 +1469,11 @@ export default function App() {
                 <Button
                   key={sport.id}
                   variant={activeSport === sport.id ? 'primary' : 'default'}
+                  isDarkMode={isDarkMode}
                   onClick={() => setActiveSport(sport.id)}
-                  className={activeSport === sport.id ? '' : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'}
+                  className={activeSport === sport.id ? '' : isDarkMode 
+                    ? 'hover:bg-gradient-to-r hover:from-gray-600 hover:to-gray-700' 
+                    : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'}
                 >
                   {sport.isImage ? (
                     <img src={sport.icon} alt={sport.label} className="h-5 w-5 object-contain" />
@@ -1492,20 +1501,34 @@ export default function App() {
           )}
 
           {error && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
-              <p className="text-red-600">{error}</p>
-              <Button variant="outline" onClick={refetch} className="mt-4">
+            <div className={`rounded-2xl border p-6 text-center ${
+              isDarkMode 
+                ? 'border-red-600/60 bg-red-900/30' 
+                : 'border-red-200 bg-red-50'
+            }`}>
+              <p className={isDarkMode ? 'text-red-300' : 'text-red-600'}>{error}</p>
+              <Button variant="outline" isDarkMode={isDarkMode} onClick={refetch} className="mt-4">
                 Thử lại
               </Button>
             </div>
           )}
 
           {!loading && !error && groupedData.length === 0 && (
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-12 text-center">
-              <Gamepad2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Không có trận đấu</h3>
-              <p className="text-gray-600 mb-4">Không tìm thấy trận đấu nào trong khoảng thời gian này.</p>
-              <Button variant="primary" onClick={refetch}>
+            <div className={`rounded-2xl border p-12 text-center ${
+              isDarkMode 
+                ? 'border-gray-600 bg-gray-800/50' 
+                : 'border-gray-200 bg-gray-50'
+            }`}>
+              <Gamepad2 className={`h-16 w-16 mx-auto mb-4 ${
+                isDarkMode ? 'text-gray-500' : 'text-gray-400'
+              }`} />
+              <h3 className={`text-xl font-semibold mb-2 ${
+                isDarkMode ? 'text-gray-100' : 'text-gray-900'
+              }`}>Không có trận đấu</h3>
+              <p className={`mb-4 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>Không tìm thấy trận đấu nào trong khoảng thời gian này.</p>
+              <Button variant="primary" isDarkMode={isDarkMode} onClick={refetch}>
                 <RefreshCw className="h-4 w-4" />
                 Làm mới dữ liệu
               </Button>
