@@ -247,53 +247,95 @@ const adjustValorantTimezone = (timestamp) => {
 const ValorantAdapter = {
   // Helper function to process Liquipedia match data
   processLiquipediaMatches(data) {
-    if (!data.query?.pages) return []
+    console.log('🔍 Processing Liquipedia data:', data)
+    
+    if (!data.query?.pages) {
+      console.warn('❌ No pages found in Liquipedia data')
+      return []
+    }
     
     const matches = []
     const pages = Object.values(data.query.pages)
     
     pages.forEach(page => {
+      console.log('📄 Processing page:', page.title, page)
+      
+      if (page.missing) {
+        console.warn(`⚠️ Page "${page.title}" is missing`)
+        return
+      }
+      
       if (page.revisions && page.revisions[0] && page.revisions[0]['*']) {
         const content = page.revisions[0]['*']
+        console.log('📝 Page content length:', content.length)
         
-        // Parse Liquipedia wikitext to extract match data
-        // This is a simplified parser for match data
-        const matchRegex = /\{\{MatchMaps[\s\S]*?\|team1=(.*?)\|[\s\S]*?\|team2=(.*?)\|[\s\S]*?\|date=(.*?)\|[\s\S]*?\|time=(.*?)\|[\s\S]*?\|tournament=(.*?)\|[\s\S]*?\|twitch=(.*?)\|[\s\S]*?\}\}/g
+        // Improved regex to match MatchMaps template with more flexible parsing
+        const matchRegex = /\{\{MatchMaps\s*\n([\s\S]*?)\}\}/g
         
         let match
         while ((match = matchRegex.exec(content)) !== null) {
-          const [, team1, team2, date, time, tournament, stream] = match
+          const matchContent = match[1]
+          console.log('🎯 Found match content:', matchContent)
           
-          if (team1 && team2 && team1.trim() !== '' && team2.trim() !== '') {
-            const matchDate = this.parseDate(date, time)
+          // Extract individual parameters
+          const params = this.parseMatchParams(matchContent)
+          console.log('📊 Parsed params:', params)
+          
+          if (params.team1 && params.team2 && params.team1 !== '' && params.team2 !== '') {
+            const matchDate = this.parseDate(params.date, params.time)
+            const isFinished = params.finished === 'true' || (params.team1score && params.team2score)
             
             matches.push({
               id: `val-liqui-${Math.random().toString(36).substr(2, 9)}`,
               game: 'valorant',
-              league: tournament?.trim() || 'VCT',
-              stage: 'Match',
+              league: params.tournament || 'VCT 2025',
+              stage: isFinished ? 'Completed' : 'Scheduled',
               home: { 
-                name: team1.trim(), 
+                name: params.team1, 
                 logo: null,
-                score: undefined
+                score: params.team1score ? parseInt(params.team1score) : undefined
               },
               away: { 
-                name: team2.trim(), 
+                name: params.team2, 
                 logo: null,
-                score: undefined
+                score: params.team2score ? parseInt(params.team2score) : undefined
               },
               start: matchDate,
               region: 'International',
-              stream: stream?.trim() ? `https://twitch.tv/${stream.trim()}` : '',
-              venue: tournament?.trim() || '',
-              status: this.getMatchStatus(matchDate),
+              stream: params.twitch ? `https://twitch.tv/${params.twitch}` : '',
+              venue: params.tournament || 'VCT',
+              status: this.getMatchStatus(matchDate, isFinished),
             })
+            
+            console.log('✅ Created match:', matches[matches.length - 1])
           }
+        }
+      } else {
+        console.warn('❌ No content found in page revisions')
+      }
+    })
+    
+    console.log('🏁 Total matches processed:', matches.length)
+    return matches
+  },
+
+  // Helper to parse match parameters from wikitext
+  parseMatchParams(content) {
+    const params = {}
+    const lines = content.split('\n')
+    
+    lines.forEach(line => {
+      const trimmed = line.trim()
+      if (trimmed.includes('=') && trimmed.startsWith('|')) {
+        const [key, ...valueParts] = trimmed.substring(1).split('=')
+        const value = valueParts.join('=').trim()
+        if (key && value) {
+          params[key.trim()] = value
         }
       }
     })
     
-    return matches
+    return params
   },
 
   // Helper function to parse Liquipedia date format
@@ -322,12 +364,15 @@ const ValorantAdapter = {
   },
 
   // Helper function to determine match status based on date
-  getMatchStatus(matchDate) {
+  getMatchStatus(matchDate, isFinished = false) {
+    if (isFinished) return 'finished'
+    
     const now = new Date()
     const matchTime = matchDate.getTime()
     const currentTime = now.getTime()
     const oneHour = 60 * 60 * 1000
     
+    // Check if match is currently live (within 1 hour of scheduled time)
     if (Math.abs(currentTime - matchTime) <= oneHour) {
       return 'live'
     } else if (matchTime > currentTime) {
