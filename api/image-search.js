@@ -58,6 +58,7 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json()
+    console.log('Google Search API response:', data)
 
     // Extract image results
     const images = []
