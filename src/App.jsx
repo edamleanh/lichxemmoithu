@@ -994,15 +994,6 @@ function MatchCard({ match, isCompact }) {
   const StatusIcon = statusInfo.icon
   const GameIcon = gameInfo.icon
 
-  // Handle click to open stream for LIVE matches
-  const handleCardClick = () => {
-    if (match.status === 'live' && match.stream) {
-      window.open(match.stream, '_blank', 'noopener,noreferrer')
-    }
-  }
-
-  const isClickable = match.status === 'live' && match.stream
-
   return (
     <motion.div
       layout
@@ -1010,21 +1001,12 @@ function MatchCard({ match, isCompact }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       whileHover={{ y: -4 }}
-      onClick={handleCardClick}
       className={`group relative overflow-hidden rounded-2xl bg-gray-200/95 backdrop-blur-sm border border-gray-400/60 shadow-lg hover:shadow-xl transition-all duration-300 ${
         isCompact ? 'p-4' : 'p-6'
-      } ${isClickable ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
+      }`}
     >
       {/* Background Gradient */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-      
-      {/* Stream Indicator for LIVE matches */}
-      {match.status === 'live' && match.stream && (
-        <div className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full animate-pulse flex items-center gap-1">
-          <span>🎥</span>
-          <span>CLICK TO WATCH</span>
-        </div>
-      )}
       
       {/* Header */}
       <div className="grid grid-cols-3 items-center mb-4">
@@ -1129,14 +1111,24 @@ function MatchCard({ match, isCompact }) {
                 )}
               </div>
               
-              <span className="text-red-600 font-medium animate-pulse flex items-center gap-1">
-                🔴 ĐANG LIVE
+              <div className="flex items-center gap-2">
+                <span className="text-red-600 font-medium animate-pulse">
+                  🔴 ĐANG LIVE
+                </span>
+                
+                {/* Watch Live Button */}
                 {match.stream && (
-                  <span className="text-xs bg-red-600 text-white px-2 py-1 rounded-full hover:bg-red-700 transition-colors">
-                    👁️ XEM
-                  </span>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => window.open(match.stream, '_blank')}
+                    className="animate-pulse"
+                  >
+                    <Play className="h-3 w-3" />
+                    Xem Live
+                  </Button>
                 )}
-              </span>
+              </div>
             </div>
             
             {/* Valorant Round scores */}
