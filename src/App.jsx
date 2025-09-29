@@ -1656,32 +1656,6 @@ function MatchCard({ match, isCompact, isDarkMode }) {
             }`}>
               {match.title || match.league || 'PUBG Tournament'}
             </h3>
-            
-            {/* Channel info */}
-            <p className={`text-sm mt-1 ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              PUBG BATTLEGROUNDS VIETNAM
-            </p>
-          </div>
-
-          {/* Video metadata */}
-          <div className="flex items-center justify-between text-sm">
-            <div className={`flex items-center gap-2 ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              <Clock className="h-4 w-4" />
-              {fmtTime(match.start)}
-            </div>
-            
-            {/* View count or duration if available */}
-            {match.viewCount && (
-              <div className={`${
-                isDarkMode ? 'text-gray-400' : 'text-gray-500'
-              }`}>
-                {match.viewCount} lượt xem
-              </div>
-            )}
           </div>
 
           {/* Live match info for PUBG */}
@@ -1703,15 +1677,6 @@ function MatchCard({ match, isCompact, isDarkMode }) {
                 
                 <WatchLiveButton match={match} />
               </div>
-            </div>
-          )}
-
-          {/* Description or additional info */}
-          {match.description && (
-            <div className={`text-sm ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              <p className="line-clamp-2">{match.description}</p>
             </div>
           )}
         </div>
