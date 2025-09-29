@@ -265,12 +265,12 @@ const TeamLogoSearchService = {
     // Check cache first
     if (this.cache.has(cacheKey)) {
       const cachedResult = this.cache.get(cacheKey)
-      console.log(`💾 Using cached logo for "${teamName}" (${sport}):`, cachedResult ? '✅ Found' : '❌ No logo')
+      console.log(`💾 Using cached logo for ${teamName}:`, cachedResult || 'No logo found')
       return cachedResult
     }
     
     try {
-      console.log(`🔍 Searching logo for "${teamName}" (${sport})...`)
+      console.log(`🔍 Searching logo for ${teamName} (${sport})...`)
       
       // Clean team name for better search results
       const cleanTeamName = teamName
@@ -306,8 +306,7 @@ const TeamLogoSearchService = {
                                  domain.includes('valorant') ||
                                  domain.includes('riotgames') ||
                                  domain.includes('fifa.com') ||
-                                 domain.includes('uefa.com') ||
-                                 domain.includes('static-mapping')
+                                 domain.includes('uefa.com')
           
           const hasGoodDimensions = img.width && img.height && 
                                   img.width >= 64 && img.height >= 64 &&
@@ -317,26 +316,16 @@ const TeamLogoSearchService = {
         }) || data.images[0] // Fall back to first result
         
         logoUrl = bestImage.url
-        
-        // Log the source of the logo
-        if (data.source === 'static-mapping') {
-          console.log(`✅ Found static logo for "${teamName}" (${sport}):`, logoUrl)
-        } else if (data.source === 'google-api') {
-          console.log(`✅ Found Google API logo for "${teamName}" (${sport}):`, logoUrl)
-        } else {
-          console.log(`✅ Found logo for "${teamName}" (${sport}):`, logoUrl)
-        }
-      } else {
-        console.log(`❌ No logo found for "${teamName}" (${sport}) - Source: ${data.source || 'unknown'}`)
       }
       
       // Cache the result (even if null to avoid repeated failed searches)
       this.addToCache(cacheKey, logoUrl)
       
+      console.log(`✅ Found logo for ${teamName} (${sport}):`, logoUrl || 'No logo found')
       return logoUrl
       
     } catch (error) {
-      console.error(`❌ Error searching logo for "${teamName}" (${sport}):`, error.name === 'AbortError' ? 'Request timeout' : error.message)
+      console.error(`❌ Error searching logo for ${teamName}:`, error.name === 'AbortError' ? 'Request timeout' : error.message)
       
       // Cache null result to avoid repeated failed searches
       this.addToCache(cacheKey, null)
@@ -379,133 +368,9 @@ const TeamLogoSearchService = {
     return {
       size: this.cache.size,
       maxSize: this.config.maxCacheSize,
-      enabled: this.config.enabled,
-      entries: Array.from(this.cache.entries()).map(([key, value]) => ({
-        key,
-        hasLogo: !!value,
-        url: value
-      }))
+      enabled: this.config.enabled
     }
   }
-}
-
-// --- Debug Component for Logo Search Status ------------------------------
-const LogoSearchDebugger = ({ isDarkMode }) => {
-  const [stats, setStats] = React.useState(null)
-  const [isVisible, setIsVisible] = React.useState(false)
-  
-  const refreshStats = () => {
-    setStats(TeamLogoSearchService.getCacheStats())
-  }
-  
-  React.useEffect(() => {
-    refreshStats()
-    // Refresh every 5 seconds if visible
-    if (isVisible) {
-      const interval = setInterval(refreshStats, 5000)
-      return () => clearInterval(interval)
-    }
-  }, [isVisible])
-  
-  if (!isVisible) {
-    return (
-      <button
-        onClick={() => setIsVisible(true)}
-        className={`fixed bottom-4 left-4 px-3 py-2 text-xs rounded-lg transition-all z-50 ${
-          isDarkMode 
-            ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-        }`}
-        title="Show logo search debug info"
-      >
-        🔍 Logo Debug
-      </button>
-    )
-  }
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className={`fixed bottom-4 left-4 p-4 rounded-lg backdrop-blur-sm z-50 max-w-md ${
-        isDarkMode 
-          ? 'bg-gray-800/95 text-gray-200 border border-gray-600' 
-          : 'bg-white/95 text-gray-800 border border-gray-200'
-      }`}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-semibold text-sm">🔍 Logo Search Debug</h3>
-        <button
-          onClick={() => setIsVisible(false)}
-          className={`text-xs px-2 py-1 rounded ${
-            isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-          }`}
-        >
-          ✕
-        </button>
-      </div>
-      
-      {stats && (
-        <div className="space-y-2 text-xs">
-          <div className="flex justify-between">
-            <span>Status:</span>
-            <span className={stats.enabled ? 'text-green-500' : 'text-red-500'}>
-              {stats.enabled ? '✅ Enabled' : '❌ Disabled'}
-            </span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span>Cache:</span>
-            <span>{stats.size}/{stats.maxSize} entries</span>
-          </div>
-          
-          <div className="max-h-32 overflow-y-auto space-y-1">
-            {stats.entries.length > 0 ? (
-              stats.entries.map((entry, i) => (
-                <div key={i} className={`flex justify-between text-xs p-1 rounded ${
-                  isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
-                }`}>
-                  <span className="truncate flex-1 mr-2">{entry.key}</span>
-                  <span className={entry.hasLogo ? 'text-green-500' : 'text-red-500'}>
-                    {entry.hasLogo ? '✅' : '❌'}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <div className="text-gray-500 text-center py-2">No cache entries yet</div>
-            )}
-          </div>
-          
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={refreshStats}
-              className={`px-2 py-1 text-xs rounded transition-colors ${
-                isDarkMode 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-blue-500 hover:bg-blue-600 text-white'
-              }`}
-            >
-              🔄 Refresh
-            </button>
-            
-            <button
-              onClick={() => {
-                TeamLogoSearchService.clearCache()
-                refreshStats()
-              }}
-              className={`px-2 py-1 text-xs rounded transition-colors ${
-                isDarkMode 
-                  ? 'bg-red-600 hover:bg-red-700 text-white' 
-                  : 'bg-red-500 hover:bg-red-600 text-white'
-              }`}
-            >
-              🗑️ Clear Cache
-            </button>
-          </div>
-        </div>
-      )}
-    </motion.div>
-  )
 }
 
 // --- API Adapters --------------------------------------------------------
@@ -2006,9 +1871,6 @@ export default function App() {
           </div>
         </footer>
       </div>
-      
-      {/* Logo Search Debug Component */}
-      <LogoSearchDebugger isDarkMode={isDarkMode} />
     </div>
   )
 }
