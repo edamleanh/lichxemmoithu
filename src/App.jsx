@@ -194,7 +194,7 @@ const adjustValorantTimezone = (timestamp) => {
 const createLiveSearchLink = (homeTeam, awayTeam, league) => {
   const searchQuery = `${homeTeam} vs ${awayTeam} ${league} live stream`
   const encodedQuery = encodeURIComponent(searchQuery)
-  return `https://www.google.com/search?q=<site:youtube className="com">${encodedQuery}</site:youtube>&btnI=1`
+  return `https://www.google.com/search?q=site:youtube.com+${encodedQuery}&btnI=1`
 }
 
 // --- API Adapters --------------------------------------------------------
