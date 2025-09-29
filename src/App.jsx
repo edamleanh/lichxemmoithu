@@ -244,60 +244,6 @@ const adjustValorantTimezone = (timestamp) => {
 }
 
 // --- API Adapters --------------------------------------------------------
-
-// Team Logo Database for Valorant
-const VALORANT_TEAM_LOGOS = {
-  'Paper Rex': 'https://owcdn.net/img/5f5ac3ec7ac8e.png',
-  'Team Heretics': 'https://owcdn.net/img/63e6d2c35b89c.png',
-  'MIBR': 'https://owcdn.net/img/63e6d2c35b89c.png',
-  'DRX': 'https://owcdn.net/img/5f2cc0ce7ac8e.png',
-  'FNATIC': 'https://owcdn.net/img/5f2cc0ce7ac8e.png',
-  'NRG': 'https://owcdn.net/img/62d2bb1c1f7f1.png',
-  'Team Falcons Vega': 'https://owcdn.net/img/66c4d5b73b8b0.png',
-  'REIGNITE Lily': 'https://owcdn.net/img/64dd1a8e04ab5.png',
-  'FENNEL GC': 'https://owcdn.net/img/65f6c5b3f22d7.png',
-  'Hypa Hypa Esports': 'https://owcdn.net/img/66c4d5b73b8b0.png',
-  'Ninetails': 'https://owcdn.net/img/65bfa6e27e91f.png',
-  'Asterisk Women': 'https://owcdn.net/img/66a6b8c8cb477.png',
-  'MIBR GC': 'https://owcdn.net/img/659cfe7dd0996.png',
-  'Team Liquid Brazil': 'https://owcdn.net/img/5f2cc0ce7ac8e.png',
-  '2Game Esports GC': 'https://owcdn.net/img/66a6b8c8cb477.png',
-  'TBS Esports GC': 'https://owcdn.net/img/66a6b8c8cb477.png',
-  'Xipto Esports GC': 'https://owcdn.net/img/66c4d5b73b8b0.png',
-  'Rising Esports GC': 'https://owcdn.net/img/66c4d5b73b8b0.png',
-  // Add more teams as needed
-};
-
-// Helper function to get team logo with fallback
-const getValorantTeamLogo = (teamName, flagCode) => {
-  // First try custom logo database
-  if (VALORANT_TEAM_LOGOS[teamName]) {
-    return VALORANT_TEAM_LOGOS[teamName];
-  }
-  
-  // Try to generate logo from team name (for common teams)
-  const teamSlug = teamName?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-  if (teamSlug && teamSlug !== 'tbd') {
-    // Try common logo providers
-    const logoProviders = [
-      `https://logos-download.com/wp-content/uploads/2021/01/${teamSlug}-logo.png`,
-      `https://owcdn.net/img/${teamSlug}.png`,
-      `https://static.wikia.nocookie.net/valorant_esports_gamepedia_en/images/${teamSlug}.png`,
-    ];
-    
-    // Return first provider as fallback (you could implement a checker here)
-    // For now, just use the flag as it's more reliable
-  }
-  
-  // Fallback to country flag
-  if (flagCode && flagCode !== 'flag_un') {
-    return `https://flagcdn.com/w40/${flagCode.replace('flag_', '')}.png`;
-  }
-  
-  // Final fallback: generic team icon
-  return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iIzM3NDE1MSIvPgo8cGF0aCBkPSJNMjAgMTBMMjcgMTVWMjVMMjAgMzBMMTMgMjVWMTVMMjAgMTBaIiBmaWxsPSIjNkI3MjgwIi8+Cjwvc3ZnPgo=';
-};
-
 const ValorantAdapter = {
   // Helper function to process live matches  
   processLiveMatches(data) {
@@ -313,7 +259,7 @@ const ValorantAdapter = {
         stage: match.match_series || '',
         home: { 
           name: match.team1 || 'TBD', 
-          logo: getValorantTeamLogo(match.team1, match.flag1),
+          logo: match.team1_logo || null,
           score: parseInt(match.score1) || 0,
           // Additional live data
           roundsCT: match.team1_round_ct !== 'N/A' ? parseInt(match.team1_round_ct) || 0 : null,
@@ -321,7 +267,7 @@ const ValorantAdapter = {
         },
         away: { 
           name: match.team2 || 'TBD', 
-          logo: getValorantTeamLogo(match.team2, match.flag2),
+          logo: match.team2_logo || null,
           score: parseInt(match.score2) || 0,
           // Additional live data
           roundsCT: match.team2_round_ct !== 'N/A' ? parseInt(match.team2_round_ct) || 0 : null,
@@ -361,12 +307,12 @@ const ValorantAdapter = {
         stage: match.match_series || '',
         home: { 
           name: match.team1 || 'TBD', 
-          logo: getValorantTeamLogo(match.team1, match.flag1),
+          logo: match.team1_logo || null,
           score: undefined // upcoming matches don't have scores
         },
         away: { 
           name: match.team2 || 'TBD', 
-          logo: getValorantTeamLogo(match.team2, match.flag2),
+          logo: match.team2_logo || null,
           score: undefined // upcoming matches don't have scores
         },
         start: match.unix_timestamp ? adjustValorantTimezone(match.unix_timestamp) : new Date(Date.now() + Math.random() * 86400000),
@@ -401,12 +347,12 @@ const ValorantAdapter = {
         stage: match.round_info || '',
         home: { 
           name: match.team1 || 'TBD', 
-          logo: getValorantTeamLogo(match.team1, match.flag1),
+          logo: null, // API doesn't provide team logos for results
           score: parseInt(match.score1) || 0
         },
         away: { 
           name: match.team2 || 'TBD', 
-          logo: getValorantTeamLogo(match.team2, match.flag2),
+          logo: null, // API doesn't provide team logos for results
           score: parseInt(match.score2) || 0
         },
         start: new Date(), // Use current time for completed matches within 1 day
