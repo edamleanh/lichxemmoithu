@@ -26,23 +26,6 @@ export default async function handler(req, res) {
     // Build search query based on sport and team name
     let searchQuery = `${teamName} logo`
     
-    // Add sport-specific terms to improve search accuracy
-    switch (sport?.toLowerCase()) {
-      case 'valorant':
-        searchQuery += ' valorant esports team'
-        break
-      case 'lol':
-        searchQuery += ' league of legends esports team'
-        break
-      case 'football':
-        searchQuery += ' football club soccer'
-        break
-      case 'pubg':
-        searchQuery += ' pubg esports team'
-        break
-      default:
-        searchQuery += ' esports team'
-    }
 
     // Google Custom Search API parameters
     const params = new URLSearchParams({
