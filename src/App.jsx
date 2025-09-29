@@ -253,9 +253,50 @@ const TeamLogoSearchService = {
   
   // Configuration
   config: {
-    enabled: true, // Set to false to disable logo search
+    enabled: false, // Đặt thành true và cấu hình Google API để bật tính năng search logo
     maxCacheSize: 100, // Maximum number of cached results
     searchTimeout: 10000, // 10 seconds timeout for search requests
+  },
+
+  // Fallback logos cho các đội nổi tiếng
+  fallbackLogos: {
+    // Valorant teams
+    'valorant': {
+      'sentinels': 'https://owcdn.net/img/62b8de321d7d0.png',
+      'fnatic': 'https://owcdn.net/img/620ba830dd4e9.png',
+      'drx': 'https://owcdn.net/img/6423c1b85c9d6.png',
+      'paper rex': 'https://owcdn.net/img/624b2d2a85d36.png',
+      'nrg': 'https://owcdn.net/img/624d2b1fd2cf3.png',
+      'mibr': 'https://owcdn.net/img/63b9d9aa5e1e1.png',
+      'team liquid': 'https://owcdn.net/img/5c32bb9d4cd02.png',
+      'navi': 'https://owcdn.net/img/62131a60ca75f.png',
+      'g2 esports': 'https://owcdn.net/img/620ba834e5da9.png'
+    },
+    // LoL teams  
+    'lol': {
+      't1': 'https://am-a.akamaihd.net/image?resize=72:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2FT1-FullonDark.png',
+      'gen.g': 'https://am-a.akamaihd.net/image?resize=72:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2FGenG-FullonDark.png',
+      'drx': 'https://am-a.akamaihd.net/image?resize=72:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2FDRX-FullonDark.png',
+      'kt rolster': 'https://am-a.akamaihd.net/image?resize=72:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2FKT-FullonDark.png'
+    },
+    // Football teams
+    'football': {
+      'manchester united': 'https://logos-world.net/wp-content/uploads/2020/06/Manchester-United-Logo.png',
+      'liverpool': 'https://logos-world.net/wp-content/uploads/2020/06/Liverpool-Logo.png',
+      'manchester city': 'https://logos-world.net/wp-content/uploads/2020/06/Manchester-City-Logo.png',
+      'arsenal': 'https://logos-world.net/wp-content/uploads/2020/06/Arsenal-Logo.png',
+      'real madrid': 'https://logos-world.net/wp-content/uploads/2020/06/Real-Madrid-Logo.png',
+      'barcelona': 'https://logos-world.net/wp-content/uploads/2020/06/Barcelona-Logo.png'
+    }
+  },
+
+  // Get fallback logo for team
+  getFallbackLogo(teamName, sport) {
+    const sportLogos = this.fallbackLogos[sport?.toLowerCase()]
+    if (!sportLogos) return null
+    
+    const cleanName = teamName.toLowerCase().trim()
+    return sportLogos[cleanName] || null
   },
   
   // Search for team logo using Google Custom Search API
@@ -353,6 +394,22 @@ const TeamLogoSearchService = {
       return team // Already has logo or no team name
     }
     
+    // Thử fallback logo trước
+    const fallbackLogo = this.getFallbackLogo(team.name, sport)
+    if (fallbackLogo) {
+      console.log(`✅ Using fallback logo for ${team.name}:`, fallbackLogo)
+      return {
+        ...team,
+        logo: fallbackLogo
+      }
+    }
+    
+    // Nếu service bị tắt, trả về team gốc
+    if (!this.config.enabled) {
+      return team
+    }
+    
+    // Nếu không có fallback, thử search
     const logoUrl = await this.searchTeamLogo(team.name, sport)
     return {
       ...team,

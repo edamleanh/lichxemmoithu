@@ -25,7 +25,15 @@ export default async function handler(req, res) {
 
     if (!API_KEY || !SEARCH_ENGINE_ID) {
       console.error('Google Search API credentials not configured')
-      return res.status(500).json({ error: 'Search service not configured' })
+      // Trả về response rỗng thay vì lỗi 500
+      return res.status(200).json({
+        teamName,
+        sport,
+        searchQuery: `${teamName} logo`,
+        images: [],
+        totalResults: 0,
+        error: 'Google Search API not configured'
+      })
     }
 
     // Build search query based on sport and team name
