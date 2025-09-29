@@ -1540,7 +1540,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-4"
               >
-                <div className={`${config.bgColor} ${config.borderColor} border rounded-2xl p-4`}>
+                <div className={`${isDarkMode ? 'bg-gray-800/90 border-gray-600/60' : `${config.bgColor} ${config.borderColor}`} border rounded-2xl p-4`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <div className={`bg-gradient-to-r ${config.gradient} text-white rounded-xl px-4 py-2 ${status === 'live' ? 'animate-pulse' : ''}`}>
@@ -1548,12 +1548,18 @@ export default function App() {
                           {config.title}
                         </h2>
                       </div>
-                      <span className={`text-sm ${config.textColor} font-medium`}>
+                      <span className={`text-sm font-medium ${
+                        isDarkMode ? 'text-gray-300' : config.textColor
+                      }`}>
                         {config.description}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`${config.textColor} text-sm font-bold px-3 py-1 rounded-full ${config.bgColor} border ${config.borderColor}`}>
+                      <span className={`text-sm font-bold px-3 py-1 rounded-full border ${
+                        isDarkMode 
+                          ? 'bg-gray-700/80 border-gray-500/60 text-gray-200' 
+                          : `${config.textColor} ${config.bgColor} ${config.borderColor}`
+                      }`}>
                         {matches.length} trận đấu
                       </span>
                     </div>
