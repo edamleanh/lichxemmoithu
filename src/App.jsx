@@ -466,6 +466,17 @@ const LolAdapter = {
       
       const data = await response.json()
       
+      // 🔍 DEBUG: Log toàn bộ response từ LoL API
+      console.log('🎮 LoL API Response:', data)
+      
+      // 🔍 DEBUG: Log cụ thể phần events
+      if (data.data?.schedule?.events) {
+        console.log('📅 LoL Events:', data.data.schedule.events)
+        console.log('📊 Total LoL Events:', data.data.schedule.events.length)
+      } else {
+        console.log('⚠️ No LoL events found in response')
+      }
+      
       if (!data.data?.schedule?.events) return createSampleData('lol', from, to)
       
       const matches = data.data.schedule.events.map(event => ({
@@ -501,8 +512,11 @@ const LolAdapter = {
           return true // Keep all non-live matches
         })
       
+      // 🔍 DEBUG: Log processed matches
+      console.log('⚡ Processed LoL Matches:', matches)
+      
       // Sort LoL matches: LIVE first, then by start time
-      return matches.sort((a, b) => {
+      const sortedMatches = matches.sort((a, b) => {
         const aPriority = a.status === 'live' ? 0 : 1
         const bPriority = b.status === 'live' ? 0 : 1
         
@@ -512,6 +526,11 @@ const LolAdapter = {
         
         return aPriority - bPriority
       })
+      
+      // 🔍 DEBUG: Log final sorted matches
+      console.log('🏆 Final LoL Matches:', sortedMatches)
+      
+      return sortedMatches
     } catch (error) {
       console.warn('⚠️ LoL API error:', error)
       return createSampleData('lol', from, to)
@@ -966,7 +985,7 @@ function MatchCard({ match, isCompact }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       whileHover={{ y: -4 }}
-      className={`group relative overflow-hidden rounded-2xl bg-gray-100/90 backdrop-blur-sm border border-gray-300/50 shadow-lg hover:shadow-xl transition-all duration-300 ${
+      className={`group relative overflow-hidden rounded-2xl bg-gray-200/95 backdrop-blur-sm border border-gray-400/60 shadow-lg hover:shadow-xl transition-all duration-300 ${
         isCompact ? 'p-4' : 'p-6'
       }`}
     >
