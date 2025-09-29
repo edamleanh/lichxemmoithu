@@ -548,7 +548,7 @@ const LolAdapter = {
         id: `lol-${event.match?.id || Math.random()}`,
         game: 'lol',
         league: event.league?.name || 'LoL Esports',
-        stage: event.match?.strategy?.type || event.blockName || '',
+        stage: event.match?.strategy?.count ? `Bo${event.match.strategy.count}` : (event.match?.strategy?.type || event.blockName || ''),
         home: { 
           name: event.match?.teams?.[0]?.name || 'TBD', 
           logo: event.match?.teams?.[0]?.image,
