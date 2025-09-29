@@ -190,6 +190,13 @@ const adjustValorantTimezone = (timestamp) => {
   return new Date(date.getTime() + 7 * 60 * 60 * 1000)
 }
 
+// Helper function to create search link for live matches without stream
+const createLiveSearchLink = (homeTeam, awayTeam, league) => {
+  const searchQuery = `${homeTeam} vs ${awayTeam} ${league} live stream`
+  const encodedQuery = encodeURIComponent(searchQuery)
+  return `https://www.google.com/search?q=${encodedQuery}&btnI=1`
+}
+
 // --- API Adapters --------------------------------------------------------
 const ValorantAdapter = {
   // Helper function to process live matches  
@@ -222,7 +229,12 @@ const ValorantAdapter = {
         },
         start: new Date(), // Live matches show current time
         region: 'International',
-        stream: match.match_page ? `${match.match_page}` : '',
+        stream: match.match_page ? `${match.match_page}` : 
+                createLiveSearchLink(
+                  match.team1 || 'TBD',
+                  match.team2 || 'TBD',
+                  match.match_event || 'Valorant'
+                ),
         venue: match.match_event || '',
         status: 'live',
         // Live-specific data
@@ -512,7 +524,13 @@ const LolAdapter = {
         },
         start: new Date(event.startTime),
         region: event.league?.region || 'International',
-        stream: event.streams?.[0]?.parameter || '',
+        stream: event.streams?.[0]?.parameter || 
+                (event.state === 'inProgress' ? 
+                  createLiveSearchLink(
+                    event.match?.teams?.[0]?.name || 'TBD',
+                    event.match?.teams?.[1]?.name || 'TBD', 
+                    event.league?.name || 'LoL Esports'
+                  ) : ''),
         venue: event.league?.name || '',
         status: event.state === 'inProgress' ? 'live' :
                 event.state === 'completed' ? 'finished' : 'upcoming',
@@ -655,7 +673,12 @@ const FootballAdapter = {
               start: new Date(match.utcDate),
               venue: match.venue || '',
               region: match.area?.name || match.competition?.area?.name || 'International',
-              stream: '',
+              stream: (match.status === 'IN_PLAY' || match.status === 'PAUSED') ? 
+                      createLiveSearchLink(
+                        match.homeTeam?.name || 'Home',
+                        match.awayTeam?.name || 'Away',
+                        displayLeagueName
+                      ) : '',
               status: match.status === 'FINISHED' ? 'finished' :
                       match.status === 'IN_PLAY' || match.status === 'PAUSED' ? 'live' : 'upcoming',
               // Live-specific data for Football
@@ -736,7 +759,7 @@ function createSampleData(game, from, to) {
         },
         start: new Date(),
         region: 'International',
-        stream: 'https://www.vlr.gg/542274/team-heretics-vs-giantx-valorant-champions-2025-lr1',
+        stream: createLiveSearchLink('Team Heretics', 'GIANTX', 'Valorant Champions 2025'),
         venue: 'Valorant Champions 2025',
         status: 'live',
         currentMap: 'Lotus',
@@ -851,7 +874,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Liverpool', score: 1 },
         start: new Date(),
         region: 'England',
-        stream: '',
+        stream: createLiveSearchLink('Manchester United', 'Liverpool', 'Premier League'),
         venue: 'Old Trafford',
         status: 'live',
         currentMinute: 67,
