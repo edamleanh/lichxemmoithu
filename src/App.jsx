@@ -175,7 +175,6 @@ const searchYouTubeLiveStream = async (match) => {
       match.league
     ].filter(Boolean).join(' ')
     
-    console.log('🔍 Searching YouTube for:', searchQuery)
     
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?` +
@@ -194,11 +193,6 @@ const searchYouTubeLiveStream = async (match) => {
       const video = data.items[0]
       const youtubeUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`
       
-      console.log('✅ Found YouTube live stream:', {
-        title: video.snippet.title,
-        channel: video.snippet.channelTitle,
-        url: youtubeUrl
-      })
       
       return youtubeUrl
     }
@@ -518,12 +512,9 @@ const LolAdapter = {
       const data = await response.json()
       
       // 🔍 DEBUG: Log toàn bộ response từ LoL API
-      console.log('🎮 LoL API Response:', data)
       
       // 🔍 DEBUG: Log cụ thể phần events
       if (data.data?.schedule?.events) {
-        console.log('📅 LoL Events:', data.data.schedule.events)
-        console.log('📊 Total LoL Events:', data.data.schedule.events.length)
         
         // 🔍 DEBUG: Check streams data specifically
         data.data.schedule.events.forEach((event, index) => {
@@ -537,7 +528,6 @@ const LolAdapter = {
               })
             })
           } else {
-            console.log(`❌ Event ${index} has no streams`)
           }
         })
       } else {
@@ -580,7 +570,6 @@ const LolAdapter = {
         })
       
       // 🔍 DEBUG: Log processed matches
-      console.log('⚡ Processed LoL Matches:', matches)
       
       // Sort LoL matches: LIVE first, then by start time
       const sortedMatches = matches.sort((a, b) => {
@@ -595,7 +584,6 @@ const LolAdapter = {
       })
       
       // 🔍 DEBUG: Log final sorted matches
-      console.log('🏆 Final LoL Matches:', sortedMatches)
       
       return sortedMatches
     } catch (error) {
