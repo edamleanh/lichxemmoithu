@@ -1301,12 +1301,6 @@ function MatchCard({ match, isCompact, isDarkMode }) {
         <div className={`flex items-center gap-4 text-sm ${
           isDarkMode ? 'text-gray-400' : 'text-gray-500'
         }`}>
-          {match.venue && (
-            <div className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              <span>{match.venue}</span>
-            </div>
-          )}
         </div>
       </div>
 
