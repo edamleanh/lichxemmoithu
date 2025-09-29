@@ -180,7 +180,7 @@ const searchYouTubeLiveStream = async (match) => {
     
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?` +
-      `part=snippet&type=video&eventType=live&maxResults=1&` +
+      `part=snippet&type=video&eventType=live&maxResults=5&` +
       `q=${encodeURIComponent(searchQuery)}&key=${YOUTUBE_API_KEY}`
     )
     
@@ -192,10 +192,48 @@ const searchYouTubeLiveStream = async (match) => {
     const data = await response.json()
     
     if (data.items && data.items.length > 0) {
+      // Priority channels for different games
+      const priorityChannels = [
+        // Valorant channels
+        'VALORANT Champions Tour', 'VCT', 'VALORANT', 'Riot Games',
+        // LoL channels  
+        'LCK', 'LPL', 'LEC', 'LCS', 'LoL Esports', 'Riot Games',
+        // Football channels
+        'FIFA', 'UEFA', 'Premier League', 'La Liga',
+        // General esports
+        'ESL', 'DreamHack', 'BLAST'
+      ]
+      
+      console.log('📺 Found YouTube live streams:', data.items.map(item => ({
+        title: item.snippet.title,
+        channel: item.snippet.channelTitle
+      })))
+      
+      // First, try to find a video from priority channels
+      for (const priorityChannel of priorityChannels) {
+        const priorityVideo = data.items.find(item => 
+          item.snippet.channelTitle.toLowerCase().includes(priorityChannel.toLowerCase())
+        )
+        
+        if (priorityVideo) {
+          const youtubeUrl = `https://www.youtube.com/watch?v=${priorityVideo.id.videoId}`
+          
+          console.log('✅ Found priority YouTube live stream:', {
+            title: priorityVideo.snippet.title,
+            channel: priorityVideo.snippet.channelTitle,
+            url: youtubeUrl,
+            priority: priorityChannel
+          })
+          
+          return youtubeUrl
+        }
+      }
+      
+      // If no priority channel found, use the first result
       const video = data.items[0]
       const youtubeUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`
       
-      console.log('✅ Found YouTube live stream:', {
+      console.log('✅ Found YouTube live stream (fallback):', {
         title: video.snippet.title,
         channel: video.snippet.channelTitle,
         url: youtubeUrl
