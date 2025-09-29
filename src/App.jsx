@@ -829,9 +829,9 @@ const PubgAdapter = {
     }
   },
 
-  // Process live videos
+  // Process live videos - only return the one with highest view count
   processLiveVideos(items) {
-    return items
+    const liveMatches = items
       .filter(item => this.isPUBGMatch(item.snippet.title))
       .map(item => ({
         id: `pubg-live-${item.id.videoId}`,
@@ -865,6 +865,30 @@ const PubgAdapter = {
         status: 'live',
         videoId: item.id.videoId
       }))
+    
+    // Return only the video with highest view count
+    if (liveMatches.length === 0) {
+      return []
+    }
+    
+    // Find the video with highest view count
+    const topVideo = liveMatches.reduce((prev, current) => {
+      const prevViews = prev.viewCount || 0
+      const currentViews = current.viewCount || 0
+      
+      // If view counts are equal, prefer the one with more concurrent viewers
+      if (prevViews === currentViews) {
+        const prevConcurrent = prev.concurrentViewers || 0
+        const currentConcurrent = current.concurrentViewers || 0
+        return currentConcurrent > prevConcurrent ? current : prev
+      }
+      
+      return currentViews > prevViews ? current : prev
+    })
+    
+    console.log(`🏆 Selected top PUBG live video: "${topVideo.title}" with ${topVideo.viewCount.toLocaleString()} views`)
+    
+    return [topVideo] // Return array with only the top video
   },
 
   // Process upcoming videos
