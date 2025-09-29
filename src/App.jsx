@@ -169,9 +169,9 @@ const searchYouTubeLiveStream = async (match) => {
     
     // Build search query: team1 + team2 + league + "live"
     const searchQuery = [
-      shortenTeamName(match.home?.name) || '',
-      'vs',
-      shortenTeamName(match.away?.name) || '',
+      // shortenTeamName(match.home?.name) || '',
+      // 'vs',
+      // shortenTeamName(match.away?.name) || '',
       match.league
     ].filter(Boolean).join(' ')
     
@@ -179,7 +179,7 @@ const searchYouTubeLiveStream = async (match) => {
     
     const response = await fetch(
       `https://www.googleapis.com/youtube/v3/search?` +
-      `part=snippet&type=video&eventType=live&maxResults=5&order=viewCount&` +
+      `part=snippet&type=video&eventType=live&maxResults=1&order=viewCount&` +
       `q=${encodeURIComponent(searchQuery)}&key=${YOUTUBE_API_KEY}`
     );
     
