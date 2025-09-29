@@ -1718,8 +1718,8 @@ function MatchCard({ match, isCompact, isDarkMode }) {
             </div>
           </div>
 
-          {/* Video Thumbnail */}
-          {match.thumbnail && (
+          {/* Video Thumbnail - Only show for live videos, not upcoming */}
+          {match.thumbnail && match.status !== 'upcoming' && (
             <div 
               className="relative rounded-lg overflow-hidden aspect-video bg-gray-900 cursor-pointer hover:opacity-90 transition-opacity"
               onClick={() => {
