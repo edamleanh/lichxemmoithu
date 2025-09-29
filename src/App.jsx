@@ -693,12 +693,289 @@ const ValorantAdapter = {
 const PubgAdapter = {
   async fetch({ from, to }) {
     try {
-      // Since Liquipedia API might not be accessible, we'll create realistic sample data
-      return createSampleData('pubg', from, to)
+      console.log('🎮 Fetching PUBG data from YouTube channel...')
+      
+      // YouTube API key
+      const YOUTUBE_API_KEY = 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294'
+      
+      // PUBG BATTLEGROUNDS VIETNAM channel ID
+      const CHANNEL_ID = 'UCA1d3HFGFUmkKr2JIUA5Vlw' // Channel ID cho @PUBGBATTLEGROUNDSVIETNAM
+      
+      let allMatches = []
+      
+      // 1. Fetch live streams
+      try {
+        const liveResponse = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?` +
+          `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
+          `maxResults=10&order=date&key=${YOUTUBE_API_KEY}`
+        )
+        
+        if (liveResponse.ok) {
+          const liveData = await liveResponse.json()
+          const liveMatches = this.processLiveVideos(liveData.items || [])
+          allMatches = [...allMatches, ...liveMatches]
+          console.log(`✅ Found ${liveMatches.length} live PUBG streams`)
+        }
+      } catch (error) {
+        console.warn('⚠️ Error fetching live PUBG streams:', error)
+      }
+      
+      // 2. Fetch upcoming streams
+      try {
+        const upcomingResponse = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?` +
+          `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
+          `maxResults=10&order=date&key=${YOUTUBE_API_KEY}`
+        )
+        
+        if (upcomingResponse.ok) {
+          const upcomingData = await upcomingResponse.json()
+          const upcomingMatches = this.processUpcomingVideos(upcomingData.items || [])
+          allMatches = [...allMatches, ...upcomingMatches]
+          console.log(`✅ Found ${upcomingMatches.length} upcoming PUBG streams`)
+        }
+      } catch (error) {
+        console.warn('⚠️ Error fetching upcoming PUBG streams:', error)
+      }
+      
+      // 3. Fetch recent completed videos
+      try {
+        const completedResponse = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?` +
+          `part=snippet&channelId=${CHANNEL_ID}&type=video&` +
+          `maxResults=15&order=date&publishedAfter=${this.getDateFilter(from)}&` +
+          `key=${YOUTUBE_API_KEY}`
+        )
+        
+        if (completedResponse.ok) {
+          const completedData = await completedResponse.json()
+          const completedMatches = this.processCompletedVideos(completedData.items || [])
+          allMatches = [...allMatches, ...completedMatches]
+          console.log(`✅ Found ${completedMatches.length} completed PUBG videos`)
+        }
+      } catch (error) {
+        console.warn('⚠️ Error fetching completed PUBG videos:', error)
+      }
+      
+      // Filter by date range
+      const filteredMatches = allMatches
+        .filter(match => withinRange(match.start, from, to))
+        .filter((match, index, self) => 
+          index === self.findIndex(m => m.id === match.id)
+        )
+      
+      // If no matches found, return sample data
+      if (filteredMatches.length === 0) {
+        console.log('📦 No PUBG matches found, using sample data')
+        return createSampleData('pubg', from, to)
+      }
+      
+      // Sort matches: LIVE first, then by start time
+      return filteredMatches.sort((a, b) => {
+        const aPriority = a.status === 'live' ? 0 : 1
+        const bPriority = b.status === 'live' ? 0 : 1
+        
+        if (aPriority === bPriority) {
+          return new Date(a.start) - new Date(b.start)
+        }
+        
+        return aPriority - bPriority
+      })
+      
     } catch (error) {
-      console.warn('⚠️ PUBG API error:', error)
+      console.warn('⚠️ PUBG YouTube API error:', error)
       return createSampleData('pubg', from, to)
     }
+  },
+
+  // Process live videos
+  processLiveVideos(items) {
+    return items
+      .filter(item => this.isPUBGMatch(item.snippet.title))
+      .map(item => ({
+        id: `pubg-live-${item.id.videoId}`,
+        game: 'pubg',
+        league: this.extractLeague(item.snippet.title),
+        stage: this.extractStage(item.snippet.title),
+        home: { 
+          name: this.extractTeam1(item.snippet.title),
+          logo: null,
+          score: undefined
+        },
+        away: { 
+          name: this.extractTeam2(item.snippet.title),
+          logo: null,
+          score: undefined
+        },
+        start: new Date(),
+        region: 'Vietnam',
+        stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        venue: 'PUBG BATTLEGROUNDS VIETNAM',
+        status: 'live',
+        youtubeTitle: item.snippet.title,
+        thumbnail: item.snippet.thumbnails?.medium?.url
+      }))
+  },
+
+  // Process upcoming videos
+  processUpcomingVideos(items) {
+    return items
+      .filter(item => this.isPUBGMatch(item.snippet.title))
+      .map(item => ({
+        id: `pubg-upcoming-${item.id.videoId}`,
+        game: 'pubg',
+        league: this.extractLeague(item.snippet.title),
+        stage: this.extractStage(item.snippet.title),
+        home: { 
+          name: this.extractTeam1(item.snippet.title),
+          logo: null,
+          score: undefined
+        },
+        away: { 
+          name: this.extractTeam2(item.snippet.title),
+          logo: null,
+          score: undefined
+        },
+        start: new Date(item.snippet.publishedAt),
+        region: 'Vietnam',
+        stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        venue: 'PUBG BATTLEGROUNDS VIETNAM',
+        status: 'upcoming',
+        youtubeTitle: item.snippet.title,
+        thumbnail: item.snippet.thumbnails?.medium?.url
+      }))
+  },
+
+  // Process completed videos
+  processCompletedVideos(items) {
+    const oneDayMs = 24 * 60 * 60 * 1000
+    const now = Date.now()
+    
+    return items
+      .filter(item => this.isPUBGMatch(item.snippet.title))
+      .filter(item => {
+        const publishDate = new Date(item.snippet.publishedAt).getTime()
+        return (now - publishDate) <= oneDayMs // Only videos from last 24 hours
+      })
+      .map(item => ({
+        id: `pubg-completed-${item.id.videoId}`,
+        game: 'pubg',
+        league: this.extractLeague(item.snippet.title),
+        stage: this.extractStage(item.snippet.title),
+        home: { 
+          name: this.extractTeam1(item.snippet.title),
+          logo: null,
+          score: this.extractScore1(item.snippet.title)
+        },
+        away: { 
+          name: this.extractTeam2(item.snippet.title),
+          logo: null,
+          score: this.extractScore2(item.snippet.title)
+        },
+        start: new Date(item.snippet.publishedAt),
+        region: 'Vietnam',
+        stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        venue: 'PUBG BATTLEGROUNDS VIETNAM',
+        status: 'finished',
+        youtubeTitle: item.snippet.title,
+        thumbnail: item.snippet.thumbnails?.medium?.url
+      }))
+  },
+
+  // Helper: Check if video title is a PUBG match
+  isPUBGMatch(title) {
+    const matchKeywords = [
+      'vs', 'VS', 'v/s', 'đấu với', 'gặp',
+      'final', 'finale', 'chung kết',
+      'semi', 'bán kết', 'playoff',
+      'match', 'trận', 'game',
+      'tournament', 'giải đấu', 'championship'
+    ]
+    
+    const lowerTitle = title.toLowerCase()
+    return matchKeywords.some(keyword => lowerTitle.includes(keyword.toLowerCase()))
+  },
+
+  // Helper: Extract league name from title
+  extractLeague(title) {
+    const leaguePatterns = [
+      /PMPL|PML|PMC|PGS|PUBG Mobile Pro League/i,
+      /Vietnam Championship|VN Championship|Việt Nam/i,
+      /Southeast Asia|SEA|Đông Nam Á/i,
+      /Global Championship|World|Thế giới/i
+    ]
+    
+    for (const pattern of leaguePatterns) {
+      const match = title.match(pattern)
+      if (match) return match[0]
+    }
+    
+    return 'PUBG Tournament'
+  },
+
+  // Helper: Extract stage from title
+  extractStage(title) {
+    const stagePatterns = [
+      /Grand Final|Chung kết/i,
+      /Semi.?Final|Bán kết/i,
+      /Quarter.?Final|Tứ kết/i,
+      /Group Stage|Vòng bảng/i,
+      /Playoff|Loại trực tiếp/i,
+      /Week \d+|Tuần \d+/i,
+      /Day \d+|Ngày \d+/i,
+      /Round \d+|Vòng \d+/i
+    ]
+    
+    for (const pattern of stagePatterns) {
+      const match = title.match(pattern)
+      if (match) return match[0]
+    }
+    
+    return 'Tournament Match'
+  },
+
+  // Helper: Extract team names (basic implementation)
+  extractTeam1(title) {
+    // Look for pattern: Team1 vs Team2 or Team1 đấu với Team2
+    const vsPattern = /(.+?)\s+(vs|VS|v\/s|đấu với|gặp)\s+(.+)/i
+    const match = title.match(vsPattern)
+    
+    if (match) {
+      return match[1].trim().split(/\s+/).slice(-2).join(' ') // Get last 2 words before 'vs'
+    }
+    
+    return 'Team A'
+  },
+
+  extractTeam2(title) {
+    const vsPattern = /(.+?)\s+(vs|VS|v\/s|đấu với|gặp)\s+(.+)/i
+    const match = title.match(vsPattern)
+    
+    if (match) {
+      return match[3].trim().split(/\s+/).slice(0, 2).join(' ') // Get first 2 words after 'vs'
+    }
+    
+    return 'Team B'
+  },
+
+  // Helper: Extract scores (for completed matches)
+  extractScore1(title) {
+    const scorePattern = /(\d+)\s*[-:]\s*(\d+)/
+    const match = title.match(scorePattern)
+    return match ? parseInt(match[1]) : undefined
+  },
+
+  extractScore2(title) {
+    const scorePattern = /(\d+)\s*[-:]\s*(\d+)/
+    const match = title.match(scorePattern)
+    return match ? parseInt(match[2]) : undefined
+  },
+
+  // Helper: Get date filter for API
+  getDateFilter(from) {
+    const date = from || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Default to 7 days ago
+    return date.toISOString()
   }
 }
 
