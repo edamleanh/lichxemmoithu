@@ -94,6 +94,7 @@ const Badge = ({ children, variant = 'default', className = '' }) => {
     valorant: 'bg-red-50 text-red-700 border border-red-200',
     pubg: 'bg-orange-50 text-orange-700 border border-orange-200',
     lol: 'bg-blue-50 text-blue-700 border border-blue-200',
+    tft: 'bg-purple-50 text-purple-700 border border-purple-200',
     football: 'bg-green-50 text-green-700 border border-green-200',
   }
   
@@ -231,6 +232,7 @@ const getGameInfo = (game) => {
     case 'valorant': return { variant: 'valorant', label: 'VALORANT', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true }
     case 'pubg': return { variant: 'pubg', label: 'PUBG', icon: pubgIcon, color: 'from-orange-500 to-yellow-500', isImage: true }
     case 'lol': return { variant: 'lol', label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true }
+    case 'tft': return { variant: 'tft', label: 'TFT', icon: Gamepad2, color: 'from-purple-500 to-indigo-500', isImage: false }
     case 'football': return { variant: 'football', label: 'BÓNG ĐÁ', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true }
     default: return { variant: 'default', label: game.toUpperCase(), icon: Gamepad2, color: 'from-gray-500 to-gray-600', isImage: false }
   }
@@ -1064,7 +1066,372 @@ const PubgAdapter = {
       return match[3].trim().split(/\s+/).slice(0, 2).join(' ') // Get first 2 words after 'vs'
     }
     
-    return 'Team B'
+  }
+}
+
+const TftAdapter = {
+  async fetch({ from, to }) {
+    try {
+      console.log('🎮 Fetching TFT data from YouTube channel...')
+      
+      // YouTube API key
+      const YOUTUBE_API_KEY = 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294'
+      
+      // TFT Esports channel ID (example - có thể thay đổi)
+      const CHANNEL_ID = 'UC2t5bjwHdUX4vM2g8TRDq5g' // Channel ID cho Riot Games hoặc kênh TFT chính thức
+      
+      let allMatches = []
+      
+      // 1. Fetch live streams
+      try {
+        const liveResponse = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?` +
+          `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
+          `maxResults=10&order=date&key=${YOUTUBE_API_KEY}`
+        )
+        
+        if (liveResponse.ok) {
+          const liveData = await liveResponse.json()
+          
+          // Get video IDs for additional details (view count, etc.)
+          const videoIds = liveData.items?.map(item => item.id.videoId).join(',')
+          
+          let liveVideosWithStats = liveData.items || []
+          
+          // Fetch video statistics if we have video IDs
+          if (videoIds) {
+            try {
+              const statsResponse = await fetch(
+                `https://www.googleapis.com/youtube/v3/videos?` +
+                `part=statistics,liveStreamingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+              )
+              
+              if (statsResponse.ok) {
+                const statsData = await statsResponse.json()
+                
+                // Merge statistics with video data
+                liveVideosWithStats = liveData.items.map(video => {
+                  const stats = statsData.items?.find(stat => stat.id === video.id.videoId)
+                  return {
+                    ...video,
+                    statistics: stats?.statistics,
+                    liveStreamingDetails: stats?.liveStreamingDetails
+                  }
+                })
+                
+                // Sort by view count (descending) - videos with more views first
+                liveVideosWithStats.sort((a, b) => {
+                  const viewsA = parseInt(a.statistics?.viewCount || '0')
+                  const viewsB = parseInt(b.statistics?.viewCount || '0')
+                  return viewsB - viewsA
+                })
+                
+                console.log('📊 TFT Live videos sorted by view count:')
+                liveVideosWithStats.forEach(video => {
+                  const views = parseInt(video.statistics?.viewCount || '0')
+                  console.log(`   ${video.snippet.title}: ${views.toLocaleString()} views`)
+                })
+              }
+            } catch (statsError) {
+              console.warn('⚠️ Could not fetch TFT video statistics:', statsError)
+            }
+          }
+          
+          const liveMatches = this.processLiveVideos(liveVideosWithStats)
+          allMatches = [...allMatches, ...liveMatches]
+          console.log(`✅ Found ${liveMatches.length} live TFT streams`)
+        }
+      } catch (error) {
+        console.warn('⚠️ Error fetching live TFT streams:', error)
+      }
+      
+      // 2. Fetch upcoming streams
+      try {
+        const upcomingResponse = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?` +
+          `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
+          `maxResults=10&order=date&key=${YOUTUBE_API_KEY}`
+        )
+        
+        if (upcomingResponse.ok) {
+          const upcomingData = await upcomingResponse.json()
+          
+          // Filter out videos that are not truly upcoming
+          const trulyUpcomingVideos = upcomingData.items?.filter(item => {
+            // Only include videos with liveBroadcastContent: "upcoming"
+            const isUpcoming = item.snippet.liveBroadcastContent === 'upcoming'
+            
+            if (!isUpcoming) {
+              console.log(`🚫 Filtered out non-upcoming TFT video: "${item.snippet.title}" (liveBroadcastContent: ${item.snippet.liveBroadcastContent})`)
+            }
+            
+            return isUpcoming
+          }) || []
+          
+          console.log(`📋 Found ${trulyUpcomingVideos.length} truly upcoming TFT videos out of ${upcomingData.items?.length || 0} total`)
+          
+          // Get video IDs for additional details (scheduled start time)
+          const videoIds = trulyUpcomingVideos?.map(item => item.id.videoId).join(',')
+          
+          let upcomingVideosWithSchedule = trulyUpcomingVideos || []
+          
+          // Fetch scheduled start time if we have video IDs
+          if (videoIds) {
+            try {
+              const scheduleResponse = await fetch(
+                `https://www.googleapis.com/youtube/v3/videos?` +
+                `part=liveStreamingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+              )
+              
+              if (scheduleResponse.ok) {
+                const scheduleData = await scheduleResponse.json()
+                
+                // Merge schedule details with video data
+                upcomingVideosWithSchedule = trulyUpcomingVideos.map(video => {
+                  const schedule = scheduleData.items?.find(sched => sched.id === video.id.videoId)
+                  return {
+                    ...video,
+                    liveStreamingDetails: schedule?.liveStreamingDetails
+                  }
+                })
+                
+                console.log('📅 TFT Upcoming videos with scheduled times:')
+                upcomingVideosWithSchedule.forEach(video => {
+                  const scheduledTime = video.liveStreamingDetails?.scheduledStartTime
+                  if (scheduledTime) {
+                    const startTime = new Date(scheduledTime)
+                    console.log(`   ${video.snippet.title}: scheduled for ${startTime.toLocaleString('vi-VN')}`)
+                  } else {
+                    console.log(`   ${video.snippet.title}: no scheduled time found`)
+                  }
+                })
+              }
+            } catch (scheduleError) {
+              console.warn('⚠️ Could not fetch TFT video schedule details:', scheduleError)
+            }
+          } else {
+            console.log('📅 No upcoming TFT video IDs found to fetch schedule details')
+          }
+          
+          const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithSchedule)
+          allMatches = [...allMatches, ...upcomingMatches]
+          console.log(`✅ Found ${upcomingMatches.length} upcoming TFT streams`)
+        }
+      } catch (error) {
+        console.warn('⚠️ Error fetching upcoming TFT streams:', error)
+      }
+      
+      // Filter by date range
+      const filteredMatches = allMatches
+        .filter(match => withinRange(match.start, from, to))
+        .filter((match, index, self) => 
+          index === self.findIndex(m => m.id === match.id)
+        )
+      
+      // If no matches found, return sample data
+      if (filteredMatches.length === 0) {
+        console.log('📦 No TFT matches found, using sample data')
+        return createSampleData('tft', from, to)
+      }
+      
+      // Sort matches: LIVE first (with view count priority), then by start time
+      return filteredMatches.sort((a, b) => {
+        const aPriority = a.status === 'live' ? 0 : 1
+        const bPriority = b.status === 'live' ? 0 : 1
+        
+        if (aPriority === bPriority) {
+          // If both are live, sort by view count (descending)
+          if (a.status === 'live' && b.status === 'live') {
+            const aViews = a.viewCount || 0
+            const bViews = b.viewCount || 0
+            if (aViews !== bViews) {
+              return bViews - aViews // Higher view count first
+            }
+            // If view counts are same, try concurrent viewers
+            const aConcurrent = a.concurrentViewers || 0
+            const bConcurrent = b.concurrentViewers || 0
+            if (aConcurrent !== bConcurrent) {
+              return bConcurrent - aConcurrent // Higher concurrent viewers first
+            }
+          }
+          return new Date(a.start) - new Date(b.start)
+        }
+        
+        return aPriority - bPriority
+      })
+      
+    } catch (error) {
+      console.warn('⚠️ TFT YouTube API error:', error)
+      return createSampleData('tft', from, to)
+    }
+  },
+
+  // Process live videos - only return the one with highest view count
+  processLiveVideos(items) {
+    const liveMatches = items
+      .map(item => ({
+        id: `tft-live-${item.id.videoId}`,
+        game: 'tft',
+        league: this.extractLeague(item.snippet.title),
+        stage: this.extractStage(item.snippet.title),
+        title: item.snippet.title, // Full YouTube video title
+        description: item.snippet.description, // Video description
+        thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
+        channelTitle: item.snippet.channelTitle,
+        publishedAt: item.snippet.publishedAt,
+        // Add view count and live streaming details
+        viewCount: item.statistics?.viewCount ? parseInt(item.statistics.viewCount) : 0,
+        concurrentViewers: item.liveStreamingDetails?.concurrentViewers ? 
+          parseInt(item.liveStreamingDetails.concurrentViewers) : null,
+        actualStartTime: item.liveStreamingDetails?.actualStartTime,
+        home: { 
+          name: this.extractPlayer1(item.snippet.title),
+          logo: null,
+          score: undefined
+        },
+        away: { 
+          name: this.extractPlayer2(item.snippet.title),
+          logo: null,
+          score: undefined
+        },
+        start: new Date(),
+        region: 'Global',
+        stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+        venue: 'TFT Esports',
+        status: 'live',
+        videoId: item.id.videoId
+      }))
+    
+    // Return only the video with highest view count
+    if (liveMatches.length === 0) {
+      return []
+    }
+    
+    // Find the video with highest view count
+    const topVideo = liveMatches.reduce((prev, current) => {
+      const prevViews = prev.viewCount || 0
+      const currentViews = current.viewCount || 0
+      
+      // If view counts are equal, prefer the one with more concurrent viewers
+      if (prevViews === currentViews) {
+        const prevConcurrent = prev.concurrentViewers || 0
+        const currentConcurrent = current.concurrentViewers || 0
+        return currentConcurrent > prevConcurrent ? current : prev
+      }
+      
+      return currentViews > prevViews ? current : prev
+    })
+    
+    console.log(`🏆 Selected top TFT live video: "${topVideo.title}" with ${topVideo.viewCount.toLocaleString()} views`)
+    
+    return [topVideo] // Return array with only the top video
+  },
+
+  // Process upcoming videos - return all upcoming videos
+  processUpcomingVideos(items) {
+    const upcomingMatches = items.map(item => ({
+      id: `tft-upcoming-${item.id.videoId}`,
+      game: 'tft',
+      league: this.extractLeague(item.snippet.title),
+      stage: this.extractStage(item.snippet.title),
+      title: item.snippet.title, // Full YouTube video title
+      description: item.snippet.description, // Video description
+      thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
+      channelTitle: item.snippet.channelTitle,
+      publishedAt: item.snippet.publishedAt,
+      // Use scheduled start time if available, otherwise fall back to publishedAt
+      scheduledStartTime: item.liveStreamingDetails?.scheduledStartTime,
+      home: { 
+        name: this.extractPlayer1(item.snippet.title),
+        logo: null,
+        score: undefined
+      },
+      away: { 
+        name: this.extractPlayer2(item.snippet.title),
+        logo: null,
+        score: undefined
+      },
+      start: item.liveStreamingDetails?.scheduledStartTime ? 
+             new Date(item.liveStreamingDetails.scheduledStartTime) : 
+             new Date(item.snippet.publishedAt),
+      region: 'Global',
+      stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+      venue: 'TFT Esports',
+      status: 'upcoming',
+      videoId: item.id.videoId
+    }))
+
+    console.log(`📅 Found ${upcomingMatches.length} upcoming TFT videos`)
+    upcomingMatches.forEach(video => {
+      const startTime = video.start
+      console.log(`   "${video.title}" - scheduled for ${startTime.toLocaleString('vi-VN')}`)
+    })
+
+    return upcomingMatches // Return all upcoming videos
+  },
+
+  // Helper: Extract league name from title
+  extractLeague(title) {
+    const leaguePatterns = [
+      /TFT World Championship|TFT Worlds|TFT Championship/i,
+      /TFT Set \d+|Set \d+/i,
+      /Teamfight Tactics Championship|TFT Tournament/i,
+      /TFT Regional|TFT Masters|TFT Challenger/i,
+      /Riot Games/i
+    ]
+    
+    for (const pattern of leaguePatterns) {
+      const match = title.match(pattern)
+      if (match) return match[0]
+    }
+    
+    return 'TFT Tournament'
+  },
+
+  // Helper: Extract stage from title
+  extractStage(title) {
+    const stagePatterns = [
+      /Grand Final|Chung kết/i,
+      /Semi.?Final|Bán kết/i,
+      /Quarter.?Final|Tứ kết/i,
+      /Group Stage|Vòng bảng/i,
+      /Playoff|Loại trực tiếp/i,
+      /Week \d+|Tuần \d+/i,
+      /Day \d+|Ngày \d+/i,
+      /Round \d+|Vòng \d+/i,
+      /Set \d+/i
+    ]
+    
+    for (const pattern of stagePatterns) {
+      const match = title.match(pattern)
+      if (match) return match[0]
+    }
+    
+    return 'Tournament Match'
+  },
+
+  // Helper: Extract player names (TFT is individual players, not teams)
+  extractPlayer1(title) {
+    // Look for pattern: Player1 vs Player2
+    const vsPattern = /(.+?)\s+(vs|VS|v\/s|against)\s+(.+)/i
+    const match = title.match(vsPattern)
+    
+    if (match) {
+      return match[1].trim().split(/\s+/).slice(-1).join(' ') // Get last word before 'vs'
+    }
+    
+    return 'Player A'
+  },
+
+  extractPlayer2(title) {
+    const vsPattern = /(.+?)\s+(vs|VS|v\/s|against)\s+(.+)/i
+    const match = title.match(vsPattern)
+    
+    if (match) {
+      return match[3].trim().split(/\s+/).slice(0, 1).join(' ') // Get first word after 'vs'
+    }
+    
+    return 'Player B'
   }
 }
 
@@ -1483,6 +1850,64 @@ function createSampleData(game, from, to) {
         videoId: 'live456'
       }
     ],
+    tft: [
+      {
+        id: `tft-sample-live`,
+        game: 'tft',
+        league: 'TFT World Championship',
+        stage: 'Grand Finals',
+        title: '[LIVE] TFT World Championship 2025 - dishsoap vs Socks',
+        description: 'Trận chung kết TFT World Championship 2025 giữa dishsoap và Socks. Ai sẽ trở thành nhà vô địch thế giới?',
+        thumbnail: 'https://i.ytimg.com/vi/tft_live/maxresdefault_live.jpg',
+        channelTitle: 'Riot Games',
+        viewCount: 45230,
+        concurrentViewers: 28500,
+        home: { name: 'dishsoap', score: 2 },
+        away: { name: 'Socks', score: 1 },
+        start: new Date(),
+        region: 'Global',
+        stream: '', // Use YouTube search instead of hardcoded stream
+        venue: 'TFT Esports',
+        status: 'live',
+        videoId: 'tft_live123'
+      },
+      {
+        id: `tft-sample-1`,
+        game: 'tft',
+        league: 'TFT World Championship',
+        stage: 'Semi Finals',
+        title: 'TFT World Championship 2025 - Milk vs spaceball',
+        description: 'Trận bán kết căng thẳng giữa Milk và spaceball tại TFT World Championship 2025.',
+        thumbnail: 'https://i.ytimg.com/vi/tft_finished/maxresdefault.jpg',
+        channelTitle: 'Riot Games',
+        home: { name: 'Milk', score: 3 },
+        away: { name: 'spaceball', score: 2 },
+        start: new Date(now.getTime() - 3 * 60 * 60 * 1000),
+        region: 'Global',
+        stream: '', // Use YouTube search instead of hardcoded stream
+        venue: 'TFT Esports',
+        status: 'finished',
+        videoId: 'tft_finished456'
+      },
+      {
+        id: `tft-sample-2`,
+        game: 'tft',
+        league: 'TFT Set 12 Tournament',
+        stage: 'Round 1',
+        title: 'TFT Set 12 Championship - kurumx vs aespa',
+        description: 'Upcoming match trong TFT Set 12 Championship giữa kurumx và aespa.',
+        thumbnail: 'https://i.ytimg.com/vi/tft_upcoming/maxresdefault.jpg',
+        channelTitle: 'Riot Games',
+        home: { name: 'kurumx' },
+        away: { name: 'aespa' },
+        start: new Date(now.getTime() + 8 * 60 * 60 * 1000),
+        region: 'Global',
+        stream: '', // Use YouTube search instead of hardcoded stream
+        venue: 'TFT Esports',
+        status: 'upcoming',
+        videoId: 'tft_upcoming789'
+      }
+    ],
     lol: [
       {
         id: `lol-sample-live`,
@@ -1578,6 +2003,7 @@ function createSampleData(game, from, to) {
 const adapters = {
   valorant: ValorantAdapter,
   pubg: PubgAdapter,
+  tft: TftAdapter,
   lol: LolAdapter,
   football: FootballAdapter,
 }
@@ -1587,6 +2013,7 @@ const sports = [
   { id: 'all', label: 'Tất cả', icon: TrendingUp, color: 'from-purple-500 to-pink-500', isImage: false },
   { id: 'valorant', label: 'Valorant', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true },
   { id: 'pubg', label: 'PUBG', icon: pubgIcon, color: 'from-orange-500 to-yellow-500', isImage: true },
+  { id: 'tft', label: 'TFT', icon: Gamepad2, color: 'from-purple-500 to-indigo-500', isImage: false },
   { id: 'lol', label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true },
   { id: 'football', label: 'Bóng Đá', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true },
 ]
@@ -1876,6 +2303,138 @@ function MatchCard({ match, isCompact, isDarkMode }) {
               </div>
             </div>
           )} */}
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Special layout for TFT (YouTube-based, similar to PUBG)
+  if (match.game === 'tft') {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        whileHover={{ y: -4 }}
+        className={`group relative overflow-hidden rounded-2xl backdrop-blur-sm border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${
+          isDarkMode 
+            ? 'bg-gray-800/90 border-gray-700 hover:border-purple-400/50' 
+            : 'bg-white/90 border-gray-200 hover:border-purple-400/50'
+        }`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200/50">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${gameInfo.color} flex items-center justify-center`}>
+              <Gamepad2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                {match.league}
+              </p>
+              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                {match.stage}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Badge variant={statusInfo.variant}>
+              <StatusIcon className="h-3 w-3" />
+              {statusInfo.label}
+            </Badge>
+            {match.status === 'live' && match.viewCount && (
+              <Badge variant="default">
+                <Eye className="h-3 w-3" />
+                {match.viewCount.toLocaleString()}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-3">
+          {/* Video Title */}
+          <h3 className={`font-semibold text-base line-clamp-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            {match.title}
+          </h3>
+          
+          {/* Players/Time */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {match.home?.name}
+              </span>
+              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>vs</span>
+              <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {match.away?.name}
+              </span>
+            </div>
+            
+            <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {fmtTime(match.start)}
+            </span>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center justify-between pt-2">
+            <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {match.venue}
+            </span>
+            
+            <div className="flex gap-2">
+              {match.status === 'live' && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => window.open(match.stream, '_blank')}
+                  className="animate-pulse"
+                >
+                  <Play className="h-3 w-3" />
+                  Xem Live
+                </Button>
+              )}
+              
+              {match.status === 'upcoming' && match.stream && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => window.open(match.stream, '_blank')}
+                >
+                  <Clock className="h-3 w-3" />
+                  Đặt nhắc nhở
+                </Button>
+              )}
+              
+              {match.status === 'finished' && match.stream && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(match.stream, '_blank')}
+                >
+                  <Play className="h-3 w-3" />
+                  Xem lại
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Status indicator for TFT */}
+          {match.status === 'live' && (
+            <div className={`text-xs ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              {match.status === 'live' && match.concurrentViewers && (
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="font-medium">
+                    {match.concurrentViewers.toLocaleString()} đang xem
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </motion.div>
     )
