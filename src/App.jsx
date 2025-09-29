@@ -851,10 +851,10 @@ const PubgAdapter = {
           index === self.findIndex(m => m.id === match.id)
         )
       
-      // If no matches found, return sample data
+      // If no matches found, return empty array (don't show anything)
       if (filteredMatches.length === 0) {
-        console.log('📦 No PUBG matches found, using sample data')
-        return createSampleData('pubg', from, to)
+        console.log('📦 No PUBG matches found, returning empty array')
+        return []
       }
       
       // Sort matches: LIVE first (with view count priority), then by start time
@@ -885,7 +885,7 @@ const PubgAdapter = {
       
     } catch (error) {
       console.warn('⚠️ PUBG YouTube API error:', error)
-      return createSampleData('pubg', from, to)
+      return [] // Return empty array instead of sample data
     }
   },
 
@@ -1228,10 +1228,10 @@ const TftAdapter = {
           index === self.findIndex(m => m.id === match.id)
         )
       
-      // If no matches found, return sample data
+      // If no matches found, return empty array (don't show anything)
       if (filteredMatches.length === 0) {
-        console.log('📦 No TFT matches found, using sample data')
-        return createSampleData('tft', from, to)
+        console.log('📦 No TFT matches found, returning empty array')
+        return []
       }
       
       // Sort matches: LIVE first (with view count priority), then by start time
@@ -1262,7 +1262,7 @@ const TftAdapter = {
       
     } catch (error) {
       console.warn('⚠️ TFT YouTube API error:', error)
-      return createSampleData('tft', from, to)
+      return [] // Return empty array instead of sample data
     }
   },
 
