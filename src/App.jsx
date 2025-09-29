@@ -1056,7 +1056,13 @@ function WatchLiveButton({ match }) {
       return
     }
     
-    // Search for YouTube live stream
+    // Special handling for football matches
+    if (match.game === 'football') {
+      window.open('https://bit.ly/tiengruoi', '_blank')
+      return
+    }
+    
+    // Search for YouTube live stream for other sports
     setIsSearching(true)
     try {
       const youtubeUrl = await searchYouTubeLiveStream(match)
