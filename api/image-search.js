@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     const SEARCH_ENGINE_ID = '514a4c5a5eb164ff0'
 
     // Build search query based on sport and team name
-    let searchQuery = `${teamName} logo`
+    let searchQuery = `${teamName} logo png`
     
 
     // Google Custom Search API parameters
