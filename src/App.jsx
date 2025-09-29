@@ -739,25 +739,6 @@ const PubgAdapter = {
         console.warn('⚠️ Error fetching upcoming PUBG streams:', error)
       }
       
-      // 3. Fetch recent completed videos
-      try {
-        const completedResponse = await fetch(
-          `https://www.googleapis.com/youtube/v3/search?` +
-          `part=snippet&channelId=${CHANNEL_ID}&type=video&` +
-          `maxResults=15&order=date&publishedAfter=${this.getDateFilter(from)}&` +
-          `key=${YOUTUBE_API_KEY}`
-        )
-        
-        if (completedResponse.ok) {
-          const completedData = await completedResponse.json()
-          const completedMatches = this.processCompletedVideos(completedData.items || [])
-          allMatches = [...allMatches, ...completedMatches]
-          console.log(`✅ Found ${completedMatches.length} completed PUBG videos`)
-        }
-      } catch (error) {
-        console.warn('⚠️ Error fetching completed PUBG videos:', error)
-      }
-      
       // Filter by date range
       const filteredMatches = allMatches
         .filter(match => withinRange(match.start, from, to))
@@ -798,6 +779,11 @@ const PubgAdapter = {
         game: 'pubg',
         league: this.extractLeague(item.snippet.title),
         stage: this.extractStage(item.snippet.title),
+        title: item.snippet.title, // Full YouTube video title
+        description: item.snippet.description, // Video description
+        thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
+        channelTitle: item.snippet.channelTitle,
+        publishedAt: item.snippet.publishedAt,
         home: { 
           name: this.extractTeam1(item.snippet.title),
           logo: null,
@@ -813,8 +799,7 @@ const PubgAdapter = {
         stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
         venue: 'PUBG BATTLEGROUNDS VIETNAM',
         status: 'live',
-        youtubeTitle: item.snippet.title,
-        thumbnail: item.snippet.thumbnails?.medium?.url
+        videoId: item.id.videoId
       }))
   },
 
@@ -827,6 +812,11 @@ const PubgAdapter = {
         game: 'pubg',
         league: this.extractLeague(item.snippet.title),
         stage: this.extractStage(item.snippet.title),
+        title: item.snippet.title, // Full YouTube video title
+        description: item.snippet.description, // Video description
+        thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
+        channelTitle: item.snippet.channelTitle,
+        publishedAt: item.snippet.publishedAt,
         home: { 
           name: this.extractTeam1(item.snippet.title),
           logo: null,
@@ -842,44 +832,7 @@ const PubgAdapter = {
         stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
         venue: 'PUBG BATTLEGROUNDS VIETNAM',
         status: 'upcoming',
-        youtubeTitle: item.snippet.title,
-        thumbnail: item.snippet.thumbnails?.medium?.url
-      }))
-  },
-
-  // Process completed videos
-  processCompletedVideos(items) {
-    const oneDayMs = 24 * 60 * 60 * 1000
-    const now = Date.now()
-    
-    return items
-      .filter(item => this.isPUBGMatch(item.snippet.title))
-      .filter(item => {
-        const publishDate = new Date(item.snippet.publishedAt).getTime()
-        return (now - publishDate) <= oneDayMs // Only videos from last 24 hours
-      })
-      .map(item => ({
-        id: `pubg-completed-${item.id.videoId}`,
-        game: 'pubg',
-        league: this.extractLeague(item.snippet.title),
-        stage: this.extractStage(item.snippet.title),
-        home: { 
-          name: this.extractTeam1(item.snippet.title),
-          logo: null,
-          score: this.extractScore1(item.snippet.title)
-        },
-        away: { 
-          name: this.extractTeam2(item.snippet.title),
-          logo: null,
-          score: this.extractScore2(item.snippet.title)
-        },
-        start: new Date(item.snippet.publishedAt),
-        region: 'Vietnam',
-        stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-        venue: 'PUBG BATTLEGROUNDS VIETNAM',
-        status: 'finished',
-        youtubeTitle: item.snippet.title,
-        thumbnail: item.snippet.thumbnails?.medium?.url
+        videoId: item.id.videoId
       }))
   },
 
@@ -957,25 +910,6 @@ const PubgAdapter = {
     }
     
     return 'Team B'
-  },
-
-  // Helper: Extract scores (for completed matches)
-  extractScore1(title) {
-    const scorePattern = /(\d+)\s*[-:]\s*(\d+)/
-    const match = title.match(scorePattern)
-    return match ? parseInt(match[1]) : undefined
-  },
-
-  extractScore2(title) {
-    const scorePattern = /(\d+)\s*[-:]\s*(\d+)/
-    const match = title.match(scorePattern)
-    return match ? parseInt(match[2]) : undefined
-  },
-
-  // Helper: Get date filter for API
-  getDateFilter(from) {
-    const date = from || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Default to 7 days ago
-    return date.toISOString()
   }
 }
 
@@ -1360,6 +1294,10 @@ function createSampleData(game, from, to) {
         game: 'pubg',
         league: 'PGS Championships',
         stage: 'Grand Finals',
+        title: 'PUBG Global Championship 2025 - Grand Finals: Gen.G vs DAMWON KIA',
+        description: 'Trận chung kết gay cấn nhất PGS 2025 giữa hai đội tuyển hàng đầu. Ai sẽ trở thành nhà vô địch?',
+        thumbnail: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
+        channelTitle: 'PUBG BATTLEGROUNDS VIETNAM',
         home: { name: 'Gen.G', score: 2 },
         away: { name: 'DAMWON KIA', score: 0 },
         start: new Date(now.getTime() - 2 * 60 * 60 * 1000),
@@ -1367,6 +1305,25 @@ function createSampleData(game, from, to) {
         stream: '', // Use YouTube search instead of hardcoded stream
         venue: 'Seoul Arena',
         status: 'finished',
+        videoId: 'sample123'
+      },
+      {
+        id: `pubg-sample-live`,
+        game: 'pubg',
+        league: 'PMPL Vietnam',
+        stage: 'Week 3',
+        title: '[LIVE] PMPL Vietnam Season 5 - Team Flash vs Divine Esports',
+        description: 'Trực tiếp trận đấu PMPL Vietnam giữa Team Flash và Divine Esports. Đây là trận đấu quyết định vị trí đầu bảng!',
+        thumbnail: 'https://i.ytimg.com/vi/live_stream/maxresdefault_live.jpg',
+        channelTitle: 'PUBG BATTLEGROUNDS VIETNAM',
+        home: { name: 'Team Flash', score: 1 },
+        away: { name: 'Divine Esports', score: 0 },
+        start: new Date(),
+        region: 'Vietnam',
+        stream: '', // Use YouTube search instead of hardcoded stream
+        venue: 'PUBG BATTLEGROUNDS VIETNAM',
+        status: 'live',
+        videoId: 'live456'
       }
     ],
     lol: [
@@ -1625,6 +1582,134 @@ function MatchCard({ match, isCompact, isDarkMode }) {
   const StatusIcon = statusInfo.icon
   const GameIcon = gameInfo.icon
 
+  // Special layout for PUBG (YouTube-based)
+  if (match.game === 'pubg') {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        whileHover={{ y: -4 }}
+        className={`group relative overflow-hidden rounded-2xl backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 ${
+          isDarkMode 
+            ? 'bg-gray-800/95 border border-gray-600/60 hover:bg-gray-700/95' 
+            : 'bg-gray-200/95 border border-gray-400/60 hover:bg-gray-100/95'
+        } ${isCompact ? 'p-4' : 'p-6'}`}
+      >
+        {/* Background Gradient */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+        
+        {/* PUBG YouTube Video Layout */}
+        <div className="space-y-4">
+          {/* Header with game icon and status */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
+                <img src={gameInfo.icon} alt={gameInfo.label} className="h-5 w-5 object-contain" />
+              </div>
+              <span className={`font-bold text-lg ${
+                isDarkMode ? 'text-gray-100' : 'text-gray-900'
+              }`}>PUBG</span>
+            </div>
+            
+            <Badge variant={statusInfo.variant}>
+              <StatusIcon className="h-3 w-3" />
+              {statusInfo.label}
+            </Badge>
+          </div>
+
+          {/* Video Thumbnail */}
+          {match.thumbnail && (
+            <div className="relative rounded-lg overflow-hidden aspect-video bg-gray-900">
+              <img 
+                src={match.thumbnail} 
+                alt={match.title}
+                className="w-full h-full object-cover"
+              />
+              {/* Play overlay for live streams */}
+              {match.status === 'live' && (
+                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                  <div className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 animate-pulse">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    LIVE
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Video Title */}
+          <div>
+            <h3 className={`font-semibold text-lg leading-tight line-clamp-2 ${
+              isDarkMode ? 'text-gray-100' : 'text-gray-900'
+            }`}>
+              {match.title || match.league || 'PUBG Tournament'}
+            </h3>
+            
+            {/* Channel info */}
+            <p className={`text-sm mt-1 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              PUBG BATTLEGROUNDS VIETNAM
+            </p>
+          </div>
+
+          {/* Video metadata */}
+          <div className="flex items-center justify-between text-sm">
+            <div className={`flex items-center gap-2 ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              <Clock className="h-4 w-4" />
+              {fmtTime(match.start)}
+            </div>
+            
+            {/* View count or duration if available */}
+            {match.viewCount && (
+              <div className={`${
+                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {match.viewCount} lượt xem
+              </div>
+            )}
+          </div>
+
+          {/* Live match info for PUBG */}
+          {match.status === 'live' && (
+            <div className={`p-3 rounded-lg ${
+              isDarkMode 
+                ? 'bg-gray-700/80 border border-gray-600/60' 
+                : 'bg-red-50 border border-red-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className={`font-semibold ${
+                    isDarkMode ? 'text-red-300' : 'text-red-800'
+                  }`}>
+                    Đang phát trực tiếp
+                  </span>
+                </div>
+                
+                <WatchLiveButton match={match} />
+              </div>
+            </div>
+          )}
+
+          {/* Description or additional info */}
+          {match.description && (
+            <div className={`text-sm ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              <p className="line-clamp-2">{match.description}</p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    )
+  }
+
+  // Default layout for other games
   return (
     <motion.div
       layout
