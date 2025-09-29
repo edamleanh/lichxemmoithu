@@ -161,6 +161,58 @@ const shortenTeamName = (teamName) => {
   return cleanName
 }
 
+// Helper function to search for live streams on YouTube
+const searchYouTubeLiveStream = async (match) => {
+  try {
+    // YouTube API key
+    const YOUTUBE_API_KEY = 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294'
+    
+    // Build search query: team1 + team2 + league + "live"
+    const searchQuery = [
+      shortenTeamName(match.home?.name) || '',
+      'vs',
+      shortenTeamName(match.away?.name) || '',
+      match.league || '',
+      'live'
+    ].filter(Boolean).join(' ')
+    
+    console.log('🔍 Searching YouTube for:', searchQuery)
+    
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?` +
+      `part=snippet&type=video&eventType=live&maxResults=1&` +
+      `q=${encodeURIComponent(searchQuery)}&key=${YOUTUBE_API_KEY}`
+    )
+    
+    if (!response.ok) {
+      console.warn('YouTube API error:', response.status)
+      return null
+    }
+    
+    const data = await response.json()
+    
+    if (data.items && data.items.length > 0) {
+      const video = data.items[0]
+      const youtubeUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`
+      
+      console.log('✅ Found YouTube live stream:', {
+        title: video.snippet.title,
+        channel: video.snippet.channelTitle,
+        url: youtubeUrl
+      })
+      
+      return youtubeUrl
+    }
+    
+    console.log('❌ No live streams found on YouTube for:', searchQuery)
+    return null
+    
+  } catch (error) {
+    console.error('YouTube search error:', error)
+    return null
+  }
+}
+
 // Status helpers
 const getStatusInfo = (status) => {
   switch (status) {
@@ -188,13 +240,6 @@ const adjustValorantTimezone = (timestamp) => {
   const date = new Date(timestampMs)
   // Add 7 hours to convert from UTC to Vietnam timezone
   return new Date(date.getTime() + 7 * 60 * 60 * 1000)
-}
-
-// Helper function to create search link for live matches without stream
-const createLiveSearchLink = (homeTeam, awayTeam, league) => {
-  const searchQuery = `${homeTeam} vs ${awayTeam} ${league} live stream`
-  const encodedQuery = encodeURIComponent(searchQuery)
-  return `https://www.google.com/search?q=site:youtube.com+${encodedQuery}&btnI=1`
 }
 
 // --- API Adapters --------------------------------------------------------
@@ -229,12 +274,7 @@ const ValorantAdapter = {
         },
         start: new Date(), // Live matches show current time
         region: 'International',
-        stream: match.match_page ? `${match.match_page}` : 
-                createLiveSearchLink(
-                  match.team1 || 'TBD',
-                  match.team2 || 'TBD',
-                  match.match_event || 'Valorant'
-                ),
+        stream: match.match_page ? `${match.match_page}` : '',
         venue: match.match_event || '',
         status: 'live',
         // Live-specific data
@@ -524,13 +564,7 @@ const LolAdapter = {
         },
         start: new Date(event.startTime),
         region: event.league?.region || 'International',
-        stream: event.streams?.[0]?.parameter || 
-                (event.state === 'inProgress' ? 
-                  createLiveSearchLink(
-                    event.match?.teams?.[0]?.name || 'TBD',
-                    event.match?.teams?.[1]?.name || 'TBD', 
-                    event.league?.name || 'LoL Esports'
-                  ) : ''),
+        stream: event.streams?.[0]?.parameter || '',
         venue: event.league?.name || '',
         status: event.state === 'inProgress' ? 'live' :
                 event.state === 'completed' ? 'finished' : 'upcoming',
@@ -673,12 +707,7 @@ const FootballAdapter = {
               start: new Date(match.utcDate),
               venue: match.venue || '',
               region: match.area?.name || match.competition?.area?.name || 'International',
-              stream: (match.status === 'IN_PLAY' || match.status === 'PAUSED') ? 
-                      createLiveSearchLink(
-                        match.homeTeam?.name || 'Home',
-                        match.awayTeam?.name || 'Away',
-                        displayLeagueName
-                      ) : '',
+              stream: '',
               status: match.status === 'FINISHED' ? 'finished' :
                       match.status === 'IN_PLAY' || match.status === 'PAUSED' ? 'live' : 'upcoming',
               // Live-specific data for Football
@@ -759,7 +788,7 @@ function createSampleData(game, from, to) {
         },
         start: new Date(),
         region: 'International',
-        stream: createLiveSearchLink('Team Heretics', 'GIANTX', 'Valorant Champions 2025'),
+        stream: 'https://www.vlr.gg/542274/team-heretics-vs-giantx-valorant-champions-2025-lr1',
         venue: 'Valorant Champions 2025',
         status: 'live',
         currentMap: 'Lotus',
@@ -874,7 +903,7 @@ function createSampleData(game, from, to) {
         away: { name: 'Liverpool', score: 1 },
         start: new Date(),
         region: 'England',
-        stream: createLiveSearchLink('Manchester United', 'Liverpool', 'Premier League'),
+        stream: '',
         venue: 'Old Trafford',
         status: 'live',
         currentMinute: 67,
@@ -1010,6 +1039,56 @@ function useSchedule({ activeSport, from, to }) {
   return { data, loading, error, refetch: () => window.location.reload() }
 }
 
+// --- Watch Live Button Component ------------------------------------------
+function WatchLiveButton({ match }) {
+  const [isSearching, setIsSearching] = useState(false)
+  const [foundStream, setFoundStream] = useState(null)
+  
+  const handleWatchLive = async () => {
+    // If match already has stream, use it
+    if (match.stream) {
+      window.open(match.stream, '_blank')
+      return
+    }
+    
+    // If we already found a stream, use it
+    if (foundStream) {
+      window.open(foundStream, '_blank')
+      return
+    }
+    
+    // Search for YouTube live stream
+    setIsSearching(true)
+    try {
+      const youtubeUrl = await searchYouTubeLiveStream(match)
+      if (youtubeUrl) {
+        setFoundStream(youtubeUrl)
+        window.open(youtubeUrl, '_blank')
+      } else {
+        alert('Không tìm thấy live stream cho trận đấu này')
+      }
+    } catch (error) {
+      console.error('Error searching for live stream:', error)
+      alert('Lỗi khi tìm kiếm live stream')
+    } finally {
+      setIsSearching(false)
+    }
+  }
+  
+  return (
+    <Button
+      variant="danger"
+      size="sm"
+      onClick={handleWatchLive}
+      className="animate-pulse"
+      disabled={isSearching}
+    >
+      <Play className="h-3 w-3" />
+      {isSearching ? 'Đang tìm...' : 'Xem Live'}
+    </Button>
+  )
+}
+
 // --- Match Card Component -------------------------------------------------
 function MatchCard({ match, isCompact }) {
   const statusInfo = getStatusInfo(match.status)
@@ -1140,17 +1219,7 @@ function MatchCard({ match, isCompact }) {
                 </span>
                 
                 {/* Watch Live Button */}
-                {match.stream && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => window.open(match.stream, '_blank')}
-                    className="animate-pulse"
-                  >
-                    <Play className="h-3 w-3" />
-                    Xem Live
-                  </Button>
-                )}
+                <WatchLiveButton match={match} />
               </div>
             </div>
             
