@@ -1216,8 +1216,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
                     isDarkMode ? 'text-red-300' : 'text-red-800'
                   }`}>
                     {match.currentGame && `${match.currentGame}`}
-                    {match.bestOf && ` (Bo${match.bestOf})`}
-                    {match.liveGameState && ` - ${match.liveGameState}`}
+                    {match.liveGameState && `${match.liveGameState}`}
                   </span>
                 )}
                 
