@@ -127,10 +127,41 @@ const getGameInfo = (game) => {
 }
 
 const fmtTime = (date) => {
-  return new Date(date).toLocaleTimeString('vi-VN', {
+  const now = new Date()
+  const matchDate = new Date(date)
+  
+  // Check if match is today
+  const isToday = now.toDateString() === matchDate.toDateString()
+  
+  // Check if match is tomorrow
+  const tomorrow = new Date(now)
+  tomorrow.setDate(now.getDate() + 1)
+  const isTomorrow = tomorrow.toDateString() === matchDate.toDateString()
+  
+  // Check if match is yesterday
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  const isYesterday = yesterday.toDateString() === matchDate.toDateString()
+  
+  const timeStr = matchDate.toLocaleTimeString('vi-VN', {
     hour: '2-digit',
     minute: '2-digit'
   })
+  
+  if (isToday) {
+    return `Hôm nay ${timeStr}`
+  } else if (isTomorrow) {
+    return `Ngày mai ${timeStr}`
+  } else if (isYesterday) {
+    return `Hôm qua ${timeStr}`
+  } else {
+    // For other days, show date and time
+    const dateStr = matchDate.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit'
+    })
+    return `${dateStr} ${timeStr}`
+  }
 }
 
 const shortenTeamName = (teamName) => {
