@@ -770,13 +770,15 @@ const YouTubeAPIManager = {
       const response = await fetch(fullUrl)
       
       if (response.ok) {
-        return response
+        const data = await response.json()
+        return data
       } else if (response.status === 403 && this.hasMoreKeys() && retryCount < this.apiKeys.length) {
         console.warn(`⚠️ API key #${this.currentKeyIndex + 1} failed (403), trying next key...`)
         this.switchToNextKey()
         return this.makeRequest(url, retryCount + 1)
       } else {
-        return response // Return failed response for other error handling
+        console.warn(`⚠️ API request failed with status ${response.status}`)
+        return null // Return null for failed requests
       }
     } catch (error) {
       if (this.hasMoreKeys() && retryCount < this.apiKeys.length) {
@@ -784,11 +786,15 @@ const YouTubeAPIManager = {
         this.switchToNextKey()
         return this.makeRequest(url, retryCount + 1)
       } else {
-        throw error
+        console.error('❌ All API keys failed or network error:', error)
+        return null
       }
     }
   }
 }
+
+// Create alias for easier access
+const youtubeApiManager = YouTubeAPIManager
 
 const PubgAdapter = {
   async fetch({ from, to }) {
