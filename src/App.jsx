@@ -2156,13 +2156,24 @@ function useSchedule({ activeSport, from, to }) {
         let allMatches = []
         
         if (activeSport === 'all') {
-          // Fetch from all adapters
+          // For "all" mode, use different time ranges for different game types
+          const now = new Date()
+          
+          // Extended time range for PUBG/TFT (30 days future)
+          const extendedFrom = new Date(now.getTime() - 1 * 60 * 60 * 1000) // 1 hour ago
+          const extendedTo = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
+          
+          // Standard time range for other sports (48 hours)
+          const standardFrom = from // Use the passed from parameter (24 hours ago)
+          const standardTo = to // Use the passed to parameter (48 hours)
+          
+          // Fetch from all adapters with appropriate time ranges
           const results = await Promise.allSettled([
-            adapters.valorant.fetch({ from, to }),
-            adapters.pubg.fetch({ from, to }),
-            adapters.tft.fetch({ from, to }),
-            adapters.lol.fetch({ from, to }),
-            adapters.football.fetch({ from, to }),
+            adapters.valorant.fetch({ from: standardFrom, to: standardTo }),
+            adapters.pubg.fetch({ from: extendedFrom, to: extendedTo }),
+            adapters.tft.fetch({ from: extendedFrom, to: extendedTo }),
+            adapters.lol.fetch({ from: standardFrom, to: standardTo }),
+            adapters.football.fetch({ from: standardFrom, to: standardTo }),
           ])
           
           results.forEach((result, index) => {
@@ -2782,27 +2793,29 @@ export default function App() {
   }, [isDarkMode])
 
   
-  // Time range: 24h before to 24h after current time (extended for PUBG/TFT)
+  // Time range with different filters for different game types
   const dateFrom = useMemo(() => {
     const now = new Date()
     // For PUBG and TFT: show events from current time (no past events)
-    // For "all" mode: also apply extended logic to include PUBG/TFT events
-    // For other sports: 24 hours ago
-    if (activeSport === 'pubg' || activeSport === 'tft' || activeSport === 'all') {
+    if (activeSport === 'pubg' || activeSport === 'tft') {
       return new Date(now.getTime() - 1 * 60 * 60 * 1000) // 1 hour ago to catch recently started events
     }
+    // For "all" mode and other sports: 24 hours ago to include recent matches
     return new Date(now.getTime() - 24 * 60 * 60 * 1000) // 24 hours ago
   }, [activeSport])
   
   const dateTo = useMemo(() => {
     const now = new Date()
-    // For PUBG and TFT: show all upcoming events in the future (30 days)
-    // For "all" mode: also extend to 30 days to include PUBG/TFT events
-    // For other sports only: 24 hours from now
-    if (activeSport === 'pubg' || activeSport === 'tft' || activeSport === 'all') {
+    // For PUBG and TFT only: show all upcoming events (30 days)
+    if (activeSport === 'pubg' || activeSport === 'tft') {
       return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
     }
-    return new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24 hours from now
+    // For "all" mode: 48 hours to include Football/Valorant/LoL upcoming matches
+    if (activeSport === 'all') {
+      return new Date(now.getTime() + 48 * 60 * 60 * 1000) // 48 hours from now
+    }
+    // For other individual sports: 48 hours from now
+    return new Date(now.getTime() + 48 * 60 * 60 * 1000) // 48 hours from now
   }, [activeSport])
 
   // Fetch data
