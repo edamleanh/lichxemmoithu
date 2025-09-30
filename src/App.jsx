@@ -2918,7 +2918,7 @@ export default function App() {
           : 'bg-white/80 border-gray-200/50'
       }`}>
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 🏆 Lịch Thi Đấu Esports
@@ -2930,7 +2930,61 @@ export default function App() {
               </p>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              {/* Quick Navigation Buttons - Only show when data is available */}
+              {!loading && !error && groupedData.length > 0 && (
+                <>
+                  {groupedData.map(([status, matches]) => {
+                    const sectionConfig = {
+                      live: {
+                        label: 'LIVE',
+                        icon: Play,
+                        variant: 'danger'
+                      },
+                      upcoming: {
+                        label: 'Sắp tới',
+                        icon: Clock,
+                        variant: 'primary'
+                      },
+                      finished: {
+                        label: 'Diễn ra rồi',
+                        icon: Trophy,
+                        variant: 'outline'
+                      }
+                    }
+                    
+                    const config = sectionConfig[status]
+                    if (!config) return null
+                    
+                    const SectionIcon = config.icon
+                    
+                    return (
+                      <Button
+                        key={status}
+                        variant={config.variant}
+                        isDarkMode={isDarkMode}
+                        onClick={() => scrollToSection(status)}
+                        className="relative"
+                        title={`Nhảy đến ${config.label}`}
+                      >
+                        <SectionIcon className="h-4 w-4" />
+                        <span className="hidden sm:inline">{config.label}</span>
+                        <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
+                          isDarkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
+                        }`}>
+                          {matches.length}
+                        </span>
+                      </Button>
+                    )
+                  })}
+                  
+                  {/* Separator */}
+                  <div className={`w-px h-6 ${
+                    isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
+                  }`} />
+                </>
+              )}
+              
               <Button
                 variant="ghost"
                 isDarkMode={isDarkMode}
@@ -2990,85 +3044,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Quick Section Navigation */}
-        {!loading && !error && groupedData.length > 0 && (
-          <div className="mb-6">
-            <div className={`rounded-2xl border p-4 ${
-              isDarkMode 
-                ? 'bg-gray-800/50 border-gray-600/50' 
-                : 'bg-white/50 border-gray-200/50'
-            }`}>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Target className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                  <span className={`text-sm font-medium ${
-                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    Điều hướng nhanh:
-                  </span>
-                </div>
-                
-                <div className="flex items-center gap-2 flex-wrap">
-                  {groupedData.map(([status, matches]) => {
-                    const sectionConfig = {
-                      live: {
-                        label: 'LIVE',
-                        icon: Play,
-                        color: 'from-red-500 to-red-600',
-                        bgColor: isDarkMode ? 'bg-red-900/20' : 'bg-red-50',
-                        textColor: isDarkMode ? 'text-red-300' : 'text-red-700',
-                        borderColor: isDarkMode ? 'border-red-700/50' : 'border-red-200',
-                        ref: liveRef
-                      },
-                      upcoming: {
-                        label: 'Sắp tới',
-                        icon: Clock,
-                        color: 'from-blue-500 to-blue-600',
-                        bgColor: isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50',
-                        textColor: isDarkMode ? 'text-blue-300' : 'text-blue-700',
-                        borderColor: isDarkMode ? 'border-blue-700/50' : 'border-blue-200',
-                        ref: upcomingRef
-                      },
-                      finished: {
-                        label: 'Diễn ra rồi',
-                        icon: Trophy,
-                        color: 'from-green-500 to-green-600',
-                        bgColor: isDarkMode ? 'bg-green-900/20' : 'bg-green-50',
-                        textColor: isDarkMode ? 'text-green-300' : 'text-green-700',
-                        borderColor: isDarkMode ? 'border-green-700/50' : 'border-green-200',
-                        ref: finishedRef
-                      }
-                    }
-                    
-                    const config = sectionConfig[status]
-                    if (!config) return null
-                    
-                    const SectionIcon = config.icon
-                    
-                    return (
-                      <button
-                        key={status}
-                        onClick={() => scrollToSection(status)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 hover:scale-105 ${
-                          config.bgColor
-                        } ${config.borderColor} ${config.textColor} hover:shadow-md`}
-                        title={`Nhảy đến section ${config.label}`}
-                      >
-                        <SectionIcon className="h-4 w-4" />
-                        <span className="text-sm font-medium">{config.label}</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          isDarkMode ? 'bg-gray-700/60' : 'bg-white/60'
-                        }`}>
-                          {matches.length}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Content */}
         <div className="space-y-8">
