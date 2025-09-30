@@ -1414,7 +1414,7 @@ const TftAdapter = {
         start: new Date(),
         region: 'Global',
         stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-        venue: 'TFT Esports',
+        venue: 'TFT Championship',
         status: 'live',
         videoId: item.id.videoId
       }))
@@ -1473,7 +1473,7 @@ const TftAdapter = {
              new Date(item.snippet.publishedAt),
       region: 'Global',
       stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-      venue: 'TFT Esports',
+      venue: 'TFT Championship',
       status: 'upcoming',
       videoId: item.id.videoId
     }))
@@ -1490,11 +1490,14 @@ const TftAdapter = {
   // Helper: Extract league name from title
   extractLeague(title) {
     const leaguePatterns = [
-      /TFT World Championship|TFT Worlds|TFT Championship/i,
-      /TFT Set \d+|Set \d+/i,
-      /Teamfight Tactics Championship|TFT Tournament/i,
+      /TFT World Championship|TFT Worlds|Teamfight Tactics World Championship/i,
+      /TFT Championship|Teamfight Tactics Championship/i,
+      /TFT Set \d+ Championship|Set \d+ Championship/i,
       /TFT Regional|TFT Masters|TFT Challenger/i,
-      /Riot Games/i
+      /TFT Tournament|Teamfight Tactics Tournament/i,
+      /TFT Set \d+|Set \d+/i,
+      /Riot Games.*TFT|TFT.*Riot/i,
+      /Teamfight Tactics/i
     ]
     
     for (const pattern of leaguePatterns) {
@@ -1502,21 +1505,22 @@ const TftAdapter = {
       if (match) return match[0]
     }
     
-    return 'TFT Tournament'
+    return 'TFT Esports'
   },
 
   // Helper: Extract stage from title
   extractStage(title) {
     const stagePatterns = [
-      /Grand Final|Chung kết/i,
-      /Semi.?Final|Bán kết/i,
-      /Quarter.?Final|Tứ kết/i,
-      /Group Stage|Vòng bảng/i,
-      /Playoff|Loại trực tiếp/i,
-      /Week \d+|Tuần \d+/i,
-      /Day \d+|Ngày \d+/i,
-      /Round \d+|Vòng \d+/i,
-      /Set \d+/i
+      /Grand Final|Chung kết|Finals/i,
+      /Semi.?Final|Bán kết|Semifinals/i,
+      /Quarter.?Final|Tứ kết|Quarterfinals/i,
+      /Group Stage|Vòng bảng|Groups/i,
+      /Playoff|Loại trực tiếp|Playoffs/i,
+      /Week \d+|Tuần \d+|W\d+/i,
+      /Day \d+|Ngày \d+|D\d+/i,
+      /Round \d+|Vòng \d+|R\d+/i,
+      /Set \d+ Championship|Set \d+/i,
+      /Regional|Masters|Challenger/i
     ]
     
     for (const pattern of stagePatterns) {
@@ -1524,7 +1528,7 @@ const TftAdapter = {
       if (match) return match[0]
     }
     
-    return 'Tournament Match'
+    return 'Championship'
   },
 
   // Helper: Extract player names (TFT is individual players, not teams)
@@ -1984,7 +1988,7 @@ function createSampleData(game, from, to) {
         start: new Date(),
         region: 'Global',
         stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'TFT Esports',
+        venue: 'TFT Championship',
         status: 'live',
         videoId: 'tft_live123'
       },
@@ -2002,7 +2006,7 @@ function createSampleData(game, from, to) {
         start: new Date(now.getTime() - 3 * 60 * 60 * 1000),
         region: 'Global',
         stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'TFT Esports',
+        venue: 'TFT Championship',
         status: 'finished',
         videoId: 'tft_finished456'
       },
@@ -2020,7 +2024,7 @@ function createSampleData(game, from, to) {
         start: new Date(now.getTime() + 8 * 60 * 60 * 1000),
         region: 'Global',
         stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'TFT Esports',
+        venue: 'TFT Championship',
         status: 'upcoming',
         videoId: 'tft_upcoming789'
       }
