@@ -31,7 +31,7 @@ export default async function handler(req, res) {
           'Accept': 'application/json',
           'Referer': 'https://lolesports.com/',
           'Origin': 'https://lolesports.com',
-          'x-api-key': 'RGAPI-dfe4998c-4245-4044-b45a-279029f904ce'
+          'x-api-key': '0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z'
         }
       });
 
