@@ -2810,12 +2810,12 @@ export default function App() {
     if (activeSport === 'pubg' || activeSport === 'tft') {
       return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
     }
-    // For "all" mode: 48 hours to include Football/Valorant/LoL upcoming matches
+    // For "all" mode: 24 hours to include Football/Valorant/LoL upcoming matches
     if (activeSport === 'all') {
-      return new Date(now.getTime() + 48 * 60 * 60 * 1000) // 48 hours from now
+      return new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24 hours from now
     }
-    // For other individual sports: 48 hours from now
-    return new Date(now.getTime() + 48 * 60 * 60 * 1000) // 48 hours from now
+    // For other individual sports: 24 hours from now
+    return new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24 hours from now
   }, [activeSport])
 
   // Fetch data
