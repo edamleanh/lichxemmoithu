@@ -256,27 +256,13 @@ function MobileMatchCard({ match, isDarkMode }) {
           </Badge>
         </div>
         
-        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          {fmtTime(match.start)}
-        </div>
-      </div>
-
-      {/* Mobile League Info - Inline with Date/Time */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className={`font-medium text-xs truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            {match.league}
-          </span>
-          {match.stage && (
-            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
-              isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
-            }`}>
-              {match.stage}
-            </span>
-          )}
+        {/* League info in center */}
+        <div className={`text-xs font-medium truncate px-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          {match.league}
+          {match.stage && <span className="text-gray-500"> • {match.stage}</span>}
         </div>
         
-        <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
           {fmtTime(match.start)}
         </div>
       </div>
