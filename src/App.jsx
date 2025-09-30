@@ -8,6 +8,11 @@
 
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+
+// Import mobile layout and hooks
+import MobileLayout from './components/MobileLayout'
+import { useIsMobile } from './hooks/useIsMobile'
+
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -2787,6 +2792,9 @@ export default function App() {
     return saved ? JSON.parse(saved) : false
   })
 
+  // Mobile detection
+  const isMobile = useIsMobile()
+
   // Toggle section collapse state
   const toggleSectionCollapse = (sectionKey) => {
     setCollapsedSections(prev => ({
@@ -2811,7 +2819,7 @@ export default function App() {
     const targetRef = refs[sectionType]
     if (targetRef?.current) {
       // Calculate offset to account for sticky header
-      const headerHeight = 120 // Approximate header height + padding
+      const headerHeight = isMobile ? 64 : 120 // Smaller header on mobile
       const elementPosition = targetRef.current.getBoundingClientRect().top
       const offsetPosition = elementPosition + window.pageYOffset - headerHeight
       
@@ -2904,8 +2912,29 @@ export default function App() {
     return result
   }, [filteredData])
 
+  // Use mobile layout for mobile devices
+  if (isMobile) {
+    return (
+      <MobileLayout
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
+        activeSport={activeSport}
+        setActiveSport={setActiveSport}
+        groupedData={groupedData}
+        loading={loading}
+        error={error}
+        refetch={refetch}
+        collapsedSections={collapsedSections}
+        toggleSectionCollapse={toggleSectionCollapse}
+        scrollToSection={scrollToSection}
+        liveRef={liveRef}
+        upcomingRef={upcomingRef}
+        finishedRef={finishedRef}
+      />
+    )
+  }
 
-
+  // Desktop layout (existing code)
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
       isDarkMode 
