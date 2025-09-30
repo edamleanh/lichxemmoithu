@@ -183,27 +183,37 @@ export const mobileGameConfig = {
     valorant: {
       showRounds: false, // Hide round details on mobile
       showMap: true,
-      maxTitleLength: 30
+      maxTitleLength: 30,
+      showLeagueInHeader: true, // Show league info in header
+      showStageBadge: true // Show stage as badge
     },
     pubg: {
       showThumbnail: true,
       showViewCount: true,
-      maxTitleLength: 40
+      maxTitleLength: 40,
+      showLeagueInHeader: true,
+      showStageBadge: true
     },
     tft: {
       showThumbnail: false, // Hide thumbnails on mobile for TFT
       showViewCount: true,
-      maxTitleLength: 35
+      maxTitleLength: 35,
+      showLeagueInHeader: true,
+      showStageBadge: true
     },
     lol: {
       showCurrentGame: true,
       showBestOf: false, // Hide best of info on mobile
-      maxTitleLength: 30
+      maxTitleLength: 30,
+      showLeagueInHeader: true,
+      showStageBadge: true
     },
     football: {
       showMinute: true,
       showReferee: false, // Hide referee on mobile
-      maxTitleLength: 25
+      maxTitleLength: 25,
+      showLeagueInHeader: true,
+      showStageBadge: true
     }
   },
   

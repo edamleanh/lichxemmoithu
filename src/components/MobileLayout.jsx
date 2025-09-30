@@ -261,6 +261,20 @@ function MobileMatchCard({ match, isDarkMode }) {
         </div>
       </div>
 
+      {/* Mobile League Info - Moved to header area */}
+      <div className={`text-xs mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+        <div className="flex items-center justify-between">
+          <span className="font-medium truncate">{match.league}</span>
+          {match.stage && (
+            <span className={`text-xs px-2 py-0.5 rounded-full ${
+              isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+            }`}>
+              {match.stage}
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* Mobile Teams Layout - Vertical for small screens */}
       <div className="space-y-2 mb-3">
         {/* Team 1 */}
@@ -316,12 +330,6 @@ function MobileMatchCard({ match, isDarkMode }) {
             </span>
           )}
         </div>
-      </div>
-
-      {/* Mobile League Info - Compact */}
-      <div className={`text-xs mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-        <span className="font-medium">{match.league}</span>
-        {match.stage && <span className="text-gray-500"> • {match.stage}</span>}
       </div>
 
       {/* Mobile Live Info - Only show essential info */}
