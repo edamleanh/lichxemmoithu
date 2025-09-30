@@ -6,7 +6,7 @@
 // Sports: Valorant, PUBG, League of Legends, Football
 // -------------------------------------------------------------------------
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Calendar as CalendarIcon,
@@ -2798,6 +2798,29 @@ export default function App() {
     }))
   }
 
+  // Refs for section navigation
+  const liveRef = useRef(null)
+  const upcomingRef = useRef(null)
+  const finishedRef = useRef(null)
+
+  // Function to scroll to specific section
+  const scrollToSection = (sectionType) => {
+    const refs = {
+      live: liveRef,
+      upcoming: upcomingRef,
+      finished: finishedRef
+    }
+    
+    const targetRef = refs[sectionType]
+    if (targetRef?.current) {
+      targetRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest'
+      })
+    }
+  }
+
   // Save dark mode preference to localStorage
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(isDarkMode))
@@ -2967,7 +2990,85 @@ export default function App() {
           </div>
         </div>
 
-
+        {/* Quick Section Navigation */}
+        {!loading && !error && groupedData.length > 0 && (
+          <div className="mb-6">
+            <div className={`rounded-2xl border p-4 ${
+              isDarkMode 
+                ? 'bg-gray-800/50 border-gray-600/50' 
+                : 'bg-white/50 border-gray-200/50'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Target className={`h-5 w-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                  <span className={`text-sm font-medium ${
+                    isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    Điều hướng nhanh:
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-wrap">
+                  {groupedData.map(([status, matches]) => {
+                    const sectionConfig = {
+                      live: {
+                        label: 'LIVE',
+                        icon: Play,
+                        color: 'from-red-500 to-red-600',
+                        bgColor: isDarkMode ? 'bg-red-900/20' : 'bg-red-50',
+                        textColor: isDarkMode ? 'text-red-300' : 'text-red-700',
+                        borderColor: isDarkMode ? 'border-red-700/50' : 'border-red-200',
+                        ref: liveRef
+                      },
+                      upcoming: {
+                        label: 'Sắp tới',
+                        icon: Clock,
+                        color: 'from-blue-500 to-blue-600',
+                        bgColor: isDarkMode ? 'bg-blue-900/20' : 'bg-blue-50',
+                        textColor: isDarkMode ? 'text-blue-300' : 'text-blue-700',
+                        borderColor: isDarkMode ? 'border-blue-700/50' : 'border-blue-200',
+                        ref: upcomingRef
+                      },
+                      finished: {
+                        label: 'Diễn ra rồi',
+                        icon: Trophy,
+                        color: 'from-green-500 to-green-600',
+                        bgColor: isDarkMode ? 'bg-green-900/20' : 'bg-green-50',
+                        textColor: isDarkMode ? 'text-green-300' : 'text-green-700',
+                        borderColor: isDarkMode ? 'border-green-700/50' : 'border-green-200',
+                        ref: finishedRef
+                      }
+                    }
+                    
+                    const config = sectionConfig[status]
+                    if (!config) return null
+                    
+                    const SectionIcon = config.icon
+                    
+                    return (
+                      <button
+                        key={status}
+                        onClick={() => scrollToSection(status)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-200 hover:scale-105 ${
+                          config.bgColor
+                        } ${config.borderColor} ${config.textColor} hover:shadow-md`}
+                        title={`Nhảy đến section ${config.label}`}
+                      >
+                        <SectionIcon className="h-4 w-4" />
+                        <span className="text-sm font-medium">{config.label}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          isDarkMode ? 'bg-gray-700/60' : 'bg-white/60'
+                        }`}>
+                          {matches.length}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="space-y-8">
@@ -3051,9 +3152,20 @@ export default function App() {
             const config = statusConfig[status]
             const isCollapsed = collapsedSections[status]
             
+            // Get appropriate ref for this section
+            const getSectionRef = (status) => {
+              switch(status) {
+                case 'live': return liveRef
+                case 'upcoming': return upcomingRef
+                case 'finished': return finishedRef
+                default: return null
+              }
+            }
+            
             return (
               <motion.section
                 key={status}
+                ref={getSectionRef(status)}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-4"
