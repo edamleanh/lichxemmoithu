@@ -250,10 +250,6 @@ function MobileMatchCard({ match, isDarkMode }) {
               <GameIcon className="h-3 w-3 text-white" />
             )}
           </div>
-          <Badge variant={statusInfo.variant} className="text-xs">
-            <StatusIcon className="h-2.5 w-2.5" />
-            {statusInfo.label}
-          </Badge>
         </div>
         
         {/* League info in center */}
