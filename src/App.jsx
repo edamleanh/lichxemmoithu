@@ -2439,112 +2439,54 @@ function MatchCard({ match, isCompact, isDarkMode }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         whileHover={{ y: -4 }}
-        className={`group relative overflow-hidden rounded-2xl backdrop-blur-sm border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${
+        className={`group relative overflow-hidden rounded-2xl backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 ${
           isDarkMode 
-            ? 'bg-gray-800/90 border-gray-700 hover:border-purple-400/50' 
-            : 'bg-white/90 border-gray-200 hover:border-purple-400/50'
-        }`}
+            ? 'bg-gray-800/95 border border-gray-600/60 hover:bg-gray-700/95' 
+            : 'bg-gray-200/95 border border-gray-400/60 hover:bg-gray-100/95'
+        } ${isCompact ? 'p-4' : 'p-6'}`}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200/50">
-          <div className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${gameInfo.color} flex items-center justify-center`}>
-              <img src={gameInfo.icon} alt="TFT" className="w-5 h-5" />
+        {/* Background Gradient */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+        
+        {/* TFT YouTube Video Layout */}
+        <div className="space-y-4">
+          {/* Header - Same format as PUBG cards */}
+          <div className="grid grid-cols-3 items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
+                {gameInfo.isImage ? (
+                  <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
+                ) : (
+                  <GameIcon className="h-4 w-4 text-white" />
+                )}
+              </div>
             </div>
-            <div>
-              <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                {match.league}
-              </p>
-              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {match.stage}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Badge variant={statusInfo.variant}>
-              <StatusIcon className="h-3 w-3" />
-              {statusInfo.label}
-            </Badge>
-            {match.status === 'live' && match.viewCount && (
-              <Badge variant="default">
-                <Eye className="h-3 w-3" />
-                {match.viewCount.toLocaleString()}
+            
+            <div className="flex items-center justify-center">
+              <Badge variant={statusInfo.variant}>
+                <StatusIcon className="h-3 w-3" />
+                {statusInfo.label}
               </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 space-y-3">
-          {/* Video Title */}
-          <h3 className={`font-semibold text-base line-clamp-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-            {match.title}
-          </h3>
-          
-          {/* Players/Time */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {match.home?.name}
-              </span>
-              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>vs</span>
-              <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {match.away?.name}
-              </span>
             </div>
             
-            <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            <div className={`flex items-center gap-2 text-sm justify-end ${
+              isDarkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              <Clock className="h-4 w-4" />
               {fmtTime(match.start)}
-            </span>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-2">
-            <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              {match.venue}
-            </span>
-            
-            <div className="flex gap-2">
-              {match.status === 'live' && (
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => window.open(match.stream, '_blank')}
-                  className="animate-pulse"
-                >
-                  <Play className="h-3 w-3" />
-                  Xem Live
-                </Button>
-              )}
-              
-              {match.status === 'upcoming' && match.stream && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => window.open(match.stream, '_blank')}
-                >
-                  <Clock className="h-3 w-3" />
-                  Đặt nhắc nhở
-                </Button>
-              )}
-              
-              {match.status === 'finished' && match.stream && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(match.stream, '_blank')}
-                >
-                  <Play className="h-3 w-3" />
-                  Xem lại
-                </Button>
-              )}
             </div>
           </div>
-          
-          {/* Status indicator for TFT */}
-          {match.status === 'live' && (
-            <div className={`text-xs ${
+
+          {/* Video Title */}
+          <div>
+            <h3 className={`font-semibold text-lg leading-tight line-clamp-2 ${
+              isDarkMode ? 'text-gray-100' : 'text-gray-900'
+            }`}>
+              {match.title || match.league || 'TFT Tournament'}
+            </h3>
+            
+            {/* View count and live viewers info */}
+            <div className={`flex items-center gap-4 mt-2 text-sm ${
               isDarkMode ? 'text-gray-400' : 'text-gray-600'
             }`}>
               {match.status === 'live' && match.concurrentViewers && (
@@ -2555,8 +2497,74 @@ function MatchCard({ match, isCompact, isDarkMode }) {
                   </span>
                 </div>
               )}
+              
+              {match.viewCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <Eye className="h-3 w-3" />
+                  <span>{match.viewCount.toLocaleString()} lượt xem</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Players info and actions */}
+          <div className="space-y-3">
+            {/* Players/Time */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {match.home?.name}
+                </span>
+                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>vs</span>
+                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {match.away?.name}
+                </span>
+              </div>
+              
+              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                {match.venue}
+              </span>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end">
+              <div className="flex gap-2">
+                {match.status === 'live' && (
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => window.open(match.stream, '_blank')}
+                    className="animate-pulse"
+                  >
+                    <Play className="h-3 w-3" />
+                    Xem Live
+                  </Button>
+                )}
+                
+                {match.status === 'upcoming' && match.stream && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => window.open(match.stream, '_blank')}
+                  >
+                    <Clock className="h-3 w-3" />
+                    Đặt nhắc nhở
+                  </Button>
+                )}
+                
+                {match.status === 'finished' && match.stream && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.open(match.stream, '_blank')}
+                  >
+                    <Play className="h-3 w-3" />
+                    Xem lại
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </motion.div>
     )
