@@ -2785,16 +2785,26 @@ export default function App() {
   }, [isDarkMode])
 
   
-  // Time range: 24h before to 24h after current time
+  // Time range: 24h before to 24h after current time (extended for PUBG/TFT)
   const dateFrom = useMemo(() => {
     const now = new Date()
+    // For PUBG and TFT: show events from current time (no past events)
+    // For other sports: 24 hours ago
+    if (activeSport === 'pubg' || activeSport === 'tft') {
+      return new Date(now.getTime() - 1 * 60 * 60 * 1000) // 1 hour ago to catch recently started events
+    }
     return new Date(now.getTime() - 24 * 60 * 60 * 1000) // 24 hours ago
-  }, [])
+  }, [activeSport])
   
   const dateTo = useMemo(() => {
     const now = new Date()
+    // For PUBG and TFT: show all upcoming events in the future (30 days)
+    // For other sports: 24 hours from now
+    if (activeSport === 'pubg' || activeSport === 'tft') {
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+    }
     return new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24 hours from now
-  }, [])
+  }, [activeSport])
 
   // Fetch data
   const { data, loading, error, refetch } = useSchedule({ 
