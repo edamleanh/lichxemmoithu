@@ -1,4 +1,121 @@
-// Vercel Serverless Function for Football API
+// Vercel Serverless Function for Football API với Firestore Cache
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+
+// Cấu hình Firebase với thông tin hardcode
+const firebaseConfig = {
+  apiKey: "AIzaSyCfBIsyq2N5mFDJwmcu-ISUs4cKIMlUwn4",
+  authDomain: "lickxemmoithu.firebaseapp.com",
+  projectId: "lickxemmoithu",
+  storageBucket: "lickxemmoithu.firebasestorage.app",
+  messagingSenderId: "1068842530441",
+  appId: "1:1068842530441:web:be4f3432ae9cd24ae3f858",
+  measurementId: "G-MWTMBCQ677"
+};
+
+// Khởi tạo Firebase (chỉ khởi tạo một lần)
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
+
+const db = getFirestore(app);
+
+// Hàm kiểm tra và lấy dữ liệu từ cache
+async function getCachedMatches(competition, dateFrom, dateTo) {
+  try {
+    const cacheDocId = `${competition}_${dateFrom}_${dateTo}`;
+    const cacheRef = doc(db, 'footballCache', cacheDocId);
+    const cacheDoc = await getDoc(cacheRef);
+    
+    if (cacheDoc.exists()) {
+      const cachedData = cacheDoc.data();
+      console.log('Football API - Tìm thấy cache:', cacheDocId);
+      return cachedData;
+    }
+    
+    console.log('Football API - Không tìm thấy cache:', cacheDocId);
+    return null;
+  } catch (error) {
+    console.error('Football API - Lỗi khi đọc cache:', error);
+    return null;
+  }
+}
+
+// Hàm lưu dữ liệu vào cache
+async function saveToCache(competition, dateFrom, dateTo, data) {
+  try {
+    const cacheDocId = `${competition}_${dateFrom}_${dateTo}`;
+    const cacheRef = doc(db, 'footballCache', cacheDocId);
+    
+    const cacheData = {
+      data,
+      lastUpdated: new Date().toISOString(),
+      competition,
+      dateFrom,
+      dateTo,
+      nextEarliestMatch: getEarliestMatchTime(data.matches)
+    };
+    
+    await setDoc(cacheRef, cacheData);
+    console.log('Football API - Đã lưu cache:', cacheDocId);
+  } catch (error) {
+    console.error('Football API - Lỗi khi lưu cache:', error);
+  }
+}
+
+// Hàm tìm thời gian trận đấu sớm nhất
+function getEarliestMatchTime(matches) {
+  if (!matches || matches.length === 0) return null;
+  
+  const now = new Date();
+  const upcomingMatches = matches
+    .map(match => new Date(match.utcDate))
+    .filter(date => date > now)
+    .sort((a, b) => a - b);
+  
+  return upcomingMatches.length > 0 ? upcomingMatches[0].toISOString() : null;
+}
+
+// Hàm kiểm tra xem có cần gọi API không
+async function shouldCallAPI(competition, dateFrom, dateTo) {
+  try {
+    const cacheDocId = `${competition}_${dateFrom}_${dateTo}`;
+    const cacheRef = doc(db, 'footballCache', cacheDocId);
+    const cacheDoc = await getDoc(cacheRef);
+    
+    if (!cacheDoc.exists()) {
+      console.log('Football API - Không có cache, cần gọi API');
+      return true;
+    }
+    
+    const cachedData = cacheDoc.data();
+    const now = new Date();
+    
+    // Nếu không có trận đấu sớm nhất, cache vẫn hợp lệ
+    if (!cachedData.nextEarliestMatch) {
+      console.log('Football API - Không có trận đấu sắp tới, sử dụng cache');
+      return false;
+    }
+    
+    const earliestMatchTime = new Date(cachedData.nextEarliestMatch);
+    
+    // Nếu thời gian hiện tại >= thời gian trận đấu sớm nhất, cần gọi API
+    if (now >= earliestMatchTime) {
+      console.log('Football API - Đã đến thời gian trận đấu sớm nhất, cần gọi API');
+      return true;
+    }
+    
+    console.log('Football API - Chưa đến thời gian trận đấu sớm nhất, sử dụng cache');
+    return false;
+  } catch (error) {
+    console.error('Football API - Lỗi khi kiểm tra cache:', error);
+    return true; // Nếu có lỗi, gọi API để đảm bảo dữ liệu
+  }
+}
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,7 +145,7 @@ export default async function handler(req, res) {
       return;
     }
     
-    // Handle /competitions/{id}/matches endpoint
+    // Handle /competitions/{id}/matches endpoint với cache
     const competitionMatch = urlPath.match(/^\/competitions\/([^\/]+)\/matches$/);
     if (competitionMatch) {
       const competition = competitionMatch[1];
@@ -37,11 +154,24 @@ export default async function handler(req, res) {
       console.log('Football API - Competition:', competition);
       console.log('Football API - Date range:', { dateFrom, dateTo });
       
-      // Get API key from environment variables or fallback to hardcoded
+      // Kiểm tra cache trước
+      const shouldCall = await shouldCallAPI(competition, dateFrom, dateTo);
+      
+      if (!shouldCall) {
+        const cachedData = await getCachedMatches(competition, dateFrom, dateTo);
+        if (cachedData) {
+          console.log('Football API - Trả về dữ liệu từ cache');
+          res.status(200).json(cachedData.data);
+          return;
+        }
+      }
+      
+      // Gọi API nếu cần thiết
+      console.log('Football API - Gọi API mới');
       const apiKey = process.env.VITE_FOOTBALL_API_KEY || process.env.FOOTBALL_API_KEY || '354c9341dac74c788f59795973d8099d';
       
       if (!apiKey) {
-        console.error('Football API - No API key found');
+        console.error('Football API - Không tìm thấy API key');
         res.status(500).json({ error: 'Football API key not configured' });
         return;
       }
@@ -51,7 +181,7 @@ export default async function handler(req, res) {
         apiUrl += `?dateFrom=${dateFrom}&dateTo=${dateTo}`;
       }
       
-      console.log('Football API - Calling:', apiUrl);
+      console.log('Football API - Đang gọi:', apiUrl);
 
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -70,12 +200,16 @@ export default async function handler(req, res) {
       }
 
       const data = await response.json();
-      console.log('Football API - Success, matches found:', data.matches?.length || 0);
+      console.log('Football API - Thành công, số trận đấu tìm thấy:', data.matches?.length || 0);
+      
+      // Lưu vào cache
+      await saveToCache(competition, dateFrom, dateTo, data);
+      
       res.status(200).json(data);
       return;
     }
     
-    // Legacy support - direct competition parameter
+    // Legacy support - direct competition parameter với cache
     const { competition, dateFrom, dateTo } = req.query;
     
     if (!competition) {
@@ -92,7 +226,19 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Get API key from environment variables or fallback to hardcoded
+    // Kiểm tra cache cho legacy support
+    const shouldCall = await shouldCallAPI(competition, dateFrom, dateTo);
+    
+    if (!shouldCall) {
+      const cachedData = await getCachedMatches(competition, dateFrom, dateTo);
+      if (cachedData) {
+        console.log('Football API - Trả về dữ liệu từ cache (legacy)');
+        res.status(200).json(cachedData.data);
+        return;
+      }
+    }
+
+    // Gọi API cho legacy support
     const apiKey = process.env.VITE_FOOTBALL_API_KEY || process.env.FOOTBALL_API_KEY || '354c9341dac74c788f59795973d8099d';
     
     if (!apiKey) {
@@ -117,6 +263,10 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
+    
+    // Lưu vào cache
+    await saveToCache(competition, dateFrom, dateTo, data);
+    
     res.status(200).json(data);
 
   } catch (error) {
