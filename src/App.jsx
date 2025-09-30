@@ -1690,25 +1690,36 @@ const LolAdapter = {
 
 const FootballAdapter = {
   async fetch({ from, to }) {
+    console.log('🏈 FootballAdapter.fetch() called with:', { from, to })
+    
     try {
       // Use Vite proxy instead of direct API calls
       const baseURL = '/api/football'
+      console.log('🏈 Football - Testing API connection...')
       
       // Test API connection first with timeout
       try {
         const controller = new AbortController()
         setTimeout(() => controller.abort(), 5000) // 5 second timeout
         
+        console.log('🏈 Football - Calling test endpoint: /api/football/competitions')
         const testResponse = await fetch('/api/football/competitions', {
           signal: controller.signal
         })
+        
+        console.log('🏈 Football - Test response status:', testResponse.status)
+        
         if (!testResponse.ok) {
-          console.warn('Football API test failed:', testResponse.status)
+          console.warn('🏈 Football API test failed:', testResponse.status)
+          console.warn('🏈 Football - Falling back to sample data')
           // If test fails, return sample data immediately
           return createSampleData('football', from, to)
         }
+        
+        console.log('🏈 Football - API test successful, proceeding with real data fetch')
       } catch (apiError) {
-        console.warn('Football API connection failed:', apiError.message)
+        console.warn('🏈 Football API connection failed:', apiError.message)
+        console.warn('🏈 Football - Falling back to sample data due to connection error')
         // If API fails, return sample data immediately
         return createSampleData('football', from, to)
       }
@@ -1720,6 +1731,8 @@ const FootballAdapter = {
         { id: 'CL', name: 'Champions League' },
       ]
       
+      console.log('🏈 Football - Will fetch data for leagues:', leagues.map(l => l.name))
+      
       let allMatches = []
       
       // Format dates for API
@@ -1730,34 +1743,42 @@ const FootballAdapter = {
       const dateFrom = formatDate(from || new Date())
       const dateTo = formatDate(to || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
       
+      console.log('🏈 Football - Date range:', { dateFrom, dateTo })
+      
       for (const league of leagues) {
         try {
+          console.log(`🏈 Football - Fetching ${league.name} (${league.id}) matches...`)
+          
           // Use proxy endpoint with correct URL structure
           const response = await fetch(
             `/api/football/competitions/${league.id}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`
           )
           
+          console.log(`🏈 Football - ${league.name} response status:`, response.status)
+          
           if (!response.ok) {
             const errorText = await response.text()
-            console.warn(`Failed to fetch ${league.name}: ${response.status} - ${errorText}`)
+            console.warn(`🏈 Football - Failed to fetch ${league.name}: ${response.status} - ${errorText}`)
             
             // If it's a 400 error (bad request), likely API key issue
             if (response.status === 400) {
-              console.warn('API Key might be invalid or expired.')
-              console.warn('To get a valid API key:')
-              console.warn('1. Visit https://www.football-data.org/')
-              console.warn('2. Register for a free account')
-              console.warn('3. Get your API token')
-              console.warn('4. Update the .env file with VITE_FOOTBALL_API_KEY=your_actual_key')
-              console.warn('Using sample data for now.')
+              console.warn('🏈 Football - API Key might be invalid or expired.')
+              console.warn('🏈 Football - To get a valid API key:')
+              console.warn('🏈 Football - 1. Visit https://www.football-data.org/')
+              console.warn('🏈 Football - 2. Register for a free account')
+              console.warn('🏈 Football - 3. Get your API token')
+              console.warn('🏈 Football - 4. Update the .env file with VITE_FOOTBALL_API_KEY=your_actual_key')
+              console.warn('🏈 Football - Using sample data for now.')
               return createSampleData('football', from, to)
             }
             continue
           }
           
           const data = await response.json()
+          console.log(`🏈 Football - ${league.name} data received:`, data.matches?.length || 0, 'matches')
           
           if (data.matches) {
+            console.log(`🏈 Football - Processing ${data.matches.length} matches from ${league.name}`)
             const matches = data.matches.map(match => {
               // Map competition names to preferred display names
               const leagueNameMap = {
@@ -1858,7 +1879,8 @@ const FootballAdapter = {
         return aPriority - bPriority
       })
     } catch (error) {
-      console.warn('⚠️ Football API error:', error)
+      console.warn('🏈 Football API critical error:', error)
+      console.warn('🏈 Football - Returning sample data due to critical error')
       return createSampleData('football', from, to)
     }
   }
