@@ -702,7 +702,7 @@ const PubgAdapter = {
       const YOUTUBE_API_KEY = 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294'
       
       // PUBG BATTLEGROUNDS VIETNAM channel ID
-      const CHANNEL_ID = 'UCaw0M6QnIvFeONPBBtqKlWg' // Channel ID cho @PUBGBATTLEGROUNDSVIETNAM
+      const CHANNEL_ID = 'UCeX2iXaH63w3BZ8Wae_JdEA' // Channel ID cho @PUBGBATTLEGROUNDSVIETNAM
       
       let allMatches = []
       
