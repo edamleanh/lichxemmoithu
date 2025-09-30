@@ -219,7 +219,7 @@ const getStatusInfo = (status) => {
   switch (status) {
     case 'live': return { variant: 'live', label: 'LIVE', icon: Play }
     case 'finished': return { variant: 'finished', label: 'ENDED', icon: Medal }
-    default: return { variant: 'upcoming', label: 'COMMING', icon: Clock }
+    default: return { variant: 'upcoming', label: 'UPCOMING', icon: Clock }
   }
 }
 
