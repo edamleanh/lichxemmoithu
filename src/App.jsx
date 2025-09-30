@@ -2156,12 +2156,13 @@ function useSchedule({ activeSport, from, to }) {
           const results = await Promise.allSettled([
             adapters.valorant.fetch({ from, to }),
             adapters.pubg.fetch({ from, to }),
+            adapters.tft.fetch({ from, to }),
             adapters.lol.fetch({ from, to }),
             adapters.football.fetch({ from, to }),
           ])
           
           results.forEach((result, index) => {
-            const adapterNames = ['valorant', 'pubg', 'lol', 'football']
+            const adapterNames = ['valorant', 'pubg', 'tft', 'lol', 'football']
             if (result.status === 'fulfilled') {
               allMatches = [...allMatches, ...result.value]
             } else {
@@ -2789,8 +2790,9 @@ export default function App() {
   const dateFrom = useMemo(() => {
     const now = new Date()
     // For PUBG and TFT: show events from current time (no past events)
+    // For "all" mode: also apply extended logic to include PUBG/TFT events
     // For other sports: 24 hours ago
-    if (activeSport === 'pubg' || activeSport === 'tft') {
+    if (activeSport === 'pubg' || activeSport === 'tft' || activeSport === 'all') {
       return new Date(now.getTime() - 1 * 60 * 60 * 1000) // 1 hour ago to catch recently started events
     }
     return new Date(now.getTime() - 24 * 60 * 60 * 1000) // 24 hours ago
@@ -2799,8 +2801,9 @@ export default function App() {
   const dateTo = useMemo(() => {
     const now = new Date()
     // For PUBG and TFT: show all upcoming events in the future (30 days)
-    // For other sports: 24 hours from now
-    if (activeSport === 'pubg' || activeSport === 'tft') {
+    // For "all" mode: also extend to 30 days to include PUBG/TFT events
+    // For other sports only: 24 hours from now
+    if (activeSport === 'pubg' || activeSport === 'tft' || activeSport === 'all') {
       return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
     }
     return new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24 hours from now
