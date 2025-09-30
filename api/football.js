@@ -71,6 +71,35 @@ export default async function handler(req, res) {
 
       const data = await response.json();
       console.log('Football API - Success, matches found:', data.matches?.length || 0);
+      
+      // Log detailed data structure
+      console.log('Football API - Full data structure:');
+      console.log('===============================');
+      console.log('Competition info:', JSON.stringify(data.competition, null, 2));
+      console.log('Filters applied:', JSON.stringify(data.filters, null, 2));
+      console.log('Total matches:', data.count);
+      console.log('===============================');
+      
+      if (data.matches && data.matches.length > 0) {
+        console.log('Sample match data (first match):');
+        console.log(JSON.stringify(data.matches[0], null, 2));
+        console.log('===============================');
+        
+        // Log all match basic info
+        data.matches.forEach((match, index) => {
+          console.log(`Match ${index + 1}:`, {
+            id: match.id,
+            homeTeam: match.homeTeam?.name,
+            awayTeam: match.awayTeam?.name,
+            status: match.status,
+            utcDate: match.utcDate,
+            score: match.score?.fullTime || 'N/A',
+            competition: match.competition?.name,
+            stage: match.stage
+          });
+        });
+      }
+      
       res.status(200).json(data);
       return;
     }
@@ -112,11 +141,38 @@ export default async function handler(req, res) {
       }
     });
 
+    console.log('Football API - Legacy endpoint response status:', response.status);
+
     if (!response.ok) {
       throw new Error(`Football API responded with status: ${response.status}`);
     }
 
     const data = await response.json();
+    
+    // Log detailed data structure for legacy endpoint
+    console.log('Football API - Legacy endpoint data:');
+    console.log('====================================');
+    console.log('Competition info:', JSON.stringify(data.competition, null, 2));
+    console.log('Total matches:', data.count);
+    console.log('====================================');
+    
+    if (data.matches && data.matches.length > 0) {
+      console.log('Legacy - Sample match data (first match):');
+      console.log(JSON.stringify(data.matches[0], null, 2));
+      
+      // Log all match basic info
+      data.matches.forEach((match, index) => {
+        console.log(`Legacy Match ${index + 1}:`, {
+          id: match.id,
+          homeTeam: match.homeTeam?.name,
+          awayTeam: match.awayTeam?.name,
+          status: match.status,
+          utcDate: match.utcDate,
+          score: match.score?.fullTime || 'N/A'
+        });
+      });
+    }
+    
     res.status(200).json(data);
 
   } catch (error) {

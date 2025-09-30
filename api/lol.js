@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     console.log('LoL API - Starting request');
     
     // Try the primary LoL API endpoint first with shorter timeout
-    const primaryApiUrl = 'https://esports-api.lolesports.com/persisted/gw/getSchedule?hl=en-US';
+    const primaryApiUrl = 'h  ';
     
     try {
       console.log('LoL API - Trying primary endpoint:', primaryApiUrl);
