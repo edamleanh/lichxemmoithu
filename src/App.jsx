@@ -2810,10 +2810,14 @@ export default function App() {
     
     const targetRef = refs[sectionType]
     if (targetRef?.current) {
-      targetRef.current.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start',
-        inline: 'nearest'
+      // Calculate offset to account for sticky header
+      const headerHeight = 120 // Approximate header height + padding
+      const elementPosition = targetRef.current.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.pageYOffset - headerHeight
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
       })
     }
   }
