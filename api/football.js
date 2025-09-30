@@ -194,6 +194,7 @@ export default async function handler(req, res) {
       }
       
       // Gọi API nếu cần thiết
+      
       console.log('Football API - Gọi API mới');
       const apiKey = process.env.VITE_FOOTBALL_API_KEY || process.env.FOOTBALL_API_KEY || '354c9341dac74c788f59795973d8099d';
       
