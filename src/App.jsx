@@ -2509,13 +2509,6 @@ function MatchCard({ match, isCompact, isDarkMode }) {
 
           {/* Players info and actions */}
           <div className="space-y-3">
-            {/* Players/Time */}
-            <div className="flex items-center justify-between">
-              
-              <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {match.venue}
-              </span>
-            </div>
 
             {/* Actions */}
             <div className="flex justify-end">
