@@ -3006,15 +3006,6 @@ export default function App() {
                 {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                 {isDarkMode ? 'Sáng' : 'Tối'}
               </Button>
-              
-              <Button
-                variant="ghost"
-                isDarkMode={isDarkMode}
-                onClick={refetch}
-              >
-                <RefreshCw className="h-5 w-5" />
-                Làm mới
-              </Button>
             </div>
           </div>
         </div>
