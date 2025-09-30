@@ -174,9 +174,6 @@ const shortenTeamName = (teamName) => {
 // Helper function to search for live streams on YouTube
 const searchYouTubeLiveStream = async (match) => {
   try {
-    // YouTube API key
-    const YOUTUBE_API_KEY = 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294'
-    
     // Build search query: team1 + team2 + league + "live"
     const searchQuery = [
       shortenTeamName(match.home?.name) || '',
@@ -187,19 +184,17 @@ const searchYouTubeLiveStream = async (match) => {
     ].filter(Boolean).join(' ')
     
     console.log('🔍 Searching YouTube for:', searchQuery)
-    
-    const response = await fetch(
+
+    const data = await youtubeApiManager.makeRequest(
       `https://www.googleapis.com/youtube/v3/search?` +
       `part=snippet&type=video&eventType=live&maxResults=3&order=viewCount&` +
-      `q=${encodeURIComponent(searchQuery)}&key=${YOUTUBE_API_KEY}`
+      `q=${encodeURIComponent(searchQuery)}`
     );
     
-    if (!response.ok) {
-      console.warn('YouTube API error:', response.status)
+    if (!data) {
+      console.warn('YouTube API error: No data returned')
       return null
     }
-    
-    const data = await response.json()
     
     if (data.items && data.items.length > 0) {
       const video = data.items[0]
@@ -693,13 +688,112 @@ const ValorantAdapter = {
   },
 }
 
+// Helper function to check YouTube API health and provide debugging info
+const checkYouTubeAPIHealth = async (apiKey) => {
+  try {
+    console.log('🔍 Checking YouTube API health...')
+    const testResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?` +
+      `part=snippet&q=test&type=video&maxResults=1&key=${apiKey}`
+    )
+    
+    if (testResponse.ok) {
+      console.log('✅ YouTube API is working correctly')
+      return true
+    } else {
+      const errorData = await testResponse.json()
+      console.error('❌ YouTube API test failed:', testResponse.status, errorData)
+      
+      if (testResponse.status === 403) {
+        console.warn('🚨 API Key Issues:')
+        console.warn('   • Quota exceeded for today')
+        console.warn('   • API key may be invalid or restricted')
+        console.warn('   • Check Google Cloud Console for quotas')
+        console.warn('   • Consider using a different API key')
+        console.warn('💡 Solutions:')
+        console.warn('   1. Wait until tomorrow for quota reset')
+        console.warn('   2. Increase quota in Google Cloud Console')
+        console.warn('   3. Use a different YouTube API key')
+        console.warn('   4. Temporarily disable PUBG/TFT features')
+      }
+      return false
+    }
+  } catch (error) {
+    console.error('❌ Network error testing YouTube API:', error)
+    return false
+  }
+}
+
+// YouTube API Key Manager with fallback support
+const YouTubeAPIManager = {
+  // Array of API keys - add your API keys here
+  apiKeys: [
+    'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294', // Primary key
+    'AIzaSyCHmBLPsIMhKJpxuOVGWK5OSHrwsIvRQbI', // Backup key 1
+    // 'YOUR_BACKUP_API_KEY_2',
+    // 'YOUR_BACKUP_API_KEY_3',
+  ],
+  
+  currentKeyIndex: 0,
+  
+  // Get current active API key
+  getCurrentKey() {
+    return this.apiKeys[this.currentKeyIndex]
+  },
+  
+  // Switch to next available API key
+  switchToNextKey() {
+    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length
+    const newKey = this.getCurrentKey()
+    console.log(`🔄 Switching to API key #${this.currentKeyIndex + 1}: ${newKey.substring(0, 10)}...`)
+    return newKey
+  },
+  
+  // Check if we've tried all keys
+  hasMoreKeys() {
+    return this.currentKeyIndex < this.apiKeys.length - 1
+  },
+  
+  // Reset to first key
+  resetToFirstKey() {
+    this.currentKeyIndex = 0
+    console.log('🔄 Reset to primary API key')
+  },
+  
+  // Make request with fallback to other keys
+  async makeRequest(url, retryCount = 0) {
+    const currentKey = this.getCurrentKey()
+    const fullUrl = url.includes('key=') ? url : `${url}&key=${currentKey}`
+    
+    try {
+      console.log(`📡 Making request with API key #${this.currentKeyIndex + 1}`)
+      const response = await fetch(fullUrl)
+      
+      if (response.ok) {
+        return response
+      } else if (response.status === 403 && this.hasMoreKeys() && retryCount < this.apiKeys.length) {
+        console.warn(`⚠️ API key #${this.currentKeyIndex + 1} failed (403), trying next key...`)
+        this.switchToNextKey()
+        return this.makeRequest(url, retryCount + 1)
+      } else {
+        return response // Return failed response for other error handling
+      }
+    } catch (error) {
+      if (this.hasMoreKeys() && retryCount < this.apiKeys.length) {
+        console.warn(`⚠️ Network error with API key #${this.currentKeyIndex + 1}, trying next key...`)
+        this.switchToNextKey()
+        return this.makeRequest(url, retryCount + 1)
+      } else {
+        throw error
+      }
+    }
+  }
+}
+
 const PubgAdapter = {
   async fetch({ from, to }) {
     try {
       console.log('🎮 Fetching PUBG data from YouTube channel...')
-      
-      // YouTube API key
-      const YOUTUBE_API_KEY = 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294'
       
       // PUBG BATTLEGROUNDS VIETNAM channel ID
       const CHANNEL_ID = 'UCeX2iXaH63w3BZ8Wae_JdEA' // Channel ID cho @PUBGBATTLEGROUNDSVIETNAM
@@ -708,14 +802,14 @@ const PubgAdapter = {
       
       // 1. Fetch live streams
       try {
-        const liveResponse = await fetch(
+        const liveResponse = await youtubeApiManager.makeRequest(
           `https://www.googleapis.com/youtube/v3/search?` +
           `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
-          `maxResults=10&order=date&key=${YOUTUBE_API_KEY}`
+          `maxResults=10&order=date`
         )
         
-        if (liveResponse.ok) {
-          const liveData = await liveResponse.json()
+        if (liveResponse) {
+          const liveData = liveResponse
           
           // Get video IDs for additional details (view count, etc.)
           const videoIds = liveData.items?.map(item => item.id.videoId).join(',')
@@ -725,13 +819,12 @@ const PubgAdapter = {
           // Fetch video statistics if we have video IDs
           if (videoIds) {
             try {
-              const statsResponse = await fetch(
+              const statsData = await youtubeApiManager.makeRequest(
                 `https://www.googleapis.com/youtube/v3/videos?` +
-                `part=statistics,liveStreamingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+                `part=statistics,liveStreamingDetails&id=${videoIds}`
               )
               
-              if (statsResponse.ok) {
-                const statsData = await statsResponse.json()
+              if (statsData) {
                 
                 // Merge statistics with video data
                 liveVideosWithStats = liveData.items.map(video => {
@@ -764,6 +857,8 @@ const PubgAdapter = {
           const liveMatches = this.processLiveVideos(liveVideosWithStats)
           allMatches = [...allMatches, ...liveMatches]
           console.log(`✅ Found ${liveMatches.length} live PUBG streams`)
+        } else {
+          console.warn('⚠️ No live PUBG streams found or API error')
         }
       } catch (error) {
         console.warn('⚠️ Error fetching live PUBG streams:', error)
@@ -771,14 +866,14 @@ const PubgAdapter = {
       
       // 2. Fetch upcoming streams
       try {
-        const upcomingResponse = await fetch(
+        const upcomingResponse = await youtubeApiManager.makeRequest(
           `https://www.googleapis.com/youtube/v3/search?` +
           `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
-          `maxResults=10&order=date&key=${YOUTUBE_API_KEY}`
+          `maxResults=10&order=date`
         )
         
-        if (upcomingResponse.ok) {
-          const upcomingData = await upcomingResponse.json()
+        if (upcomingResponse) {
+          const upcomingData = upcomingResponse
           
           // Filter out videos that are not truly upcoming
           const trulyUpcomingVideos = upcomingData.items?.filter(item => {
@@ -802,13 +897,12 @@ const PubgAdapter = {
           // Fetch scheduled start time if we have video IDs
           if (videoIds) {
             try {
-              const scheduleResponse = await fetch(
+              const scheduleData = await youtubeApiManager.makeRequest(
                 `https://www.googleapis.com/youtube/v3/videos?` +
-                `part=liveStreamingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+                `part=liveStreamingDetails&id=${videoIds}`
               )
               
-              if (scheduleResponse.ok) {
-                const scheduleData = await scheduleResponse.json()
+              if (scheduleData) {
                 
                 // Merge schedule details with video data
                 upcomingVideosWithSchedule = trulyUpcomingVideos.map(video => {
@@ -840,6 +934,13 @@ const PubgAdapter = {
           const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithSchedule)
           allMatches = [...allMatches, ...upcomingMatches]
           console.log(`✅ Found ${upcomingMatches.length} upcoming PUBG streams`)
+        } else {
+          // Handle API errors for upcoming streams
+          const errorText = await upcomingResponse.text()
+          console.warn(`⚠️ PUBG Upcoming API error: ${upcomingResponse.status} - ${errorText}`)
+          if (upcomingResponse.status === 403) {
+            console.warn('📋 YouTube API quota exceeded or API key invalid for upcoming streams')
+          }
         }
       } catch (error) {
         console.warn('⚠️ Error fetching upcoming PUBG streams:', error)
@@ -1075,9 +1176,6 @@ const TftAdapter = {
     try {
       console.log('🎮 Fetching TFT data from YouTube channel...')
       
-      // YouTube API key
-      const YOUTUBE_API_KEY = 'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294'
-      
       // TFT Esports channel ID (example - có thể thay đổi)
       const CHANNEL_ID = 'UC2t5bjwHdUX4vM2g8TRDq5g' // Channel ID cho Riot Games hoặc kênh TFT chính thức
       
@@ -1085,14 +1183,14 @@ const TftAdapter = {
       
       // 1. Fetch live streams
       try {
-        const liveResponse = await fetch(
+        const liveResponse = await youtubeApiManager.makeRequest(
           `https://www.googleapis.com/youtube/v3/search?` +
           `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
-          `maxResults=10&order=date&key=${YOUTUBE_API_KEY}`
+          `maxResults=10&order=date`
         )
         
-        if (liveResponse.ok) {
-          const liveData = await liveResponse.json()
+        if (liveResponse) {
+          const liveData = liveResponse
           
           // Get video IDs for additional details (view count, etc.)
           const videoIds = liveData.items?.map(item => item.id.videoId).join(',')
@@ -1102,13 +1200,12 @@ const TftAdapter = {
           // Fetch video statistics if we have video IDs
           if (videoIds) {
             try {
-              const statsResponse = await fetch(
+              const statsData = await youtubeApiManager.makeRequest(
                 `https://www.googleapis.com/youtube/v3/videos?` +
-                `part=statistics,liveStreamingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+                `part=statistics,liveStreamingDetails&id=${videoIds}`
               )
               
-              if (statsResponse.ok) {
-                const statsData = await statsResponse.json()
+              if (statsData) {
                 
                 // Merge statistics with video data
                 liveVideosWithStats = liveData.items.map(video => {
@@ -1141,6 +1238,13 @@ const TftAdapter = {
           const liveMatches = this.processLiveVideos(liveVideosWithStats)
           allMatches = [...allMatches, ...liveMatches]
           console.log(`✅ Found ${liveMatches.length} live TFT streams`)
+        } else {
+          // Handle API errors for TFT live streams
+          const errorText = await liveResponse.text()
+          console.warn(`⚠️ TFT Live API error: ${liveResponse.status} - ${errorText}`)
+          if (liveResponse.status === 403) {
+            console.warn('📋 YouTube API quota exceeded or API key invalid for TFT')
+          }
         }
       } catch (error) {
         console.warn('⚠️ Error fetching live TFT streams:', error)
@@ -1148,14 +1252,14 @@ const TftAdapter = {
       
       // 2. Fetch upcoming streams
       try {
-        const upcomingResponse = await fetch(
+        const upcomingResponse = await youtubeApiManager.makeRequest(
           `https://www.googleapis.com/youtube/v3/search?` +
           `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
-          `maxResults=10&order=date&key=${YOUTUBE_API_KEY}`
+          `maxResults=10&order=date`
         )
         
-        if (upcomingResponse.ok) {
-          const upcomingData = await upcomingResponse.json()
+        if (upcomingResponse) {
+          const upcomingData = upcomingResponse
           
           // Filter out videos that are not truly upcoming
           const trulyUpcomingVideos = upcomingData.items?.filter(item => {
@@ -1179,13 +1283,12 @@ const TftAdapter = {
           // Fetch scheduled start time if we have video IDs
           if (videoIds) {
             try {
-              const scheduleResponse = await fetch(
+              const scheduleData = await youtubeApiManager.makeRequest(
                 `https://www.googleapis.com/youtube/v3/videos?` +
-                `part=liveStreamingDetails&id=${videoIds}&key=${YOUTUBE_API_KEY}`
+                `part=liveStreamingDetails&id=${videoIds}`
               )
               
-              if (scheduleResponse.ok) {
-                const scheduleData = await scheduleResponse.json()
+              if (scheduleData) {
                 
                 // Merge schedule details with video data
                 upcomingVideosWithSchedule = trulyUpcomingVideos.map(video => {
@@ -1217,6 +1320,13 @@ const TftAdapter = {
           const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithSchedule)
           allMatches = [...allMatches, ...upcomingMatches]
           console.log(`✅ Found ${upcomingMatches.length} upcoming TFT streams`)
+        } else {
+          // Handle API errors for TFT upcoming streams
+          const errorText = await upcomingResponse.text()
+          console.warn(`⚠️ TFT Upcoming API error: ${upcomingResponse.status} - ${errorText}`)
+          if (upcomingResponse.status === 403) {
+            console.warn('📋 YouTube API quota exceeded or API key invalid for TFT upcoming')
+          }
         }
       } catch (error) {
         console.warn('⚠️ Error fetching upcoming TFT streams:', error)
