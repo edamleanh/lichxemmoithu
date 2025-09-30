@@ -182,8 +182,8 @@ const shortenTeamName = (teamName) => {
   }
   
   // Mobile-specific: If name is still too long, truncate
-  if (cleanName.length > 15) {
-    return cleanName.substring(0, 12) + '...'
+  if (cleanName.length > 25) {
+    return cleanName.substring(0, 22) + '...'
   }
   
   return cleanName
