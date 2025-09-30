@@ -35,6 +35,7 @@ import valorantIcon from './images/valorant.png'
 import lolIcon from './images/lol.png'
 import footballIcon from './images/football.png'
 import pubgIcon from './images/pubg.png'
+import tftIcon from './images/tft.png'
 
 // --- Styled Components ---------------------------------------------------
 const Button = ({ className = '', children, variant = 'default', size = 'default', isDarkMode = false, ...props }) => {
@@ -232,7 +233,7 @@ const getGameInfo = (game) => {
     case 'valorant': return { variant: 'valorant', label: 'VALORANT', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true }
     case 'pubg': return { variant: 'pubg', label: 'PUBG', icon: pubgIcon, color: 'from-orange-500 to-yellow-500', isImage: true }
     case 'lol': return { variant: 'lol', label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true }
-    case 'tft': return { variant: 'tft', label: 'TFT', icon: Gamepad2, color: 'from-purple-500 to-indigo-500', isImage: false }
+    case 'tft': return { variant: 'tft', label: 'TFT', icon: tftIcon, color: 'from-purple-500 to-indigo-500', isImage: true }
     case 'football': return { variant: 'football', label: 'BÓNG ĐÁ', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true }
     default: return { variant: 'default', label: game.toUpperCase(), icon: Gamepad2, color: 'from-gray-500 to-gray-600', isImage: false }
   }
@@ -2013,7 +2014,7 @@ const sports = [
   { id: 'all', label: 'Tất cả', icon: TrendingUp, color: 'from-purple-500 to-pink-500', isImage: false },
   { id: 'valorant', label: 'Valorant', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true },
   { id: 'pubg', label: 'PUBG', icon: pubgIcon, color: 'from-orange-500 to-yellow-500', isImage: true },
-  { id: 'tft', label: 'TFT', icon: Gamepad2, color: 'from-purple-500 to-indigo-500', isImage: false },
+  { id: 'tft', label: 'TFT', icon: tftIcon, color: 'from-purple-500 to-indigo-500', isImage: true },
   { id: 'lol', label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true },
   { id: 'football', label: 'Bóng Đá', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true },
 ]
@@ -2327,7 +2328,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
         <div className="flex items-center justify-between p-4 border-b border-gray-200/50">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${gameInfo.color} flex items-center justify-center`}>
-              <Gamepad2 className="w-5 h-5 text-white" />
+              <img src={gameInfo.icon} alt="TFT" className="w-5 h-5" />
             </div>
             <div>
               <p className={`font-semibold text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
