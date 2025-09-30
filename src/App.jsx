@@ -15,8 +15,6 @@ import {
   MapPin,
   RefreshCw,
   Trophy,
-  List,
-  Grid3X3,
   Eye,
   Play,
   Users,
@@ -2295,7 +2293,7 @@ function WatchLiveButton({ match }) {
 }
 
 // --- Match Card Component -------------------------------------------------
-function MatchCard({ match, isCompact, isDarkMode }) {
+function MatchCard({ match, isDarkMode }) {
   const statusInfo = getStatusInfo(match.status)
   const gameInfo = getGameInfo(match.game)
   const StatusIcon = statusInfo.icon
@@ -2314,7 +2312,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
           isDarkMode 
             ? 'bg-gray-800/95 border border-gray-600/60 hover:bg-gray-700/95' 
             : 'bg-gray-200/95 border border-gray-400/60 hover:bg-gray-100/95'
-        } ${isCompact ? 'p-4' : 'p-6'}`}
+        } p-6`}
       >
         {/* Background Gradient */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
@@ -2456,7 +2454,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
           isDarkMode 
             ? 'bg-gray-800/95 border border-gray-600/60 hover:bg-gray-700/95' 
             : 'bg-gray-200/95 border border-gray-400/60 hover:bg-gray-100/95'
-        } ${isCompact ? 'p-4' : 'p-6'}`}
+        } p-6`}
       >
         {/* Background Gradient */}
         <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
@@ -2579,7 +2577,7 @@ function MatchCard({ match, isCompact, isDarkMode }) {
         isDarkMode 
           ? 'bg-gray-800/95 border border-gray-600/60 hover:bg-gray-700/95' 
           : 'bg-gray-200/95 border border-gray-400/60 hover:bg-gray-100/95'
-      } ${isCompact ? 'p-4' : 'p-6'}`}
+      } p-6`}
     >
       {/* Background Gradient */}
       <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
@@ -2782,7 +2780,6 @@ function MatchCard({ match, isCompact, isDarkMode }) {
 export default function App() {
   // State management
   const [activeSport, setActiveSport] = useState('all')
-  const [isCompactView, setIsCompactView] = useState(false)
   const [collapsedSections, setCollapsedSections] = useState({}) // Track collapsed sections
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check localStorage for saved preference
@@ -3014,15 +3011,6 @@ export default function App() {
                 <RefreshCw className="h-5 w-5" />
                 Làm mới
               </Button>
-              
-              <Button
-                variant="ghost"
-                isDarkMode={isDarkMode}
-                onClick={() => setIsCompactView(!isCompactView)}
-              >
-                {isCompactView ? <Grid3X3 className="h-5 w-5" /> : <List className="h-5 w-5" />}
-                {isCompactView ? 'Lưới' : 'Danh sách'}
-              </Button>
             </div>
           </div>
         </div>
@@ -3210,17 +3198,12 @@ export default function App() {
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                         className="overflow-hidden"
                       >
-                        <div className={`grid gap-6 ${
-                          isCompactView 
-                            ? 'grid-cols-1' 
-                            : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
-                        }`}>
+                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                           <AnimatePresence>
                             {matches.map((match) => (
                               <MatchCard
                                 key={match.id}
                                 match={match}
-                                isCompact={isCompactView}
                                 isDarkMode={isDarkMode}
                               />
                             ))}
