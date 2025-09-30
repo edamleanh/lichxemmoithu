@@ -2511,15 +2511,6 @@ function MatchCard({ match, isCompact, isDarkMode }) {
           <div className="space-y-3">
             {/* Players/Time */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {match.home?.name}
-                </span>
-                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>vs</span>
-                <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {match.away?.name}
-                </span>
-              </div>
               
               <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 {match.venue}
