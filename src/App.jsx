@@ -1748,6 +1748,8 @@ const FootballAdapter = {
       for (const league of leagues) {
         try {
           console.log(`🏈 Football - Fetching ${league.name} (${league.id}) matches...`)
+          console.log(`🏈 Football - Request URL: /api/football/competitions/${league.id}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`)
+          console.log('🏈 Football - Note: API keys are managed on the backend (/api/football endpoint)')
           
           // Use proxy endpoint with correct URL structure
           const response = await fetch(
