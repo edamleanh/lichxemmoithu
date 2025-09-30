@@ -261,17 +261,23 @@ function MobileMatchCard({ match, isDarkMode }) {
         </div>
       </div>
 
-      {/* Mobile League Info - Moved to header area */}
-      <div className={`text-xs mb-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-        <div className="flex items-center justify-between">
-          <span className="font-medium truncate">{match.league}</span>
+      {/* Mobile League Info - Inline with Date/Time */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className={`font-medium text-xs truncate ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            {match.league}
+          </span>
           {match.stage && (
-            <span className={`text-xs px-2 py-0.5 rounded-full ${
+            <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
               isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
             }`}>
               {match.stage}
             </span>
           )}
+        </div>
+        
+        <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          {fmtTime(match.start)}
         </div>
       </div>
 
