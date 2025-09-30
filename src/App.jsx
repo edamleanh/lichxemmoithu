@@ -1779,6 +1779,17 @@ const FootballAdapter = {
           const data = await response.json()
           console.log(`🏈 Football - ${league.name} data received:`, data.matches?.length || 0, 'matches')
           
+          // Log API key information if available
+          if (data._apiKeyInfo) {
+            console.log(`🔑 Football API Key Used:`, data._apiKeyInfo.keyUsed)
+            console.log(`🔑 Football API Key Details:`, {
+              keyIndex: data._apiKeyInfo.keyIndex,
+              keyTotal: data._apiKeyInfo.keyTotal,
+              keyPrefix: data._apiKeyInfo.keyPrefix,
+              endpoint: data._apiKeyInfo.endpoint || 'main'
+            })
+          }
+          
           if (data.matches) {
             console.log(`🏈 Football - Processing ${data.matches.length} matches from ${league.name}`)
             const matches = data.matches.map(match => {

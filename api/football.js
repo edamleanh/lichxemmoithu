@@ -94,7 +94,16 @@ export default async function handler(req, res) {
 
           if (response.ok) {
             const data = await response.json();
-            console.log(`Football API - Key ${i + 1} SUCCESS! Matches found:`, data.matches?.length || 0);
+            console.log(`🏈 Football API - Key ${i + 1} SUCCESS! Matches found:`, data.matches?.length || 0);
+            
+            // Add API key info to response for frontend logging
+            data._apiKeyInfo = {
+              keyIndex: i + 1,
+              keyTotal: apiKeys.length,
+              keyPrefix: currentApiKey.substring(0, 8),
+              keyUsed: `Key ${i + 1}/${apiKeys.length} (${currentApiKey.substring(0, 8)}...)`
+            };
+            
             successfulData = data;
             break; // Success, exit the loop
           } else {
@@ -222,7 +231,17 @@ export default async function handler(req, res) {
 
         if (response.ok) {
           const data = await response.json();
-          console.log(`Football API - Legacy: Key ${i + 1} SUCCESS!`);
+          console.log(`🏈 Football API - Legacy: Key ${i + 1} SUCCESS!`);
+          
+          // Add API key info to response for frontend logging
+          data._apiKeyInfo = {
+            keyIndex: i + 1,
+            keyTotal: apiKeys.length,
+            keyPrefix: currentApiKey.substring(0, 8),
+            keyUsed: `Legacy Key ${i + 1}/${apiKeys.length} (${currentApiKey.substring(0, 8)}...)`,
+            endpoint: 'legacy'
+          };
+          
           successfulData = data;
           break;
         } else {
