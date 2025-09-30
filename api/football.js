@@ -37,14 +37,21 @@ export default async function handler(req, res) {
       console.log('Football API - Competition:', competition);
       console.log('Football API - Date range:', { dateFrom, dateTo });
       
-      // Get API key from environment variables or fallback to hardcoded
-      const apiKey = process.env.VITE_FOOTBALL_API_KEY || process.env.FOOTBALL_API_KEY || '354c9341dac74c788f59795973d8099d';
+      // List of API keys to try in order
+      const apiKeys = [
+        process.env.VITE_FOOTBALL_API_KEY,
+        process.env.FOOTBALL_API_KEY,
+        '354c9341dac74c788f59795973d8099d',
+        '802efe2831cd4f00b45f718885ed2658',
+      ].filter(Boolean); // Remove null/undefined keys
       
-      if (!apiKey) {
-        console.error('Football API - No API key found');
-        res.status(500).json({ error: 'Football API key not configured' });
+      if (apiKeys.length === 0) {
+        console.error('Football API - No API keys found');
+        res.status(500).json({ error: 'Football API keys not configured' });
         return;
       }
+      
+      console.log('Football API - Available keys count:', apiKeys.length);
 
       let apiUrl = `https://api.football-data.org/v4/competitions/${competition}/matches`;
       if (dateFrom && dateTo) {
@@ -53,23 +60,64 @@ export default async function handler(req, res) {
       
       console.log('Football API - Calling:', apiUrl);
 
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'X-Auth-Token': apiKey,
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      // Try each API key until one works
+      let lastError = null;
+      let successfulData = null;
+      
+      for (let i = 0; i < apiKeys.length; i++) {
+        const currentApiKey = apiKeys[i];
+        console.log(`Football API - Trying key ${i + 1}/${apiKeys.length} (${currentApiKey.substring(0, 8)}...)`);
+        
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+              'X-Auth-Token': currentApiKey,
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+
+          console.log(`Football API - Key ${i + 1} response status:`, response.status);
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`Football API - Key ${i + 1} SUCCESS! Matches found:`, data.matches?.length || 0);
+            successfulData = data;
+            break; // Success, exit the loop
+          } else {
+            const errorText = await response.text();
+            console.warn(`Football API - Key ${i + 1} failed with status ${response.status}:`, errorText);
+            
+            // If it's a rate limit (429) or auth error (401/403), try next key
+            if (response.status === 429 || response.status === 401 || response.status === 403) {
+              lastError = new Error(`Key ${i + 1} failed: ${response.status} - ${errorText}`);
+              continue; // Try next key
+            } else {
+              // For other errors, throw immediately
+              throw new Error(`Football API responded with status: ${response.status} - ${errorText}`);
+            }
+          }
+        } catch (error) {
+          console.error(`Football API - Key ${i + 1} error:`, error.message);
+          lastError = error;
+          
+          // If it's a network error, try next key
+          if (error.name === 'TypeError' || error.name === 'AbortError') {
+            continue;
+          } else {
+            // For other errors, continue to try next key
+            continue;
+          }
         }
-      });
-
-      console.log('Football API - Response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Football API - Error response:', errorText);
-        throw new Error(`Football API responded with status: ${response.status} - ${errorText}`);
       }
-
-      const data = await response.json();
+      
+      // If no key worked, throw the last error
+      if (!successfulData) {
+        console.error('Football API - All keys failed');
+        throw lastError || new Error('All API keys failed');
+      }
+      
+      const data = successfulData;
       console.log('Football API - Success, matches found:', data.matches?.length || 0);
       
       // Log detailed data structure
@@ -121,11 +169,18 @@ export default async function handler(req, res) {
       return;
     }
 
-    // Get API key from environment variables or fallback to hardcoded
-    const apiKey = process.env.VITE_FOOTBALL_API_KEY || process.env.FOOTBALL_API_KEY || '354c9341dac74c788f59795973d8099d';
+    // Get API keys list for legacy support
+    const apiKeys = [
+      process.env.VITE_FOOTBALL_API_KEY,
+      process.env.FOOTBALL_API_KEY,
+      '354c9341dac74c788f59795973d8099d',
+      // Add more API keys here as needed
+      // 'your-second-api-key',
+      // 'your-third-api-key',
+    ].filter(Boolean); // Remove null/undefined keys
     
-    if (!apiKey) {
-      res.status(500).json({ error: 'Football API key not configured' });
+    if (apiKeys.length === 0) {
+      res.status(500).json({ error: 'Football API keys not configured' });
       return;
     }
 
@@ -133,21 +188,51 @@ export default async function handler(req, res) {
       dateFrom && dateTo ? `?dateFrom=${dateFrom}&dateTo=${dateTo}` : ''
     }`;
 
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'X-Auth-Token': apiKey,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    // Try each API key until one works (Legacy endpoint)
+    let lastError = null;
+    let successfulData = null;
+    
+    for (let i = 0; i < apiKeys.length; i++) {
+      const currentApiKey = apiKeys[i];
+      console.log(`Football API - Legacy: Trying key ${i + 1}/${apiKeys.length}`);
+      
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'X-Auth-Token': currentApiKey,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+
+        console.log('Football API - Legacy endpoint response status:', response.status);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`Football API - Legacy: Key ${i + 1} SUCCESS!`);
+          successfulData = data;
+          break;
+        } else {
+          console.warn(`Football API - Legacy: Key ${i + 1} failed with status ${response.status}`);
+          if (response.status === 429 || response.status === 401 || response.status === 403) {
+            lastError = new Error(`Legacy key ${i + 1} failed: ${response.status}`);
+            continue;
+          } else {
+            throw new Error(`Football API responded with status: ${response.status}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Football API - Legacy: Key ${i + 1} error:`, error.message);
+        lastError = error;
+        continue;
       }
-    });
-
-    console.log('Football API - Legacy endpoint response status:', response.status);
-
-    if (!response.ok) {
-      throw new Error(`Football API responded with status: ${response.status}`);
     }
-
-    const data = await response.json();
+    
+    if (!successfulData) {
+      throw lastError || new Error('All legacy API keys failed');
+    }
+    
+    const data = successfulData;
     
     // Log detailed data structure for legacy endpoint
     console.log('Football API - Legacy endpoint data:');
