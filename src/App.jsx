@@ -2417,11 +2417,34 @@ function MatchCard({ match, isDarkMode }) {
                   </Button>
                 )}
                 
-                {match.status === 'upcoming' && match.stream && (
+                {match.status === 'upcoming' && (
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => window.open(match.stream, '_blank')}
+                    onClick={async () => {
+                      // Create reminder logic - for now, try to find and open stream URL
+                      if (match.stream) {
+                        window.open(match.stream, '_blank')
+                      } else {
+                        // Search for YouTube live stream for upcoming matches
+                        try {
+                          const youtubeUrl = await searchYouTubeLiveStream(match)
+                          if (youtubeUrl) {
+                            window.open(youtubeUrl, '_blank')
+                          } else {
+                            // Create calendar reminder as fallback
+                            const startTime = new Date(match.start)
+                            const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${match.home?.name || 'TBD'} vs ${match.away?.name || 'TBD'}`)}&dates=${startTime.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${new Date(startTime.getTime() + 2*60*60*1000).toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(`${match.league} - ${match.stage || 'Match'}`)}`
+                            window.open(calendarUrl, '_blank')
+                          }
+                        } catch (error) {
+                          // Fallback to calendar reminder
+                          const startTime = new Date(match.start)
+                          const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`${match.home?.name || 'TBD'} vs ${match.away?.name || 'TBD'}`)}&dates=${startTime.toISOString().replace(/[-:]/g, '').split('.')[0]}Z/${new Date(startTime.getTime() + 2*60*60*1000).toISOString().replace(/[-:]/g, '').split('.')[0]}Z&details=${encodeURIComponent(`${match.league} - ${match.stage || 'Match'}`)}`
+                          window.open(calendarUrl, '_blank')
+                        }
+                      }
+                    }}
                   >
                     <Clock className="h-3 w-3" />
                     Đặt nhắc nhở
