@@ -1,29 +1,41 @@
 // Vercel Serverless Function for Football API
 export default async function handler(req, res) {
+  // Add initial log to track when API is called
+  console.log('🏈 Football API - Handler called!');
+  console.log('🏈 Football API - Request method:', req.method);
+  console.log('🏈 Football API - Request URL:', req.url);
+  console.log('🏈 Football API - Request headers:', JSON.stringify(req.headers, null, 2));
+  
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Auth-Token');
 
   if (req.method === 'OPTIONS') {
+    console.log('🏈 Football API - Handling OPTIONS request');
     res.status(200).end();
     return;
   }
 
   try {
+    console.log('🏈 Football API - Starting main logic');
+    
     // Parse URL path - remove query parameters first
     const urlPath = req.url.split('?')[0].replace('/api/football', '');
-    console.log('Football API - URL Path:', urlPath);
-    console.log('Football API - Full URL:', req.url);
+    console.log('🏈 Football API - URL Path:', urlPath);
+    console.log('🏈 Football API - Full URL:', req.url);
+    console.log('🏈 Football API - Query params:', req.query);
     
     // Handle /competitions endpoint
     if (urlPath === '/competitions') {
+      console.log('🏈 Football API - Handling /competitions endpoint');
       // GET /competitions - return available competitions
       const competitions = [
         { id: 'PL', name: 'Premier League', area: { name: 'England' } },
         { id: 'PD', name: 'LaLiga', area: { name: 'Spain' } },
         { id: 'CL', name: 'UEFA Champions League', area: { name: 'Europe' } }
       ];
+      console.log('🏈 Football API - Returning competitions:', competitions);
       res.status(200).json({ competitions });
       return;
     }
@@ -31,11 +43,12 @@ export default async function handler(req, res) {
     // Handle /competitions/{id}/matches endpoint
     const competitionMatch = urlPath.match(/^\/competitions\/([^\/]+)\/matches$/);
     if (competitionMatch) {
+      console.log('🏈 Football API - Handling /competitions/{id}/matches endpoint');
       const competition = competitionMatch[1];
       const { dateFrom, dateTo } = req.query;
       
-      console.log('Football API - Competition:', competition);
-      console.log('Football API - Date range:', { dateFrom, dateTo });
+      console.log('🏈 Football API - Competition:', competition);
+      console.log('🏈 Football API - Date range:', { dateFrom, dateTo });
       
       // List of API keys to try in order
       const apiKeys = [
@@ -46,12 +59,12 @@ export default async function handler(req, res) {
       ].filter(Boolean); // Remove null/undefined keys
       
       if (apiKeys.length === 0) {
-        console.error('Football API - No API keys found');
+        console.error('🏈 Football API - No API keys found');
         res.status(500).json({ error: 'Football API keys not configured' });
         return;
       }
       
-      console.log('Football API - Available keys count:', apiKeys.length);
+      console.log('🏈 Football API - Available keys count:', apiKeys.length);
 
       let apiUrl = `https://api.football-data.org/v4/competitions/${competition}/matches`;
       if (dateFrom && dateTo) {
@@ -261,7 +274,11 @@ export default async function handler(req, res) {
     res.status(200).json(data);
 
   } catch (error) {
-    console.error('Football API Error:', error);
+    console.error('🏈 Football API - Critical Error occurred!');
+    console.error('🏈 Football API Error:', error);
+    console.error('🏈 Football API Error Name:', error.name);
+    console.error('🏈 Football API Error Message:', error.message);
+    console.error('🏈 Football API Error Stack:', error.stack);
     res.status(500).json({ 
       error: 'Failed to fetch Football data',
       message: error.message 
