@@ -61,7 +61,9 @@ export const mobileConfig = {
     enableSwipeNavigation: true,
     showViewCount: true,
     compactMatchInfo: true,
-    prioritizeLiveMatches: true
+    prioritizeLiveMatches: true,
+    enableTeamNameFilter: true, // Enable team name filtering like desktop
+    maxTeamNameLength: 15 // Maximum length before truncation
   },
   
   // Breakpoints
@@ -69,6 +71,32 @@ export const mobileConfig = {
     mobile: 768,
     mobileSm: 375,
     mobileXs: 320
+  },
+
+  // Team name filtering settings
+  teamNameFilter: {
+    enabled: true,
+    maxLength: 15,
+    wordsToRemove: [
+      'FC', 'CF', 'AC', 'SC', 'AS', 'RC', 'CD', 'CD.', 'C.D.',
+      'Esports', 'Esport', 'E-sports', 'Gaming', 'Team',
+      'Club', 'Football Club', 'Soccer Club',
+      'Athletic', 'Atletico',
+      'Town', 'County', 'Sport', 'de', 'Fútbol', 'Fútbol Club', 
+      'F.C.', 'C.F.', 'A.C.', 'S.C.', 'A.S.', 'R.C.', 'C.D.'
+    ],
+    specialCases: {
+      'Manchester United': 'Man United',
+      'Manchester City': 'Man City', 
+      'Barcelona': 'Barça',
+      'Bayern München': 'Bayern',
+      'Inter Milan': 'Inter',
+      'AC Milan': 'Milan',
+      'Real Madrid': 'Real Madrid',
+      'Atletico Madrid': 'Atletico',
+      'Paris Saint-Germain': 'PSG',
+      'Borussia Dortmund': 'Dortmund'
+    }
   }
 }
 

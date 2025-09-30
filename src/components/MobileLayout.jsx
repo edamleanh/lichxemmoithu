@@ -133,10 +133,60 @@ const fmtTime = (date) => {
   })
 }
 
-const shortenTeamName = (name) => {
-  if (!name) return ''
-  if (name.length <= 12) return name
-  return name.substring(0, 12) + '...'
+const shortenTeamName = (teamName) => {
+  if (!teamName || teamName === 'TBD') return teamName
+  
+  // Words to remove from team names
+  const wordsToRemove = [
+    'FC', 'CF', 'AC', 'SC', 'AS', 'RC', 'CD', 'CD.', 'C.D.',
+    'Esports', 'Esport', 'E-sports', 'Gaming', 'Team',
+    'Club', 'Football Club', 'Soccer Club',
+     'Athletic', 'Atletico',
+     'Town', 'County', 'Sport', 'de', 'Fútbol', 'Fútbol', 'Fútbol Club', 'F.C.', 'C.F.', 'A.C.', 'S.C.', 'A.S.', 'R.C.', 'C.D.', 'C.D',
+  ]
+  
+  // Split team name into words
+  let words = teamName.split(' ')
+  
+  // Remove unnecessary words (case insensitive)
+  words = words.filter(word => {
+    const wordLower = word.toLowerCase().replace(/[.,]/g, '')
+    return !wordsToRemove.some(removeWord => 
+      removeWord.toLowerCase() === wordLower
+    )
+  })
+  
+  // If all words were removed, return original name
+  if (words.length === 0) {
+    return teamName
+  }
+  
+  // Join remaining words
+  let cleanName = words.join(' ')
+  
+  // Special cases for common abbreviations
+  const specialCases = {
+    'Manchester Utd': 'Manchester United',
+    'Man Utd': 'Manchester United',
+    'Barcelona': 'Barça',
+    'Bayern München': 'Bayern Munich',
+    'Inter Milan': 'Inter',
+    'AC Milan': 'Milan'
+  }
+  
+  // Check if cleaned name matches any special case
+  for (const [key, value] of Object.entries(specialCases)) {
+    if (cleanName === key) {
+      return value
+    }
+  }
+  
+  // Mobile-specific: If name is still too long, truncate
+  if (cleanName.length > 15) {
+    return cleanName.substring(0, 12) + '...'
+  }
+  
+  return cleanName
 }
 
 // Mobile-optimized Match Card Component

@@ -2,7 +2,25 @@
 
 ## Tổng quan
 
-Đã tạo thành công một hệ thống layout riêng biệt cho mobile và desktop với những tính năng và giao diện được tối ưu cho từng loại thiết bị.
+Đã tạo thành công một hệ thống layout riêng biệt cho mobile và desktop với những tính năn### Configuration Options
+
+### Team Name Filtering
+```js
+teamNameFilter: {
+  enabled: true,              // Enable team name filtering
+  maxLength: 15,              // Max length before truncation
+  wordsToRemove: [            // Words to remove from team names
+    'FC', 'CF', 'AC', 'SC', 'Esports', 'Team', 'Club'
+  ],
+  specialCases: {             // Special abbreviations
+    'Manchester United': 'Man United',
+    'Barcelona': 'Barça',
+    'Paris Saint-Germain': 'PSG'
+  }
+}
+```
+
+### Layout Settingsà giao diện được tối ưu cho từng loại thiết bị.
 
 ## 🏗️ Cấu trúc Files
 
@@ -32,6 +50,8 @@ src/
 - **Quick jump buttons**: Nút nhanh để nhảy đến Live/Upcoming/Finished
 - **Card layout**: Layout dọc, compact hơn
 - **Typography**: Font size nhỏ hơn, phù hợp mobile
+- **Team name filtering**: Sử dụng bộ lọc tên CLB giống desktop
+- **Smart truncation**: Tên quá dài sẽ được cắt ngắn với "..."
 
 ### 🎮 Game-specific Mobile Optimizations
 
