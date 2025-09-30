@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     console.log('LoL API - Starting request');
     
     // Try the primary LoL API endpoint first with shorter timeout
-    const primaryApiUrl = 'https://esports-api.lolesports.com/persisted/gw/getLive?hl=en-US';
+    const primaryApiUrl = 'h  ';
     
     try {
       console.log('LoL API - Trying primary endpoint:', primaryApiUrl);
@@ -41,45 +41,16 @@ export default async function handler(req, res) {
       if (response.ok) {
         const data = await response.json();
         console.log('LoL API - Success, data received from primary endpoint');
-        console.log('LoL API - Data structure:', JSON.stringify(data, null, 2));
         res.status(200).json(data);
         return;
-      } else {
-        // Log chi tiết lỗi khi response không thành công
-        const errorText = await response.text();
-        console.error('LoL API - HTTP Error Details:');
-        console.error('Status Code:', response.status);
-        console.error('Status Text:', response.statusText);
-        console.error('Response Headers:', Object.fromEntries(response.headers.entries()));
-        console.error('Error Response Body:', errorText);
-        
-        // Throw error với chi tiết để fallback xử lý
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
       }
     } catch (error) {
-      console.error('LoL API - Primary endpoint failed with detailed error:');
-      console.error('Error Type:', error.name);
-      console.error('Error Message:', error.message);
-      console.error('Error Stack:', error.stack);
-      
-      if (error.name === 'AbortError') {
-        console.error('LoL API - Request timed out after 5 seconds');
-      } else if (error.name === 'TypeError') {
-        console.error('LoL API - Network error or invalid URL');
-      }
+      console.log('LoL API - Primary endpoint failed:', error.message);
     }
     
     // If primary API fails, return realistic sample data with proper structure
-    console.log('LoL API - Primary API failed, using sample data fallback');
-    console.warn('LoL API - WARNING: Returning sample data due to API failure');
-    
+    console.log('LoL API - Using sample data fallback');
     const sampleData = {
-      _metadata: {
-        isUsingFallbackData: true,
-        fallbackReason: 'Primary API endpoint failed',
-        timestamp: new Date().toISOString(),
-        note: 'This is sample data - not real live data'
-      },
       data: {
         schedule: {
           events: [
@@ -173,61 +144,13 @@ export default async function handler(req, res) {
       }
     };
     
-    console.log('LoL API - Returning sample data with', sampleData.data.schedule.events.length, 'sample matches');
-    console.log('LoL API - Sample data structure:', JSON.stringify(sampleData._metadata, null, 2));
     res.status(200).json(sampleData);
 
   } catch (error) {
-    console.error('LoL API - Critical Error:');
-    console.error('Error Name:', error.name);
-    console.error('Error Message:', error.message);
-    console.error('Error Stack:', error.stack);
-    console.error('Request URL:', req.url);
-    console.error('Request Method:', req.method);
-    console.error('Request Headers:', req.headers);
-    
-    // Xác định loại lỗi và mã lỗi tương ứng
-    let errorCode = 'UNKNOWN_ERROR';
-    let statusCode = 500;
-    
-    if (error.name === 'AbortError') {
-      errorCode = 'TIMEOUT_ERROR';
-      statusCode = 408;
-    } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      errorCode = 'NETWORK_ERROR';
-      statusCode = 503;
-    } else if (error.message.includes('HTTP 401')) {
-      errorCode = 'UNAUTHORIZED';
-      statusCode = 401;
-    } else if (error.message.includes('HTTP 403')) {
-      errorCode = 'FORBIDDEN';
-      statusCode = 403;
-    } else if (error.message.includes('HTTP 404')) {
-      errorCode = 'NOT_FOUND';
-      statusCode = 404;
-    } else if (error.message.includes('HTTP 429')) {
-      errorCode = 'RATE_LIMITED';
-      statusCode = 429;
-    } else if (error.message.includes('HTTP 5')) {
-      errorCode = 'SERVER_ERROR';
-      statusCode = 502;
-    }
-    
-    const errorResponse = {
+    console.error('LoL API Error:', error);
+    res.status(500).json({ 
       error: 'Failed to fetch LoL data',
-      errorCode: errorCode,
-      statusCode: statusCode,
-      message: error.message,
-      timestamp: new Date().toISOString(),
-      endpoint: 'LoL API',
-      details: {
-        errorType: error.name,
-        originalMessage: error.message,
-        isUsingFallbackData: false
-      }
-    };
-    
-    console.error('LoL API - Returning error response:', JSON.stringify(errorResponse, null, 2));
-    res.status(statusCode).json(errorResponse);
+      message: error.message 
+    });
   }
 }
