@@ -1183,7 +1183,7 @@ const TftAdapter = {
       console.log('🎮 Fetching TFT data from YouTube channel...')
       
       // TFT Esports channel ID (example - có thể thay đổi)
-      const CHANNEL_ID = 'UC2t5bjwHdUX4vM2g8TRDq5g' // Channel ID cho Riot Games hoặc kênh TFT chính thức
+      const CHANNEL_ID = 'UCKxbHR8VG9AyXL-W07ocrWA' // Channel ID cho Riot Games hoặc kênh TFT chính thức
       
       let allMatches = []
       
