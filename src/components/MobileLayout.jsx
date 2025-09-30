@@ -255,6 +255,7 @@ function MobileMatchCard({ match, isDarkMode }) {
         {/* League info in center */}
         <div className={`text-xs font-medium truncate px-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           {match.league}
+          {match.stage && <span className="text-gray-500"> • {match.stage}</span>}
         </div>
         
         <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
