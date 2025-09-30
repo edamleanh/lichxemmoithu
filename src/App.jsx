@@ -28,6 +28,8 @@ import {
   Medal,
   Moon,
   Sun,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 
 // Import custom game icons
@@ -2781,11 +2783,20 @@ export default function App() {
   // State management
   const [activeSport, setActiveSport] = useState('all')
   const [isCompactView, setIsCompactView] = useState(false)
+  const [collapsedSections, setCollapsedSections] = useState({}) // Track collapsed sections
   const [isDarkMode, setIsDarkMode] = useState(() => {
     // Check localStorage for saved preference
     const saved = localStorage.getItem('darkMode')
     return saved ? JSON.parse(saved) : false
   })
+
+  // Toggle section collapse state
+  const toggleSectionCollapse = (sectionKey) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }))
+  }
 
   // Save dark mode preference to localStorage
   useEffect(() => {
@@ -3038,6 +3049,7 @@ export default function App() {
             }
             
             const config = statusConfig[status]
+            const isCollapsed = collapsedSections[status]
             
             return (
               <motion.section
@@ -3068,25 +3080,55 @@ export default function App() {
                       }`}>
                         {matches.length} trận đấu
                       </span>
+                      
+                      {/* Collapse/Expand Button */}
+                      <button
+                        onClick={() => toggleSectionCollapse(status)}
+                        className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
+                          isDarkMode 
+                            ? 'bg-gray-700/60 hover:bg-gray-600/80 text-gray-300 border border-gray-600/60' 
+                            : `${config.bgColor} hover:bg-opacity-80 ${config.textColor} ${config.borderColor} border`
+                        }`}
+                        title={isCollapsed ? 'Mở rộng' : 'Thu nhỏ'}
+                      >
+                        {isCollapsed ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronUp className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
-                  <div className={`grid gap-6 ${
-                    isCompactView 
-                      ? 'grid-cols-1' 
-                      : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
-                  }`}>
-                    <AnimatePresence>
-                      {matches.map((match) => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          isCompact={isCompactView}
-                          isDarkMode={isDarkMode}
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </div>
+                  {/* Content with collapse animation */}
+                  <AnimatePresence>
+                    {!isCollapsed && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                      >
+                        <div className={`grid gap-6 ${
+                          isCompactView 
+                            ? 'grid-cols-1' 
+                            : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+                        }`}>
+                          <AnimatePresence>
+                            {matches.map((match) => (
+                              <MatchCard
+                                key={match.id}
+                                match={match}
+                                isCompact={isCompactView}
+                                isDarkMode={isDarkMode}
+                              />
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.section>
             )
