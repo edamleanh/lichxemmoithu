@@ -209,11 +209,6 @@ function MobileMatchCard({ match, isDarkMode }) {
           )}
         </div>
 
-        {/* VS Divider */}
-        <div className="flex justify-center">
-          <span className="text-gray-400 text-xs font-medium">VS</span>
-        </div>
-
         {/* Team 2 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1 min-w-0">
