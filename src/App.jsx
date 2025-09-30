@@ -188,7 +188,7 @@ const searchYouTubeLiveStream = async (match) => {
       'live'
     ].filter(Boolean).join(' ')
     
-    console.log('🔍 Searching YouTube for:', searchQuery)
+    //console.log('🔍 Searching YouTube for:', searchQuery)
 
     const data = await youtubeApiManager.makeRequest(
       `https://www.googleapis.com/youtube/v3/search?` +
@@ -197,7 +197,7 @@ const searchYouTubeLiveStream = async (match) => {
     );
     
     if (!data) {
-      console.warn('YouTube API error: No data returned')
+      //console.warn('YouTube API error: No data returned')
       return null
     }
     
@@ -205,16 +205,16 @@ const searchYouTubeLiveStream = async (match) => {
       const video = data.items[0]
       const youtubeUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`
       
-      console.log('✅ Found YouTube live stream:', youtubeUrl)
-      console.log('📺 Video title:', video.snippet.title)
+      //console.log('✅ Found YouTube live stream:', youtubeUrl)
+      //console.log('📺 Video title:', video.snippet.title)
       return youtubeUrl
     }
     
-    console.log('❌ No live streams found on YouTube for:', searchQuery)
+    //console.log('❌ No live streams found on YouTube for:', searchQuery)
     return null
     
   } catch (error) {
-    console.error('YouTube search error:', error)
+    //console.error('YouTube search error:', error)
     return null
   }
 }
@@ -271,12 +271,12 @@ const TeamLogoSearchService = {
     // Check cache first
     if (this.cache.has(cacheKey)) {
       const cachedResult = this.cache.get(cacheKey)
-      console.log(`💾 Using cached logo for ${teamName}:`, cachedResult || 'No logo found')
+      //console.log(`💾 Using cached logo for ${teamName}:`, cachedResult || 'No logo found')
       return cachedResult
     }
     
     try {
-      console.log(`🔍 Searching logo for ${teamName} (${sport})...`)
+      //console.log(`🔍 Searching logo for ${teamName} (${sport})...`)
       
       // Clean team name for better search results
       const cleanTeamName = teamName
@@ -327,11 +327,11 @@ const TeamLogoSearchService = {
       // Cache the result (even if null to avoid repeated failed searches)
       this.addToCache(cacheKey, logoUrl)
       
-      console.log(`✅ Found logo for ${teamName} (${sport}):`, logoUrl || 'No logo found')
+      //console.log(`✅ Found logo for ${teamName} (${sport}):`, logoUrl || 'No logo found')
       return logoUrl
       
     } catch (error) {
-      console.error(`❌ Error searching logo for ${teamName}:`, error.name === 'AbortError' ? 'Request timeout' : error.message)
+      //console.error(`❌ Error searching logo for ${teamName}:`, error.name === 'AbortError' ? 'Request timeout' : error.message)
       
       // Cache null result to avoid repeated failed searches
       this.addToCache(cacheKey, null)
@@ -366,7 +366,7 @@ const TeamLogoSearchService = {
   // Clear cache (useful for testing or memory management)
   clearCache() {
     this.cache.clear()
-    console.log('🗑️ Team logo cache cleared')
+    //console.log('🗑️ Team logo cache cleared')
   },
   
   // Get cache statistics
@@ -433,7 +433,7 @@ const ValorantAdapter = {
             away: enhancedAway
           }
         } catch (error) {
-          console.error('Error enhancing logos for live match:', match.id, error)
+          //console.error('Error enhancing logos for live match:', match.id, error)
           return match // Return original match if enhancement fails
         }
       })
@@ -494,7 +494,7 @@ const ValorantAdapter = {
             away: enhancedAway
           }
         } catch (error) {
-          console.error('Error enhancing logos for upcoming match:', match.id, error)
+          //console.error('Error enhancing logos for upcoming match:', match.id, error)
           return match // Return original match if enhancement fails
         }
       })
@@ -558,7 +558,7 @@ const ValorantAdapter = {
             away: enhancedAway
           }
         } catch (error) {
-          console.error('Error enhancing logos for match:', match.id, error)
+          //console.error('Error enhancing logos for match:', match.id, error)
           return match // Return original match if enhancement fails
         }
       })
@@ -626,10 +626,10 @@ const ValorantAdapter = {
           const liveMatches = await this.processLiveMatches(liveData)
           allMatches = [...allMatches, ...liveMatches]
         } else {
-          console.warn(`⚠️ Live Valorant API error: ${liveResponse.status}`)
+          //console.warn(`⚠️ Live Valorant API error: ${liveResponse.status}`)
         }
       } catch (error) {
-        console.warn('⚠️ Error fetching LIVE Valorant matches:', error)
+        //console.warn('⚠️ Error fetching LIVE Valorant matches:', error)
       }
 
       // Fetch upcoming matches
@@ -641,10 +641,10 @@ const ValorantAdapter = {
           const upcomingMatches = await this.processUpcomingMatches(upcomingData)
           allMatches = [...allMatches, ...upcomingMatches]
         } else {
-          console.warn(`⚠️ Upcoming Valorant API error: ${upcomingResponse.status}`)
+          //console.warn(`⚠️ Upcoming Valorant API error: ${upcomingResponse.status}`)
         }
       } catch (error) {
-        console.warn('⚠️ Error fetching upcoming Valorant matches:', error)
+        //console.warn('⚠️ Error fetching upcoming Valorant matches:', error)
       }
 
       // Fetch completed matches (results)
@@ -656,10 +656,10 @@ const ValorantAdapter = {
           const completedMatches = await this.processCompletedMatches(resultsData)
           allMatches = [...allMatches, ...completedMatches]
         } else {
-          console.warn(`⚠️ Results Valorant API error: ${resultsResponse.status}`)
+          //console.warn(`⚠️ Results Valorant API error: ${resultsResponse.status}`)
         }
       } catch (error) {
-        console.warn('⚠️ Error fetching completed Valorant matches:', error)
+        //console.warn('⚠️ Error fetching completed Valorant matches:', error)
       }
 
       // Filter matches by date range and remove duplicates
@@ -687,7 +687,7 @@ const ValorantAdapter = {
       })
       return sortedMatches
     } catch (error) {
-      console.warn('⚠️ Valorant API error:', error)
+      //console.warn('⚠️ Valorant API error:', error)
       return createSampleData('valorant', from, to)
     }
   },
@@ -696,35 +696,35 @@ const ValorantAdapter = {
 // Helper function to check YouTube API health and provide debugging info
 const checkYouTubeAPIHealth = async (apiKey) => {
   try {
-    console.log('🔍 Checking YouTube API health...')
+    //console.log('🔍 Checking YouTube API health...')
     const testResponse = await fetch(
       `https://www.googleapis.com/youtube/v3/search?` +
       `part=snippet&q=test&type=video&maxResults=1&key=${apiKey}`
     )
     
     if (testResponse.ok) {
-      console.log('✅ YouTube API is working correctly')
+      //console.log('✅ YouTube API is working correctly')
       return true
     } else {
       const errorData = await testResponse.json()
-      console.error('❌ YouTube API test failed:', testResponse.status, errorData)
+      //console.error('❌ YouTube API test failed:', testResponse.status, errorData)
       
       if (testResponse.status === 403) {
-        console.warn('🚨 API Key Issues:')
-        console.warn('   • Quota exceeded for today')
-        console.warn('   • API key may be invalid or restricted')
-        console.warn('   • Check Google Cloud Console for quotas')
-        console.warn('   • Consider using a different API key')
-        console.warn('💡 Solutions:')
-        console.warn('   1. Wait until tomorrow for quota reset')
-        console.warn('   2. Increase quota in Google Cloud Console')
-        console.warn('   3. Use a different YouTube API key')
-        console.warn('   4. Temporarily disable PUBG/TFT features')
+        //console.warn('🚨 API Key Issues:')
+        //console.warn('   • Quota exceeded for today')
+        //console.warn('   • API key may be invalid or restricted')
+        //console.warn('   • Check Google Cloud //console for quotas')
+        //console.warn('   • Consider using a different API key')
+        //console.warn('💡 Solutions:')
+        //console.warn('   1. Wait until tomorrow for quota reset')
+        //console.warn('   2. Increase quota in Google Cloud //console')
+        //console.warn('   3. Use a different YouTube API key')
+        //console.warn('   4. Temporarily disable PUBG/TFT features')
       }
       return false
     }
   } catch (error) {
-    console.error('❌ Network error testing YouTube API:', error)
+    //console.error('❌ Network error testing YouTube API:', error)
     return false
   }
 }
@@ -750,7 +750,7 @@ const YouTubeAPIManager = {
   switchToNextKey() {
     this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length
     const newKey = this.getCurrentKey()
-    console.log(`🔄 Switching to API key #${this.currentKeyIndex + 1}: ${newKey.substring(0, 10)}...`)
+    //console.log(`🔄 Switching to API key #${this.currentKeyIndex + 1}: ${newKey.substring(0, 10)}...`)
     return newKey
   },
   
@@ -762,7 +762,7 @@ const YouTubeAPIManager = {
   // Reset to first key
   resetToFirstKey() {
     this.currentKeyIndex = 0
-    console.log('🔄 Reset to primary API key')
+    //console.log('🔄 Reset to primary API key')
   },
   
   // Make request with fallback to other keys
@@ -771,27 +771,27 @@ const YouTubeAPIManager = {
     const fullUrl = url.includes('key=') ? url : `${url}&key=${currentKey}`
     
     try {
-      console.log(`📡 Making request with API key #${this.currentKeyIndex + 1}`)
+      //console.log(`📡 Making request with API key #${this.currentKeyIndex + 1}`)
       const response = await fetch(fullUrl)
       
       if (response.ok) {
         const data = await response.json()
         return data
       } else if (response.status === 403 && this.hasMoreKeys() && retryCount < this.apiKeys.length) {
-        console.warn(`⚠️ API key #${this.currentKeyIndex + 1} failed (403), trying next key...`)
+        //console.warn(`⚠️ API key #${this.currentKeyIndex + 1} failed (403), trying next key...`)
         this.switchToNextKey()
         return this.makeRequest(url, retryCount + 1)
       } else {
-        console.warn(`⚠️ API request failed with status ${response.status}`)
+        //console.warn(`⚠️ API request failed with status ${response.status}`)
         return null // Return null for failed requests
       }
     } catch (error) {
       if (this.hasMoreKeys() && retryCount < this.apiKeys.length) {
-        console.warn(`⚠️ Network error with API key #${this.currentKeyIndex + 1}, trying next key...`)
+        //console.warn(`⚠️ Network error with API key #${this.currentKeyIndex + 1}, trying next key...`)
         this.switchToNextKey()
         return this.makeRequest(url, retryCount + 1)
       } else {
-        console.error('❌ All API keys failed or network error:', error)
+        //console.error('❌ All API keys failed or network error:', error)
         return null
       }
     }
@@ -804,7 +804,7 @@ const youtubeApiManager = YouTubeAPIManager
 const PubgAdapter = {
   async fetch({ from, to }) {
     try {
-      console.log('🎮 Fetching PUBG data from YouTube channel...')
+      //console.log('🎮 Fetching PUBG data from YouTube channel...')
       
       // PUBG BATTLEGROUNDS VIETNAM channel ID
       const CHANNEL_ID = 'UCeX2iXaH63w3BZ8Wae_JdEA' // Channel ID cho @PUBGBATTLEGROUNDSVIETNAM
@@ -854,25 +854,25 @@ const PubgAdapter = {
                   return viewsB - viewsA
                 })
                 
-                console.log('📊 Live videos sorted by view count:')
+                //console.log('📊 Live videos sorted by view count:')
                 liveVideosWithStats.forEach(video => {
                   const views = parseInt(video.statistics?.viewCount || '0')
-                  console.log(`   ${video.snippet.title}: ${views.toLocaleString()} views`)
+                  //console.log(`   ${video.snippet.title}: ${views.toLocaleString()} views`)
                 })
               }
             } catch (statsError) {
-              console.warn('⚠️ Could not fetch video statistics:', statsError)
+              //console.warn('⚠️ Could not fetch video statistics:', statsError)
             }
           }
           
           const liveMatches = this.processLiveVideos(liveVideosWithStats)
           allMatches = [...allMatches, ...liveMatches]
-          console.log(`✅ Found ${liveMatches.length} live PUBG streams`)
+          //console.log(`✅ Found ${liveMatches.length} live PUBG streams`)
         } else {
-          console.warn('⚠️ No live PUBG streams found or API error')
+          //console.warn('⚠️ No live PUBG streams found or API error')
         }
       } catch (error) {
-        console.warn('⚠️ Error fetching live PUBG streams:', error)
+        //console.warn('⚠️ Error fetching live PUBG streams:', error)
       }
       
       // 2. Fetch upcoming streams
@@ -892,13 +892,13 @@ const PubgAdapter = {
             const isUpcoming = item.snippet.liveBroadcastContent === 'upcoming'
             
             if (!isUpcoming) {
-              console.log(`🚫 Filtered out non-upcoming video: "${item.snippet.title}" (liveBroadcastContent: ${item.snippet.liveBroadcastContent})`)
+              //console.log(`🚫 Filtered out non-upcoming video: "${item.snippet.title}" (liveBroadcastContent: ${item.snippet.liveBroadcastContent})`)
             }
             
             return isUpcoming
           }) || []
           
-          console.log(`📋 Found ${trulyUpcomingVideos.length} truly upcoming videos out of ${upcomingData.items?.length || 0} total`)
+          //console.log(`📋 Found ${trulyUpcomingVideos.length} truly upcoming videos out of ${upcomingData.items?.length || 0} total`)
           
           // Get video IDs for additional details (scheduled start time)
           const videoIds = trulyUpcomingVideos?.map(item => item.id.videoId).join(',')
@@ -924,37 +924,37 @@ const PubgAdapter = {
                   }
                 })
                 
-                console.log('📅 Upcoming videos with scheduled times:')
+                //console.log('📅 Upcoming videos with scheduled times:')
                 upcomingVideosWithSchedule.forEach(video => {
                   const scheduledTime = video.liveStreamingDetails?.scheduledStartTime
                   if (scheduledTime) {
                     const startTime = new Date(scheduledTime)
-                    console.log(`   ${video.snippet.title}: scheduled for ${startTime.toLocaleString('vi-VN')}`)
+                    //console.log(`   ${video.snippet.title}: scheduled for ${startTime.toLocaleString('vi-VN')}`)
                   } else {
-                    console.log(`   ${video.snippet.title}: no scheduled time found`)
+                    //console.log(`   ${video.snippet.title}: no scheduled time found`)
                   }
                 })
               }
             } catch (scheduleError) {
-              console.warn('⚠️ Could not fetch video schedule details:', scheduleError)
+              //console.warn('⚠️ Could not fetch video schedule details:', scheduleError)
             }
           } else {
-            console.log('📅 No upcoming video IDs found to fetch schedule details')
+            //console.log('📅 No upcoming video IDs found to fetch schedule details')
           }
           
           const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithSchedule)
           allMatches = [...allMatches, ...upcomingMatches]
-          console.log(`✅ Found ${upcomingMatches.length} upcoming PUBG streams`)
+          //console.log(`✅ Found ${upcomingMatches.length} upcoming PUBG streams`)
         } else {
           // Handle API errors for upcoming streams
           const errorText = await upcomingResponse.text()
-          console.warn(`⚠️ PUBG Upcoming API error: ${upcomingResponse.status} - ${errorText}`)
+          //console.warn(`⚠️ PUBG Upcoming API error: ${upcomingResponse.status} - ${errorText}`)
           if (upcomingResponse.status === 403) {
-            console.warn('📋 YouTube API quota exceeded or API key invalid for upcoming streams')
+            //console.warn('📋 YouTube API quota exceeded or API key invalid for upcoming streams')
           }
         }
       } catch (error) {
-        console.warn('⚠️ Error fetching upcoming PUBG streams:', error)
+        //console.warn('⚠️ Error fetching upcoming PUBG streams:', error)
       }
       
       // Filter by date range
@@ -966,7 +966,7 @@ const PubgAdapter = {
       
       // If no matches found, return empty array (don't show anything)
       if (filteredMatches.length === 0) {
-        console.log('📦 No PUBG matches found, returning empty array')
+        //console.log('📦 No PUBG matches found, returning empty array')
         return []
       }
       
@@ -997,7 +997,7 @@ const PubgAdapter = {
       })
       
     } catch (error) {
-      console.warn('⚠️ PUBG YouTube API error:', error)
+      //console.warn('⚠️ PUBG YouTube API error:', error)
       return [] // Return empty array instead of sample data
     }
   },
@@ -1058,7 +1058,7 @@ const PubgAdapter = {
       return currentViews > prevViews ? current : prev
     })
     
-    console.log(`🏆 Selected top PUBG live video: "${topVideo.title}" with ${topVideo.viewCount.toLocaleString()} views`)
+    //console.log(`🏆 Selected top PUBG live video: "${topVideo.title}" with ${topVideo.viewCount.toLocaleString()} views`)
     
     return [topVideo] // Return array with only the top video
   },
@@ -1097,10 +1097,10 @@ const PubgAdapter = {
       videoId: item.id.videoId
     }))
 
-    console.log(`📅 Found ${upcomingMatches.length} upcoming PUBG videos`)
+    //console.log(`📅 Found ${upcomingMatches.length} upcoming PUBG videos`)
     upcomingMatches.forEach(video => {
       const startTime = video.start
-      console.log(`   "${video.title}" - scheduled for ${startTime.toLocaleString('vi-VN')}`)
+      //console.log(`   "${video.title}" - scheduled for ${startTime.toLocaleString('vi-VN')}`)
     })
 
     return upcomingMatches // Return all upcoming videos
@@ -1185,7 +1185,7 @@ const PubgAdapter = {
 const TftAdapter = {
   async fetch({ from, to }) {
     try {
-      console.log('🎮 Fetching TFT data from YouTube channel...')
+      //console.log('🎮 Fetching TFT data from YouTube channel...')
       
       // TFT Esports channel ID (example - có thể thay đổi)
       const CHANNEL_ID = 'UCKxbHR8VG9AyXL-W07ocrWA' // Channel ID cho Riot Games hoặc kênh TFT chính thức
@@ -1235,30 +1235,30 @@ const TftAdapter = {
                   return viewsB - viewsA
                 })
                 
-                console.log('📊 TFT Live videos sorted by view count:')
+                //console.log('📊 TFT Live videos sorted by view count:')
                 liveVideosWithStats.forEach(video => {
                   const views = parseInt(video.statistics?.viewCount || '0')
-                  console.log(`   ${video.snippet.title}: ${views.toLocaleString()} views`)
+                  //console.log(`   ${video.snippet.title}: ${views.toLocaleString()} views`)
                 })
               }
             } catch (statsError) {
-              console.warn('⚠️ Could not fetch TFT video statistics:', statsError)
+              //console.warn('⚠️ Could not fetch TFT video statistics:', statsError)
             }
           }
           
           const liveMatches = this.processLiveVideos(liveVideosWithStats)
           allMatches = [...allMatches, ...liveMatches]
-          console.log(`✅ Found ${liveMatches.length} live TFT streams`)
+          //console.log(`✅ Found ${liveMatches.length} live TFT streams`)
         } else {
           // Handle API errors for TFT live streams
           const errorText = await liveResponse.text()
-          console.warn(`⚠️ TFT Live API error: ${liveResponse.status} - ${errorText}`)
+          //console.warn(`⚠️ TFT Live API error: ${liveResponse.status} - ${errorText}`)
           if (liveResponse.status === 403) {
-            console.warn('📋 YouTube API quota exceeded or API key invalid for TFT')
+            //console.warn('📋 YouTube API quota exceeded or API key invalid for TFT')
           }
         }
       } catch (error) {
-        console.warn('⚠️ Error fetching live TFT streams:', error)
+        //console.warn('⚠️ Error fetching live TFT streams:', error)
       }
       
       // 2. Fetch upcoming streams
@@ -1278,13 +1278,13 @@ const TftAdapter = {
             const isUpcoming = item.snippet.liveBroadcastContent === 'upcoming'
             
             if (!isUpcoming) {
-              console.log(`🚫 Filtered out non-upcoming TFT video: "${item.snippet.title}" (liveBroadcastContent: ${item.snippet.liveBroadcastContent})`)
+              //console.log(`🚫 Filtered out non-upcoming TFT video: "${item.snippet.title}" (liveBroadcastContent: ${item.snippet.liveBroadcastContent})`)
             }
             
             return isUpcoming
           }) || []
           
-          console.log(`📋 Found ${trulyUpcomingVideos.length} truly upcoming TFT videos out of ${upcomingData.items?.length || 0} total`)
+          //console.log(`📋 Found ${trulyUpcomingVideos.length} truly upcoming TFT videos out of ${upcomingData.items?.length || 0} total`)
           
           // Get video IDs for additional details (scheduled start time)
           const videoIds = trulyUpcomingVideos?.map(item => item.id.videoId).join(',')
@@ -1310,37 +1310,37 @@ const TftAdapter = {
                   }
                 })
                 
-                console.log('📅 TFT Upcoming videos with scheduled times:')
+                //console.log('📅 TFT Upcoming videos with scheduled times:')
                 upcomingVideosWithSchedule.forEach(video => {
                   const scheduledTime = video.liveStreamingDetails?.scheduledStartTime
                   if (scheduledTime) {
                     const startTime = new Date(scheduledTime)
-                    console.log(`   ${video.snippet.title}: scheduled for ${startTime.toLocaleString('vi-VN')}`)
+                    //console.log(`   ${video.snippet.title}: scheduled for ${startTime.toLocaleString('vi-VN')}`)
                   } else {
-                    console.log(`   ${video.snippet.title}: no scheduled time found`)
+                    //console.log(`   ${video.snippet.title}: no scheduled time found`)
                   }
                 })
               }
             } catch (scheduleError) {
-              console.warn('⚠️ Could not fetch TFT video schedule details:', scheduleError)
+              //console.warn('⚠️ Could not fetch TFT video schedule details:', scheduleError)
             }
           } else {
-            console.log('📅 No upcoming TFT video IDs found to fetch schedule details')
+            //console.log('📅 No upcoming TFT video IDs found to fetch schedule details')
           }
           
           const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithSchedule)
           allMatches = [...allMatches, ...upcomingMatches]
-          console.log(`✅ Found ${upcomingMatches.length} upcoming TFT streams`)
+          //console.log(`✅ Found ${upcomingMatches.length} upcoming TFT streams`)
         } else {
           // Handle API errors for TFT upcoming streams
           const errorText = await upcomingResponse.text()
-          console.warn(`⚠️ TFT Upcoming API error: ${upcomingResponse.status} - ${errorText}`)
+          //console.warn(`⚠️ TFT Upcoming API error: ${upcomingResponse.status} - ${errorText}`)
           if (upcomingResponse.status === 403) {
-            console.warn('📋 YouTube API quota exceeded or API key invalid for TFT upcoming')
+            //console.warn('📋 YouTube API quota exceeded or API key invalid for TFT upcoming')
           }
         }
       } catch (error) {
-        console.warn('⚠️ Error fetching upcoming TFT streams:', error)
+        //console.warn('⚠️ Error fetching upcoming TFT streams:', error)
       }
       
       // Filter by date range
@@ -1352,7 +1352,7 @@ const TftAdapter = {
       
       // If no matches found, return empty array (don't show anything)
       if (filteredMatches.length === 0) {
-        console.log('📦 No TFT matches found, returning empty array')
+        //console.log('📦 No TFT matches found, returning empty array')
         return []
       }
       
@@ -1383,7 +1383,7 @@ const TftAdapter = {
       })
       
     } catch (error) {
-      console.warn('⚠️ TFT YouTube API error:', error)
+      //console.warn('⚠️ TFT YouTube API error:', error)
       return [] // Return empty array instead of sample data
     }
   },
@@ -1444,7 +1444,7 @@ const TftAdapter = {
       return currentViews > prevViews ? current : prev
     })
     
-    console.log(`🏆 Selected top TFT live video: "${topVideo.title}" with ${topVideo.viewCount.toLocaleString()} views`)
+    //console.log(`🏆 Selected top TFT live video: "${topVideo.title}" with ${topVideo.viewCount.toLocaleString()} views`)
     
     return [topVideo] // Return array with only the top video
   },
@@ -1483,10 +1483,10 @@ const TftAdapter = {
       videoId: item.id.videoId
     }))
 
-    console.log(`📅 Found ${upcomingMatches.length} upcoming TFT videos`)
+    //console.log(`📅 Found ${upcomingMatches.length} upcoming TFT videos`)
     upcomingMatches.forEach(video => {
       const startTime = video.start
-      console.log(`   "${video.title}" - scheduled for ${startTime.toLocaleString('vi-VN')}`)
+      //console.log(`   "${video.title}" - scheduled for ${startTime.toLocaleString('vi-VN')}`)
     })
 
     return upcomingMatches // Return all upcoming videos
@@ -1573,23 +1573,23 @@ const LolAdapter = {
       })
       
       if (!response.ok) {
-        console.warn(`LoL API error: ${response.status}`)
+        //console.warn(`LoL API error: ${response.status}`)
         return createSampleData('lol', from, to)
       }
       
       const data = await response.json()
       
       // 🔍 DEBUG: Log toàn bộ response từ LoL API
-      console.log('📊 LoL API Response:', data)
+      //console.log('📊 LoL API Response:', data)
       // 🔍 DEBUG: Log cụ thể phần events
       if (data.data?.schedule?.events) {
         
         // 🔍 DEBUG: Check streams data specifically
         data.data.schedule.events.forEach((event, index) => {
           if (event.streams && event.streams.length > 0) {
-            console.log(`🎥 Event ${index} Streams:`, event.streams)
+            //console.log(`🎥 Event ${index} Streams:`, event.streams)
             event.streams.forEach((stream, streamIndex) => {
-              console.log(`   Stream ${streamIndex}:`, {
+              //console.log(`   Stream ${streamIndex}:`, {
                 parameter: stream.parameter,
                 locale: stream.locale,
                 mediaLocale: stream.mediaLocale
@@ -1599,7 +1599,7 @@ const LolAdapter = {
           }
         })
       } else {
-        console.log('⚠️ No LoL events found in response')
+        //console.log('⚠️ No LoL events found in response')
       }
       
       if (!data.data?.schedule?.events) return createSampleData('lol', from, to)
@@ -1658,7 +1658,7 @@ const LolAdapter = {
               away: enhancedAway
             }
           } catch (error) {
-            console.error('Error enhancing logos for LoL match:', match.id, error)
+            //console.error('Error enhancing logos for LoL match:', match.id, error)
             return match // Return original match if enhancement fails
           }
         })
@@ -1682,7 +1682,7 @@ const LolAdapter = {
       
       return sortedMatches
     } catch (error) {
-      console.warn('⚠️ LoL API error:', error)
+      //console.warn('⚠️ LoL API error:', error)
       return createSampleData('lol', from, to)
     }
   }
@@ -1690,36 +1690,25 @@ const LolAdapter = {
 
 const FootballAdapter = {
   async fetch({ from, to }) {
-    console.log('🏈 FootballAdapter.fetch() called with:', { from, to })
-    
     try {
       // Use Vite proxy instead of direct API calls
       const baseURL = '/api/football'
-      console.log('🏈 Football - Testing API connection...')
       
       // Test API connection first with timeout
       try {
         const controller = new AbortController()
         setTimeout(() => controller.abort(), 5000) // 5 second timeout
         
-        console.log('🏈 Football - Calling test endpoint: /api/football/competitions')
         const testResponse = await fetch('/api/football/competitions', {
           signal: controller.signal
         })
-        
-        console.log('🏈 Football - Test response status:', testResponse.status)
-        
         if (!testResponse.ok) {
-          console.warn('🏈 Football API test failed:', testResponse.status)
-          console.warn('🏈 Football - Falling back to sample data')
+          //console.warn('Football API test failed:', testResponse.status)
           // If test fails, return sample data immediately
           return createSampleData('football', from, to)
         }
-        
-        console.log('🏈 Football - API test successful, proceeding with real data fetch')
       } catch (apiError) {
-        console.warn('🏈 Football API connection failed:', apiError.message)
-        console.warn('🏈 Football - Falling back to sample data due to connection error')
+        //console.warn('Football API connection failed:', apiError.message)
         // If API fails, return sample data immediately
         return createSampleData('football', from, to)
       }
@@ -1731,8 +1720,6 @@ const FootballAdapter = {
         { id: 'CL', name: 'Champions League' },
       ]
       
-      console.log('🏈 Football - Will fetch data for leagues:', leagues.map(l => l.name))
-      
       let allMatches = []
       
       // Format dates for API
@@ -1743,55 +1730,34 @@ const FootballAdapter = {
       const dateFrom = formatDate(from || new Date())
       const dateTo = formatDate(to || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
       
-      console.log('🏈 Football - Date range:', { dateFrom, dateTo })
-      
       for (const league of leagues) {
         try {
-          console.log(`🏈 Football - Fetching ${league.name} (${league.id}) matches...`)
-          console.log(`🏈 Football - Request URL: /api/football/competitions/${league.id}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`)
-          console.log('🏈 Football - Note: API keys are managed on the backend (/api/football endpoint)')
-          
           // Use proxy endpoint with correct URL structure
           const response = await fetch(
             `/api/football/competitions/${league.id}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`
           )
           
-          console.log(`🏈 Football - ${league.name} response status:`, response.status)
-          
           if (!response.ok) {
             const errorText = await response.text()
-            console.warn(`🏈 Football - Failed to fetch ${league.name}: ${response.status} - ${errorText}`)
+            //console.warn(`Failed to fetch ${league.name}: ${response.status} - ${errorText}`)
             
             // If it's a 400 error (bad request), likely API key issue
             if (response.status === 400) {
-              console.warn('🏈 Football - API Key might be invalid or expired.')
-              console.warn('🏈 Football - To get a valid API key:')
-              console.warn('🏈 Football - 1. Visit https://www.football-data.org/')
-              console.warn('🏈 Football - 2. Register for a free account')
-              console.warn('🏈 Football - 3. Get your API token')
-              console.warn('🏈 Football - 4. Update the .env file with VITE_FOOTBALL_API_KEY=your_actual_key')
-              console.warn('🏈 Football - Using sample data for now.')
+              //console.warn('API Key might be invalid or expired.')
+              //console.warn('To get a valid API key:')
+              //console.warn('1. Visit https://www.football-data.org/')
+              //console.warn('2. Register for a free account')
+              //console.warn('3. Get your API token')
+              //console.warn('4. Update the .env file with VITE_FOOTBALL_API_KEY=your_actual_key')
+              //console.warn('Using sample data for now.')
               return createSampleData('football', from, to)
             }
             continue
           }
           
           const data = await response.json()
-          console.log(`🏈 Football - ${league.name} data received:`, data.matches?.length || 0, 'matches')
-          
-          // Log API key information if available
-          if (data._apiKeyInfo) {
-            console.log(`🔑 Football API Key Used:`, data._apiKeyInfo.keyUsed)
-            console.log(`🔑 Football API Key Details:`, {
-              keyIndex: data._apiKeyInfo.keyIndex,
-              keyTotal: data._apiKeyInfo.keyTotal,
-              keyPrefix: data._apiKeyInfo.keyPrefix,
-              endpoint: data._apiKeyInfo.endpoint || 'main'
-            })
-          }
           
           if (data.matches) {
-            console.log(`🏈 Football - Processing ${data.matches.length} matches from ${league.name}`)
             const matches = data.matches.map(match => {
               // Map competition names to preferred display names
               const leagueNameMap = {
@@ -1847,7 +1813,7 @@ const FootballAdapter = {
                     away: enhancedAway
                   }
                 } catch (error) {
-                  console.error('Error enhancing logos for football match:', match.id, error)
+                  //console.error('Error enhancing logos for football match:', match.id, error)
                   return match // Return original match if enhancement fails
                 }
               })
@@ -1856,7 +1822,7 @@ const FootballAdapter = {
             allMatches = [...allMatches, ...enhancedMatches]
           }
         } catch (err) {
-          console.warn(`Failed to fetch ${league.name}:`, err)
+          //console.warn(`Failed to fetch ${league.name}:`, err)
         }
       }
       
@@ -1892,8 +1858,7 @@ const FootballAdapter = {
         return aPriority - bPriority
       })
     } catch (error) {
-      console.warn('🏈 Football API critical error:', error)
-      console.warn('🏈 Football - Returning sample data due to critical error')
+      //console.warn('⚠️ Football API error:', error)
       return createSampleData('football', from, to)
     }
   }
@@ -2221,7 +2186,7 @@ function useSchedule({ activeSport, from, to }) {
             if (result.status === 'fulfilled') {
               allMatches = [...allMatches, ...result.value]
             } else {
-              console.warn(`🔍 useSchedule - ${adapterNames[index]} adapter failed:`, result.reason)
+              //console.warn(`🔍 useSchedule - ${adapterNames[index]} adapter failed:`, result.reason)
             }
           })
         } else {
@@ -2230,7 +2195,7 @@ function useSchedule({ activeSport, from, to }) {
           if (adapter) {
             allMatches = await adapter.fetch({ from, to })
           } else {
-            console.warn(`🔍 useSchedule - No adapter found for ${activeSport}`)
+            //console.warn(`🔍 useSchedule - No adapter found for ${activeSport}`)
           }
         }
         
@@ -2300,18 +2265,18 @@ function WatchLiveButton({ match }) {
     // Search for YouTube live stream for other sports
     setIsSearching(true)
     try {
-      console.log(`🔍 Searching live stream for: ${match.home?.name} vs ${match.away?.name} - ${match.league}`)
+      //console.log(`🔍 Searching live stream for: ${match.home?.name} vs ${match.away?.name} - ${match.league}`)
       const youtubeUrl = await searchYouTubeLiveStream(match)
       if (youtubeUrl) {
         setFoundStream(youtubeUrl)
         window.open(youtubeUrl, '_blank')
-        console.log('✅ Opened live stream:', youtubeUrl)
+        //console.log('✅ Opened live stream:', youtubeUrl)
       } else {
-        console.log('❌ No live stream found')
+        //console.log('❌ No live stream found')
         alert('Không tìm thấy live stream cho trận đấu này trên YouTube')
       }
     } catch (error) {
-      console.error('Error searching for live stream:', error)
+      //console.error('Error searching for live stream:', error)
       alert('Lỗi khi tìm kiếm live stream')
     } finally {
       setIsSearching(false)
