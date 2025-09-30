@@ -2939,17 +2939,29 @@ export default function App() {
                       live: {
                         label: 'LIVE',
                         icon: Play,
-                        variant: 'danger'
+                        bgColor: isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600',
+                        textColor: 'text-white',
+                        badgeBg: isDarkMode ? 'bg-red-800' : 'bg-red-400',
+                        badgeText: 'text-white',
+                        animate: 'animate-pulse'
                       },
                       upcoming: {
                         label: 'Sắp tới',
                         icon: Clock,
-                        variant: 'primary'
+                        bgColor: isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600',
+                        textColor: 'text-white',
+                        badgeBg: isDarkMode ? 'bg-blue-800' : 'bg-blue-400',
+                        badgeText: 'text-white',
+                        animate: ''
                       },
                       finished: {
                         label: 'Diễn ra rồi',
                         icon: Trophy,
-                        variant: 'outline'
+                        bgColor: isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600',
+                        textColor: 'text-white',
+                        badgeBg: isDarkMode ? 'bg-green-800' : 'bg-green-400',
+                        badgeText: 'text-white',
+                        animate: ''
                       }
                     }
                     
@@ -2959,22 +2971,22 @@ export default function App() {
                     const SectionIcon = config.icon
                     
                     return (
-                      <Button
+                      <button
                         key={status}
-                        variant={config.variant}
-                        isDarkMode={isDarkMode}
                         onClick={() => scrollToSection(status)}
-                        className="relative"
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 hover:shadow-md ${
+                          config.bgColor
+                        } ${config.textColor} ${config.animate}`}
                         title={`Nhảy đến ${config.label}`}
                       >
                         <SectionIcon className="h-4 w-4" />
-                        <span className="hidden sm:inline">{config.label}</span>
-                        <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
-                          isDarkMode ? 'bg-gray-600 text-gray-200' : 'bg-gray-200 text-gray-700'
-                        }`}>
+                        <span className="hidden sm:inline text-sm">{config.label}</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                          config.badgeBg
+                        } ${config.badgeText}`}>
                           {matches.length}
                         </span>
-                      </Button>
+                      </button>
                     )
                   })}
                   
