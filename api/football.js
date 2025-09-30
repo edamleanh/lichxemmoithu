@@ -56,17 +56,22 @@ async function saveToCache(competition, dateFrom, dateTo, data) {
       competition,
       dateFrom,
       dateTo,
-      nextEarliestMatch: getEarliestMatchTime(data.matches)
+      nextEarliestMatch: getEarliestMatchTime(data.matches),
+      hasLiveMatches: hasLiveMatches(data.matches),
+      liveMatchCount: data.matches ? data.matches.filter(match => 
+        match.status === 'IN_PLAY' || match.status === 'LIVE'
+      ).length : 0
     };
     
     await setDoc(cacheRef, cacheData);
-    console.log('Football API - Đã lưu cache:', cacheDocId);
+    console.log('Football API - Đã lưu cache:', cacheDocId, 
+      `- Live matches: ${cacheData.liveMatchCount}`);
   } catch (error) {
     console.error('Football API - Lỗi khi lưu cache:', error);
   }
 }
 
-// Hàm tìm thời gian trận đấu sớm nhất
+// Hàm tìm thời gian trận đấu sớm nhất và kiểm tra trận đấu live
 function getEarliestMatchTime(matches) {
   if (!matches || matches.length === 0) return null;
   
@@ -77,6 +82,13 @@ function getEarliestMatchTime(matches) {
     .sort((a, b) => a - b);
   
   return upcomingMatches.length > 0 ? upcomingMatches[0].toISOString() : null;
+}
+
+// Hàm kiểm tra có trận đấu live không
+function hasLiveMatches(matches) {
+  if (!matches || matches.length === 0) return false;
+  
+  return matches.some(match => match.status === 'IN_PLAY' || match.status === 'LIVE');
 }
 
 // Hàm kiểm tra xem có cần gọi API không
@@ -94,9 +106,24 @@ async function shouldCallAPI(competition, dateFrom, dateTo) {
     const cachedData = cacheDoc.data();
     const now = new Date();
     
-    // Nếu không có trận đấu sớm nhất, cache vẫn hợp lệ
+    // Kiểm tra trận đấu live trước - Nếu có trận live, LUÔN gọi API để cập nhật tỷ số
+    if (hasLiveMatches(cachedData.data.matches)) {
+      console.log('Football API - Có trận đấu đang live, cần gọi API để cập nhật tỷ số');
+      return true;
+    }
+    
+    // Kiểm tra cache cũ (hơn 5 phút) trong trường hợp có thể có trận live mới
+    const lastUpdated = new Date(cachedData.lastUpdated);
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    
+    if (lastUpdated < fiveMinutesAgo) {
+      console.log('Football API - Cache cũ hơn 5 phút, gọi API để kiểm tra trận live mới');
+      return true;
+    }
+    
+    // Nếu không có trận đấu sắp tới, cache vẫn hợp lệ
     if (!cachedData.nextEarliestMatch) {
-      console.log('Football API - Không có trận đấu sắp tới, sử dụng cache');
+      console.log('Football API - Không có trận đấu sắp tới và không có trận live, sử dụng cache');
       return false;
     }
     
@@ -108,7 +135,7 @@ async function shouldCallAPI(competition, dateFrom, dateTo) {
       return true;
     }
     
-    console.log('Football API - Chưa đến thời gian trận đấu sớm nhất, sử dụng cache');
+    console.log('Football API - Chưa đến thời gian trận đấu sớm nhất và không có trận live, sử dụng cache');
     return false;
   } catch (error) {
     console.error('Football API - Lỗi khi kiểm tra cache:', error);
