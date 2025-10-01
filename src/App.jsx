@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 // Import mobile layout and hooks
 import MobileLayout from './components/MobileLayout'
 import { useIsMobile } from './hooks/useIsMobile'
+import youtubeCacheService from './services/youtubeCacheService'
 
 import {
   Calendar as CalendarIcon,
@@ -754,6 +755,7 @@ const YouTubeAPIManager = {
     'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294', 
     'AIzaSyCHmBLPsIMhKJpxuOVGWK5OSHrwsIvRQbI', 
     'AIzaSyBd8I64KQA5fS_eQEDh5kpMM4416R3arrc', 
+    
   ],
   
   currentKeyIndex: 0,
@@ -820,12 +822,16 @@ const PubgAdapter = {
       
       let allMatches = []
       
-      // 1. Fetch live streams
+      // 1. Fetch live streams (with cache)
       try {
-        const liveResponse = await youtubeApiManager.makeRequest(
-          `https://www.googleapis.com/youtube/v3/search?` +
-          `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
-          `maxResults=10&order=date`
+        const liveResponse = await youtubeCacheService.getCachedData(
+          'pubg',
+          'live',
+          () => youtubeApiManager.makeRequest(
+            `https://www.googleapis.com/youtube/v3/search?` +
+            `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
+            `maxResults=10&order=date`
+          )
         )
         
         if (liveResponse) {
@@ -839,9 +845,13 @@ const PubgAdapter = {
           // Fetch video statistics if we have video IDs
           if (videoIds) {
             try {
-              const statsData = await youtubeApiManager.makeRequest(
-                `https://www.googleapis.com/youtube/v3/videos?` +
-                `part=statistics,liveStreamingDetails&id=${videoIds}`
+              const statsData = await youtubeCacheService.getCachedData(
+                'pubg',
+                'live-stats',
+                () => youtubeApiManager.makeRequest(
+                  `https://www.googleapis.com/youtube/v3/videos?` +
+                  `part=statistics,liveStreamingDetails&id=${videoIds}`
+                )
               )
               
               if (statsData) {
@@ -875,12 +885,16 @@ const PubgAdapter = {
       } catch (error) {
       }
       
-      // 2. Fetch upcoming streams
+      // 2. Fetch upcoming streams (with cache)
       try {
-        const upcomingResponse = await youtubeApiManager.makeRequest(
-          `https://www.googleapis.com/youtube/v3/search?` +
-          `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
-          `maxResults=10&order=date`
+        const upcomingResponse = await youtubeCacheService.getCachedData(
+          'pubg',
+          'upcoming',
+          () => youtubeApiManager.makeRequest(
+            `https://www.googleapis.com/youtube/v3/search?` +
+            `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
+            `maxResults=10&order=date`
+          )
         )
         
         if (upcomingResponse) {
@@ -905,9 +919,13 @@ const PubgAdapter = {
           // Fetch scheduled start time if we have video IDs
           if (videoIds) {
             try {
-              const scheduleData = await youtubeApiManager.makeRequest(
-                `https://www.googleapis.com/youtube/v3/videos?` +
-                `part=liveStreamingDetails&id=${videoIds}`
+              const scheduleData = await youtubeCacheService.getCachedData(
+                'pubg',
+                'upcoming-schedule',
+                () => youtubeApiManager.makeRequest(
+                  `https://www.googleapis.com/youtube/v3/videos?` +
+                  `part=liveStreamingDetails&id=${videoIds}`
+                )
               )
               
               if (scheduleData) {
@@ -1174,12 +1192,16 @@ const TftAdapter = {
       
       let allMatches = []
       
-      // 1. Fetch live streams
+      // 1. Fetch live streams (with cache)
       try {
-        const liveResponse = await youtubeApiManager.makeRequest(
-          `https://www.googleapis.com/youtube/v3/search?` +
-          `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
-          `maxResults=10&order=date`
+        const liveResponse = await youtubeCacheService.getCachedData(
+          'tft',
+          'live',
+          () => youtubeApiManager.makeRequest(
+            `https://www.googleapis.com/youtube/v3/search?` +
+            `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
+            `maxResults=10&order=date`
+          )
         )
         
         if (liveResponse) {
@@ -1193,9 +1215,13 @@ const TftAdapter = {
           // Fetch video statistics if we have video IDs
           if (videoIds) {
             try {
-              const statsData = await youtubeApiManager.makeRequest(
-                `https://www.googleapis.com/youtube/v3/videos?` +
-                `part=statistics,liveStreamingDetails&id=${videoIds}`
+              const statsData = await youtubeCacheService.getCachedData(
+                'tft',
+                'live-stats',
+                () => youtubeApiManager.makeRequest(
+                  `https://www.googleapis.com/youtube/v3/videos?` +
+                  `part=statistics,liveStreamingDetails&id=${videoIds}`
+                )
               )
               
               if (statsData) {
@@ -1236,12 +1262,16 @@ const TftAdapter = {
       } catch (error) {
       }
       
-      // 2. Fetch upcoming streams
+      // 2. Fetch upcoming streams (with cache)
       try {
-        const upcomingResponse = await youtubeApiManager.makeRequest(
-          `https://www.googleapis.com/youtube/v3/search?` +
-          `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
-          `maxResults=10&order=date`
+        const upcomingResponse = await youtubeCacheService.getCachedData(
+          'tft',
+          'upcoming',
+          () => youtubeApiManager.makeRequest(
+            `https://www.googleapis.com/youtube/v3/search?` +
+            `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
+            `maxResults=10&order=date`
+          )
         )
         
         if (upcomingResponse) {
@@ -1266,9 +1296,13 @@ const TftAdapter = {
           // Fetch scheduled start time if we have video IDs
           if (videoIds) {
             try {
-              const scheduleData = await youtubeApiManager.makeRequest(
-                `https://www.googleapis.com/youtube/v3/videos?` +
-                `part=liveStreamingDetails&id=${videoIds}`
+              const scheduleData = await youtubeCacheService.getCachedData(
+                'tft',
+                'upcoming-schedule',
+                () => youtubeApiManager.makeRequest(
+                  `https://www.googleapis.com/youtube/v3/videos?` +
+                  `part=liveStreamingDetails&id=${videoIds}`
+                )
               )
               
               if (scheduleData) {
