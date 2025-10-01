@@ -2227,7 +2227,7 @@ function WatchLiveButton({ match }) {
     
     // Special handling for football matches
     if (match.game === 'football') {
-      window.open('https://bit.ly/tiengruoi', '_blank')
+      window.open('https://www.xaycon.live', '_blank')
       return
     }
     
