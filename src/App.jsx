@@ -183,10 +183,7 @@ const searchYouTubeLiveStream = async (match) => {
     // Build search query: team1 + team2 + league + "live"
     console.log('Match:', match)
     const searchQuery = [
-      shortenTeamName(match.home?.name) || '',
-      'vs',
-      shortenTeamName(match.away?.name) || '',
-      match.league,
+      match.league || `${match.home?.name || 'Team 1'} vs ${match.away?.name || 'Team 2'}`,
     ].filter(Boolean).join(' ')
     
     const data = await youtubeApiManager.makeRequest(
@@ -194,9 +191,6 @@ const searchYouTubeLiveStream = async (match) => {
       `part=snippet&type=video&eventType=live&maxResults=3&order=viewCount&` +
       `q=${encodeURIComponent(searchQuery)}`
     );
-    console.log(      `https://www.googleapis.com/youtube/v3/search?` +
-      `part=snippet&type=video&eventType=live&maxResults=3&order=viewCount&` +
-      `q=${encodeURIComponent(searchQuery)}`)
     console.log('YouTube Live Search Results:', data)
     
     if (!data) {
