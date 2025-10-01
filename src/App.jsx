@@ -432,7 +432,12 @@ const ValorantAdapter = {
 
   // Helper function to process upcoming matches
   async processUpcomingMatches(data) {
-    if (!data.data?.segments) return []
+    if (!data.data?.segments) {
+      //console.log('🔵 VALORANT UPCOMING: No segments in data')
+      return []
+    }
+    
+    //console.log('🔵 VALORANT UPCOMING: Raw segments:', data.data.segments)
     
     const now = Date.now()
     const oneDayMs = 24 * 60 * 60 * 1000
@@ -442,31 +447,38 @@ const ValorantAdapter = {
         // Only include matches within 1 day
         if (match.time_until_match) {
           const timeUntilMs = this.parseTimeUntil(match.time_until_match)
+          //console.log(`🔵 VALORANT UPCOMING: Match ${match.team1} vs ${match.team2}, time_until: ${match.time_until_match}, timeUntilMs: ${timeUntilMs}, within1day: ${timeUntilMs <= oneDayMs}`)
           return timeUntilMs <= oneDayMs
         }
+        //console.log(`🔵 VALORANT UPCOMING: Match ${match.team1} vs ${match.team2}, no time_until_match - including`)
         return true // Include if no time info
       })
-      .map(match => ({
-        id: `val-upcoming-${match.match_page?.split('/')[1] || Math.random()}`,
-        game: 'valorant',
-        league: match.match_event || 'VCT',
-        stage: match.match_series || '',
-        home: { 
-          name: match.team1 || 'TBD', 
-          logo: match.team1_logo || null,
-          score: undefined // upcoming matches don't have scores
-        },
-        away: { 
-          name: match.team2 || 'TBD', 
-          logo: match.team2_logo || null,
-          score: undefined // upcoming matches don't have scores
-        },
-        start: match.unix_timestamp ? adjustValorantTimezone(match.unix_timestamp) : new Date(Date.now() + Math.random() * 86400000),
-        region: 'International',
-        stream: '', // Use YouTube search instead of API stream
-        venue: match.match_event || '',
-        status: 'upcoming',
-      }))
+      .map(match => {
+        //console.log(`🔵 VALORANT UPCOMING: Processing match ${match.team1} vs ${match.team2}`)
+        return {
+          id: `val-upcoming-${match.match_page?.split('/')[1] || Math.random()}`,
+          game: 'valorant',
+          league: match.match_event || 'VCT',
+          stage: match.match_series || '',
+          home: { 
+            name: match.team1 || 'TBD', 
+            logo: match.team1_logo || null,
+            score: undefined // upcoming matches don't have scores
+          },
+          away: { 
+            name: match.team2 || 'TBD', 
+            logo: match.team2_logo || null,
+            score: undefined // upcoming matches don't have scores
+          },
+          start: match.unix_timestamp ? adjustValorantTimezone(match.unix_timestamp) : new Date(Date.now() + Math.random() * 86400000),
+          region: 'International',
+          stream: '', // Use YouTube search instead of API stream
+          venue: match.match_event || '',
+          status: 'upcoming',
+        }
+      })
+    
+    //console.log('🔵 VALORANT UPCOMING: Filtered matches:', matches)
 
     // Enhance matches with team logos for teams that don't have logos
     const enhancedMatches = await Promise.all(
@@ -492,7 +504,12 @@ const ValorantAdapter = {
 
   // Helper function to process completed matches (results)
   async processCompletedMatches(data) {
-    if (!data.data?.segments) return []
+    if (!data.data?.segments) {
+      //console.log('🟢 VALORANT RESULTS: No segments in data')
+      return []
+    }
+    
+    //console.log('🟢 VALORANT RESULTS: Raw segments:', data.data.segments)
     
     const oneDayMs = 24 * 60 * 60 * 1000
     
@@ -502,32 +519,38 @@ const ValorantAdapter = {
         if (match.time_completed) {
           const timeCompletedMs = this.parseTimeAgo(match.time_completed)
           const withinOneDay = timeCompletedMs <= oneDayMs
-          
+          //console.log(`🟢 VALORANT RESULTS: Match ${match.team1} vs ${match.team2}, time_completed: ${match.time_completed}, timeCompletedMs: ${timeCompletedMs}, within1day: ${withinOneDay}`)
           return withinOneDay
         }
+        //console.log(`🟢 VALORANT RESULTS: Match ${match.team1} vs ${match.team2}, no time_completed - including`)
         return true // Include if no time info
       })
-      .map(match => ({
-        id: `val-completed-${match.match_page?.split('/')[1] || Math.random()}`,
-        game: 'valorant',
-        league: match.tournament_name || 'VCT',
-        stage: match.round_info || '',
-        home: { 
-          name: match.team1 || 'TBD', 
-          logo: null, // Will be enhanced with logo search
-          score: parseInt(match.score1) || 0
-        },
-        away: { 
-          name: match.team2 || 'TBD', 
-          logo: null, // Will be enhanced with logo search
-          score: parseInt(match.score2) || 0
-        },
-        start: new Date(), // Use current time for completed matches within 1 day
-        region: 'International',
-        stream: '', // Use YouTube search instead of API stream
-        venue: match.tournament_name || '',
-        status: 'finished',
-      }))
+      .map(match => {
+        //console.log(`🟢 VALORANT RESULTS: Processing match ${match.team1} vs ${match.team2}`)
+        return {
+          id: `val-completed-${match.match_page?.split('/')[1] || Math.random()}`,
+          game: 'valorant',
+          league: match.tournament_name || 'VCT',
+          stage: match.round_info || '',
+          home: { 
+            name: match.team1 || 'TBD', 
+            logo: null, // Will be enhanced with logo search
+            score: parseInt(match.score1) || 0
+          },
+          away: { 
+            name: match.team2 || 'TBD', 
+            logo: null, // Will be enhanced with logo search
+            score: parseInt(match.score2) || 0
+          },
+          start: new Date(), // Use current time for completed matches within 1 day
+          region: 'International',
+          stream: '', // Use YouTube search instead of API stream
+          venue: match.tournament_name || '',
+          status: 'finished',
+        }
+      })
+    
+    //console.log('🟢 VALORANT RESULTS: Filtered matches:', matches)
 
     // Enhance matches with team logos asynchronously
     const enhancedMatches = await Promise.all(
@@ -609,17 +632,17 @@ const ValorantAdapter = {
         
         if (liveResponse.ok) {
           const liveData = await liveResponse.json()
-          console.log('🔴 VALORANT LIVE API Response:', liveData)
-          console.log('🔴 VALORANT LIVE Segments Count:', liveData.data?.segments?.length || 0)
+          //console.log('🔴 VALORANT LIVE API Response:', liveData)
+          //console.log('🔴 VALORANT LIVE Segments Count:', liveData.data?.segments?.length || 0)
           
           const liveMatches = await this.processLiveMatches(liveData)
-          console.log('🔴 VALORANT LIVE Processed Matches:', liveMatches)
+          //console.log('🔴 VALORANT LIVE Processed Matches:', liveMatches)
           allMatches = [...allMatches, ...liveMatches]
         } else {
-          console.error('❌ VALORANT LIVE API Error - Response not OK:', liveResponse.status)
+          //console.error('❌ VALORANT LIVE API Error - Response not OK:', liveResponse.status)
         }
       } catch (error) {
-        console.error('❌ VALORANT LIVE API Error:', error)
+        //console.error('❌ VALORANT LIVE API Error:', error)
       }
 
       // Fetch upcoming matches
@@ -628,17 +651,17 @@ const ValorantAdapter = {
         
         if (upcomingResponse.ok) {
           const upcomingData = await upcomingResponse.json()
-          console.log('🔵 VALORANT UPCOMING API Response:', upcomingData)
-          console.log('🔵 VALORANT UPCOMING Segments Count:', upcomingData.data?.segments?.length || 0)
+          //console.log('🔵 VALORANT UPCOMING API Response:', upcomingData)
+          //console.log('🔵 VALORANT UPCOMING Segments Count:', upcomingData.data?.segments?.length || 0)
           
           const upcomingMatches = await this.processUpcomingMatches(upcomingData)
-          console.log('🔵 VALORANT UPCOMING Processed Matches:', upcomingMatches)
+          //console.log('🔵 VALORANT UPCOMING Processed Matches:', upcomingMatches)
           allMatches = [...allMatches, ...upcomingMatches]
         } else {
-          console.error('❌ VALORANT UPCOMING API Error - Response not OK:', upcomingResponse.status)
+          //console.error('❌ VALORANT UPCOMING API Error - Response not OK:', upcomingResponse.status)
         }
       } catch (error) {
-        console.error('❌ VALORANT UPCOMING API Error:', error)
+        //console.error('❌ VALORANT UPCOMING API Error:', error)
       }
 
       // Fetch completed matches (results)
@@ -647,17 +670,17 @@ const ValorantAdapter = {
         
         if (resultsResponse.ok) {
           const resultsData = await resultsResponse.json()
-          console.log('🟢 VALORANT RESULTS API Response:', resultsData)
-          console.log('🟢 VALORANT RESULTS Segments Count:', resultsData.data?.segments?.length || 0)
+          //console.log('🟢 VALORANT RESULTS API Response:', resultsData)
+          //console.log('🟢 VALORANT RESULTS Segments Count:', resultsData.data?.segments?.length || 0)
           
           const completedMatches = await this.processCompletedMatches(resultsData)
-          console.log('🟢 VALORANT RESULTS Processed Matches:', completedMatches)
+          //console.log('🟢 VALORANT RESULTS Processed Matches:', completedMatches)
           allMatches = [...allMatches, ...completedMatches]
         } else {
-          console.error('❌ VALORANT RESULTS API Error - Response not OK:', resultsResponse.status)
+          //console.error('❌ VALORANT RESULTS API Error - Response not OK:', resultsResponse.status)
         }
       } catch (error) {
-        console.error('❌ VALORANT RESULTS API Error:', error)
+        //console.error('❌ VALORANT RESULTS API Error:', error)
       }
 
       // Filter matches by date range and remove duplicates
@@ -667,14 +690,14 @@ const ValorantAdapter = {
           index === self.findIndex(m => m.id === match.id)
         )
 
-      console.log('📊 VALORANT All Matches Count:', allMatches.length)
-      console.log('📊 VALORANT Filtered Matches Count:', filteredMatches.length)
-      console.log('📊 VALORANT Filtered Matches:', filteredMatches)
+      //console.log('📊 VALORANT All Matches Count:', allMatches.length)
+      //console.log('📊 VALORANT Filtered Matches Count:', filteredMatches.length)
+      //console.log('📊 VALORANT Filtered Matches:', filteredMatches)
 
-      // If no matches found, return sample data
+      // If no matches found, return empty array instead of sample data
       if (filteredMatches.length === 0) {
-        console.log('⚠️ VALORANT No matches found, returning sample data')
-        return createSampleData('valorant', from, to)
+        //console.log('⚠️ VALORANT No matches found, returning empty array')
+        return []
       }
 
       const sortedMatches = filteredMatches.sort((a, b) => {
@@ -689,13 +712,13 @@ const ValorantAdapter = {
         return aPriority - bPriority
       })
       
-      console.log('✅ VALORANT Final Sorted Matches:', sortedMatches)
-      console.log('✅ VALORANT Final Match Count:', sortedMatches.length)
+      //console.log('✅ VALORANT Final Sorted Matches:', sortedMatches)
+      //console.log('✅ VALORANT Final Match Count:', sortedMatches.length)
       
       return sortedMatches
     } catch (error) {
-      console.error('💥 VALORANT Adapter Fatal Error:', error)
-      return createSampleData('valorant', from, to)
+      //console.error('💥 VALORANT Adapter Fatal Error:', error)
+      return [] // Return empty array instead of sample data
     }
   },
 }
@@ -726,10 +749,11 @@ const checkYouTubeAPIHealth = async (apiKey) => {
 const YouTubeAPIManager = {
   // Array of API keys - add your API keys here
   apiKeys: [
-    'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294', // Primary key
-    'AIzaSyCHmBLPsIMhKJpxuOVGWK5OSHrwsIvRQbI', // Backup key 1
-    'AIzaSyBd8I64KQA5fS_eQEDh5kpMM4416R3arrc', // Backup key 2
-    // 'YOUR_BACKUP_API_KEY_3',
+    'AIzaSyCZHYPprCcGOwLFrt1jGbtiKlvuVJtgoRY',
+    'AIzaSyDo77udI07ntgKZ7uBqeDo2NavY9199TPE',
+    'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294', 
+    'AIzaSyCHmBLPsIMhKJpxuOVGWK5OSHrwsIvRQbI', 
+    'AIzaSyBd8I64KQA5fS_eQEDh5kpMM4416R3arrc', 
   ],
   
   currentKeyIndex: 0,
@@ -1507,7 +1531,7 @@ const LolAdapter = {
       })
       
       if (!response.ok) {
-        return createSampleData('lol', from, to)
+        return [] // Return empty array instead of sample data
       }
       
       const data = await response.json()
@@ -1527,7 +1551,7 @@ const LolAdapter = {
       } else {
       }
       
-      if (!data.data?.schedule?.events) return createSampleData('lol', from, to)
+      if (!data.data?.schedule?.events) return [] // Return empty array instead of sample data
       
       const matches = data.data.schedule.events.map(event => ({
         id: `lol-${event.match?.id || Math.random()}`,
@@ -1606,7 +1630,7 @@ const LolAdapter = {
       
       return sortedMatches
     } catch (error) {
-      return createSampleData('lol', from, to)
+      return [] // Return empty array instead of sample data
     }
   }
 }
@@ -1626,12 +1650,12 @@ const FootballAdapter = {
           signal: controller.signal
         })
         if (!testResponse.ok) {
-          // If test fails, return sample data immediately
-          return createSampleData('football', from, to)
+          // If test fails, return empty array immediately
+          return []
         }
       } catch (apiError) {
-        // If API fails, return sample data immediately
-        return createSampleData('football', from, to)
+        // If API fails, return empty array immediately
+        return []
       }
       
       // Major league IDs on football-data.org (reduced list to avoid rate limits)
@@ -1663,7 +1687,7 @@ const FootballAdapter = {
             
             // If it's a 400 error (bad request), likely API key issue
             if (response.status === 400) {
-              return createSampleData('football', from, to)
+              return [] // Return empty array instead of sample data
             }
             continue
           }
@@ -1754,7 +1778,7 @@ const FootballAdapter = {
         })
       
       if (filteredMatches.length === 0) {
-        return createSampleData('football', from, to)
+        return [] // Return empty array instead of sample data
       }
       
       // Sort Football matches: LIVE first, then by start time
@@ -1769,7 +1793,7 @@ const FootballAdapter = {
         return aPriority - bPriority
       })
     } catch (error) {
-      return createSampleData('football', from, to)
+      return [] // Return empty array instead of sample data
     }
   }
 }
@@ -2157,6 +2181,11 @@ function WatchLiveButton({ match }) {
       window.open(match.stream, '_blank')
       return
     }
+
+    if (match.videoId) {
+      const youtubeUrl = `https://www.youtube.com/watch?v=${match.videoId}`
+      window.open(youtubeUrl, '_blank')
+    }
     
     // If we already found a stream, use it
     if (foundStream) {
@@ -2189,14 +2218,14 @@ function WatchLiveButton({ match }) {
   
   return (
     <Button
-      variant="danger"
+      variant={match.status === 'upcoming' ? "primary" : "danger"}
       size="sm"
       onClick={handleWatchLive}
       className="animate-pulse"
       disabled={isSearching}
     >
       <Play className="h-3 w-3" />
-      {isSearching ? 'Đang tìm...' : 'Xem Live'}
+      {match.status === 'upcoming' ? 'Đặt thông báo' : isSearching ? 'Đang tìm...' : 'Xem Live'}
     </Button>
   )
 }
@@ -2427,57 +2456,10 @@ function MatchCard({ match, isDarkMode }) {
             </div>
           </div>
 
-          {/* Players info and actions */}
           <div className="space-y-3">
-
-            {/* Actions */}
-            <div className="flex justify-end">
-              <div className="flex gap-2">
-                {match.status === 'live' && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => window.open(match.stream, '_blank')}
-                    className="animate-pulse"
-                  >
-                    <Play className="h-3 w-3" />
-                    Xem Live
-                  </Button>
-                )}
-                
-                {match.status === 'upcoming' && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => {
-                      // Open YouTube video directly using videoId
-                      if (match.videoId) {
-                        const youtubeUrl = `https://www.youtube.com/watch?v=${match.videoId}`
-                        window.open(youtubeUrl, '_blank')
-                      } else if (match.stream) {
-                        // Fallback to stream URL if available
-                        window.open(match.stream, '_blank')
-                      } else {
-                        alert('Không có link video cho trận đấu này')
-                      }
-                    }}
-                  >
-                    <Clock className="h-3 w-3" />
-                    Đặt nhắc nhở
-                  </Button>
-                )}
-                
-                {match.status === 'finished' && match.stream && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => window.open(match.stream, '_blank')}
-                  >
-                    <Play className="h-3 w-3" />
-                    Xem lại
-                  </Button>
-                )}
-              </div>
+            <div className="flex items-center gap-2">
+              
+                <WatchLiveButton match={match} />
             </div>
           </div>
         </div>
