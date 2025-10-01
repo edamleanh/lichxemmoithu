@@ -32,10 +32,11 @@ import footballIcon from '../images/football.png'
 import tftIcon from '../images/tft.png'
 
 
+
 function WatchLiveButton({ match }) {
   const [isSearching, setIsSearching] = useState(false)
   const [foundStream, setFoundStream] = useState(null)
-  if(match.game === 'football') {return null}
+  if(match.game === 'football' || match.game === 'lol') {return null}
   const handleWatchLive = async () => {
     // If match already has stream, use it
     if (match.stream) {
