@@ -2384,6 +2384,11 @@ function MatchCard({ match, isDarkMode }) {
               )}
             </div>
           </div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+                <WatchLiveButton match={match} />
+            </div>
+          </div>
 
           {/* Live match info for PUBG */}
           {/* {match.status === 'live' && (
