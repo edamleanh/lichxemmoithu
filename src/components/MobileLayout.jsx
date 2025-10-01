@@ -23,6 +23,7 @@ import '../styles/mobile.css'
 // Import mobile configuration
 import { getConfig, getGameConfig } from '../config/mobileConfig'
 
+
 // Import icons
 import valorantIcon from '../images/valorant.png'
 import pubgIcon from '../images/pubg.png'
@@ -30,8 +31,69 @@ import lolIcon from '../images/lol.png'
 import footballIcon from '../images/football.png'
 import tftIcon from '../images/tft.png'
 
-// We'll use inline components since we don't have a separate component library
-// Button Component
+
+function WatchLiveButton({ match }) {
+  const [isSearching, setIsSearching] = useState(false)
+  const [foundStream, setFoundStream] = useState(null)
+  if(match.game === 'football') {return null}
+  const handleWatchLive = async () => {
+    // If match already has stream, use it
+    if (match.stream) {
+      window.open(match.stream, '_blank')
+      return
+    }
+
+    if (match.videoId) {
+      const youtubeUrl = `https://www.youtube.com/watch?v=${match.videoId}`
+      window.open(youtubeUrl, '_blank')
+      return
+    }
+    
+    // If we already found a stream, use it
+    if (foundStream) {
+      window.open(foundStream, '_blank')
+      return
+    }
+    
+    // Special handling for football matches
+    if (match.game === 'football') {
+      window.open('https://bit.ly/tiengruoi', '_blank')
+      return
+    }
+    
+    // Search for YouTube live stream for other sports
+    setIsSearching(true)
+    try {
+      const youtubeUrl = await searchYouTubeLiveStream(match)
+      if (youtubeUrl) {
+        setFoundStream(youtubeUrl)
+        window.open(youtubeUrl, '_blank')
+      } else {
+        alert('Không tìm thấy live stream cho trận đấu này trên YouTube')
+      }
+    } catch (error) {
+      alert('Lỗi khi tìm kiếm live stream')
+    } finally {
+      setIsSearching(false)
+    }
+  }
+  
+  return (
+    <Button
+      variant={match.status === 'upcoming' ? "primary" : "danger"}
+      size="sm"
+      onClick={handleWatchLive}
+      className={`text-xs px-2 py-1 ${match.status === 'live' ? 'animate-pulse' : ''}`}
+      disabled={isSearching}
+    >
+      <Play className="h-2.5 w-2.5" />
+      {match.status === 'upcoming' && (match.game === 'tft' || match.game === 'pubg') ? 'Đặt nhắc nhở' : 
+       match.status === 'finished' ? 'Xem lại' :
+       match.status === 'live' ? (isSearching ? 'Đang tìm...' : 'Xem Live') : null  }
+    </Button>
+  )
+}
+
 const Button = ({ className = '', children, variant = 'default', size = 'default', isDarkMode = false, ...props }) => {
   const variants = {
     default: isDarkMode 
@@ -238,7 +300,16 @@ function MobileMatchCard({ match, isDarkMode }) {
         isDarkMode 
           ? 'bg-gray-800/95 border border-gray-600/60' 
           : 'bg-gray-200/95 border border-gray-400/60'
-      } p-3`}
+      } p-3 ${
+        // Make PUBG/TFT cards clickable if they have streams
+        (match.game === 'pubg' || match.game === 'tft') && match.stream ? 'cursor-pointer hover:scale-[1.02]' : ''
+      }`}
+      onClick={() => {
+        // Click handler for PUBG/TFT videos
+        if ((match.game === 'pubg' || match.game === 'tft') && match.stream) {
+          window.open(match.stream, '_blank')
+        }
+      }}
     >
       {/* Mobile Header - Compact */}
       <div className="flex items-center justify-between mb-2">
@@ -264,59 +335,83 @@ function MobileMatchCard({ match, isDarkMode }) {
 
       {/* Mobile Teams Layout - Vertical for small screens */}
       <div className="space-y-2 mb-3">
-        {/* Team 1 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {match.home?.logo && (
-              <img src={match.home.logo} alt={match.home.name} className="h-6 w-6 rounded object-cover flex-shrink-0" />
-            )}
-            <span className={`font-semibold text-sm truncate ${
+        {/* Special layout for PUBG/TFT - Show video title instead of teams */}
+        {(match.game === 'pubg' || match.game === 'tft') && match.title ? (
+          <div className="space-y-2">
+            {/* Video Title */}
+            <div className={`font-semibold text-sm leading-tight ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
             }`}>
-              {shortenTeamName(match.home?.name) || 'TBD'}
-            </span>
+              {match.title}
+            </div>
+            
+            {/* Show description if available and not too long */}
+            {match.description && match.description.length <= 100 && (
+              <div className={`text-xs leading-relaxed opacity-80 ${
+                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                {match.description}
+              </div>
+            )}
           </div>
-          
-          {/* Score for Team 1 */}
-          {(match.status === 'finished' || match.status === 'live') && match.home?.score !== undefined && (
-            <span className={`px-2 py-1 rounded text-xs font-bold ${
-              match.status === 'live' 
-                ? 'bg-red-100 text-red-800' 
-                : (match.home?.score > (match.away?.score || 0)) 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-gray-100 text-gray-600'
-            }`}>
-              {match.home.score}
-            </span>
-          )}
-        </div>
+        ) : (
+          /* Regular team vs team layout for other games */
+          <>
+            {/* Team 1 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {match.home?.logo && (
+                  <img src={match.home.logo} alt={match.home.name} className="h-6 w-6 rounded object-cover flex-shrink-0" />
+                )}
+                <span className={`font-semibold text-sm truncate ${
+                  isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                }`}>
+                  {shortenTeamName(match.home?.name) || 'TBD'}
+                </span>
+              </div>
+              
+              {/* Score for Team 1 */}
+              {(match.status === 'finished' || match.status === 'live') && match.home?.score !== undefined && (
+                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                  match.status === 'live' 
+                    ? 'bg-red-100 text-red-800' 
+                    : (match.home?.score > (match.away?.score || 0)) 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {match.home.score}
+                </span>
+              )}
+            </div>
 
-        {/* Team 2 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            {match.away?.logo && (
-              <img src={match.away.logo} alt={match.away.name} className="h-6 w-6 rounded object-cover flex-shrink-0" />
-            )}
-            <span className={`font-semibold text-sm truncate ${
-              isDarkMode ? 'text-gray-100' : 'text-gray-900'
-            }`}>
-              {shortenTeamName(match.away?.name) || 'TBD'}
-            </span>
-          </div>
-          
-          {/* Score for Team 2 */}
-          {(match.status === 'finished' || match.status === 'live') && match.away?.score !== undefined && (
-            <span className={`px-2 py-1 rounded text-xs font-bold ${
-              match.status === 'live' 
-                ? 'bg-red-100 text-red-800' 
-                : (match.away?.score > (match.home?.score || 0)) 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-gray-100 text-gray-600'
-            }`}>
-              {match.away.score}
-            </span>
-          )}
-        </div>
+            {/* Team 2 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {match.away?.logo && (
+                  <img src={match.away.logo} alt={match.away.name} className="h-6 w-6 rounded object-cover flex-shrink-0" />
+                )}
+                <span className={`font-semibold text-sm truncate ${
+                  isDarkMode ? 'text-gray-100' : 'text-gray-900'
+                }`}>
+                  {shortenTeamName(match.away?.name) || 'TBD'}
+                </span>
+              </div>
+              
+              {/* Score for Team 2 */}
+              {(match.status === 'finished' || match.status === 'live') && match.away?.score !== undefined && (
+                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                  match.status === 'live' 
+                    ? 'bg-red-100 text-red-800' 
+                    : (match.away?.score > (match.home?.score || 0)) 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {match.away.score}
+                </span>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Mobile Live Info - Only show essential info */}
@@ -344,21 +439,7 @@ function MobileMatchCard({ match, isDarkMode }) {
               )}
             </div>
             
-            <Button
-              variant="danger"
-              size="sm"
-              className="text-xs px-2 py-1 animate-pulse"
-              onClick={() => {
-                if (match.stream) {
-                  window.open(match.stream, '_blank')
-                } else if (match.game === 'football') {
-                  window.open('https://bit.ly/tiengruoi', '_blank')
-                }
-              }}
-            >
-              <Play className="h-2.5 w-2.5" />
-              Xem
-            </Button>
+            <WatchLiveButton match={match} />
           </div>
         </div>
       )}
@@ -379,6 +460,13 @@ function MobileMatchCard({ match, isDarkMode }) {
             <Eye className="h-2.5 w-2.5" />
             <span>{match.viewCount.toLocaleString()}</span>
           </div>
+        </div>
+      )}
+
+      {/* Watch/Reminder Button for all matches */}
+      {(match.status === 'upcoming' || (match.status === 'finished' && (match.stream || match.videoId))) && (
+        <div className="mt-3 flex justify-center">
+          <WatchLiveButton match={match} />
         </div>
       )}
     </motion.div>
