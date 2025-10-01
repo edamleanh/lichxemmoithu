@@ -609,11 +609,17 @@ const ValorantAdapter = {
         
         if (liveResponse.ok) {
           const liveData = await liveResponse.json()
+          console.log('🔴 VALORANT LIVE API Response:', liveData)
+          console.log('🔴 VALORANT LIVE Segments Count:', liveData.data?.segments?.length || 0)
+          
           const liveMatches = await this.processLiveMatches(liveData)
+          console.log('🔴 VALORANT LIVE Processed Matches:', liveMatches)
           allMatches = [...allMatches, ...liveMatches]
         } else {
+          console.error('❌ VALORANT LIVE API Error - Response not OK:', liveResponse.status)
         }
       } catch (error) {
+        console.error('❌ VALORANT LIVE API Error:', error)
       }
 
       // Fetch upcoming matches
@@ -622,11 +628,17 @@ const ValorantAdapter = {
         
         if (upcomingResponse.ok) {
           const upcomingData = await upcomingResponse.json()
+          console.log('🔵 VALORANT UPCOMING API Response:', upcomingData)
+          console.log('🔵 VALORANT UPCOMING Segments Count:', upcomingData.data?.segments?.length || 0)
+          
           const upcomingMatches = await this.processUpcomingMatches(upcomingData)
+          console.log('🔵 VALORANT UPCOMING Processed Matches:', upcomingMatches)
           allMatches = [...allMatches, ...upcomingMatches]
         } else {
+          console.error('❌ VALORANT UPCOMING API Error - Response not OK:', upcomingResponse.status)
         }
       } catch (error) {
+        console.error('❌ VALORANT UPCOMING API Error:', error)
       }
 
       // Fetch completed matches (results)
@@ -635,11 +647,17 @@ const ValorantAdapter = {
         
         if (resultsResponse.ok) {
           const resultsData = await resultsResponse.json()
+          console.log('🟢 VALORANT RESULTS API Response:', resultsData)
+          console.log('🟢 VALORANT RESULTS Segments Count:', resultsData.data?.segments?.length || 0)
+          
           const completedMatches = await this.processCompletedMatches(resultsData)
+          console.log('🟢 VALORANT RESULTS Processed Matches:', completedMatches)
           allMatches = [...allMatches, ...completedMatches]
         } else {
+          console.error('❌ VALORANT RESULTS API Error - Response not OK:', resultsResponse.status)
         }
       } catch (error) {
+        console.error('❌ VALORANT RESULTS API Error:', error)
       }
 
       // Filter matches by date range and remove duplicates
@@ -649,8 +667,13 @@ const ValorantAdapter = {
           index === self.findIndex(m => m.id === match.id)
         )
 
+      console.log('📊 VALORANT All Matches Count:', allMatches.length)
+      console.log('📊 VALORANT Filtered Matches Count:', filteredMatches.length)
+      console.log('📊 VALORANT Filtered Matches:', filteredMatches)
+
       // If no matches found, return sample data
       if (filteredMatches.length === 0) {
+        console.log('⚠️ VALORANT No matches found, returning sample data')
         return createSampleData('valorant', from, to)
       }
 
@@ -665,8 +688,13 @@ const ValorantAdapter = {
         
         return aPriority - bPriority
       })
+      
+      console.log('✅ VALORANT Final Sorted Matches:', sortedMatches)
+      console.log('✅ VALORANT Final Match Count:', sortedMatches.length)
+      
       return sortedMatches
     } catch (error) {
+      console.error('💥 VALORANT Adapter Fatal Error:', error)
       return createSampleData('valorant', from, to)
     }
   },
@@ -700,7 +728,7 @@ const YouTubeAPIManager = {
   apiKeys: [
     'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294', // Primary key
     'AIzaSyCHmBLPsIMhKJpxuOVGWK5OSHrwsIvRQbI', // Backup key 1
-    // 'YOUR_BACKUP_API_KEY_2',
+    'AIzaSyBd8I64KQA5fS_eQEDh5kpMM4416R3arrc', // Backup key 2
     // 'YOUR_BACKUP_API_KEY_3',
   ],
   
