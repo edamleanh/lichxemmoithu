@@ -36,7 +36,7 @@ import tftIcon from '../images/tft.png'
 function WatchLiveButton({ match }) {
   const [isSearching, setIsSearching] = useState(false)
   const [foundStream, setFoundStream] = useState(null)
-  if(match.game === 'football' || match.game === 'lol') {
+  if(match.game === 'football' || match.game === 'lol' || match.game === 'valorant' ) {
     if(match.status !== 'live') {
       return null
     }
