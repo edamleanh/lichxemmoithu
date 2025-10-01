@@ -1,4 +1,4 @@
-// YouTube Cache Service với Firebase Firestore
+﻿// YouTube Cache Service với Firebase Firestore
 import { db } from '../config/firebase'
 import { 
   doc, 
@@ -17,20 +17,16 @@ export class YouTubeCacheService {
   
   // Cache expiry times (in minutes)
   static CACHE_EXPIRY = {
-    live: 30,      // 30 minutes for live data
-    upcoming: 720  // 12 hours for upcoming data
+    live: 30,
+    'live-stats': 30,
+    upcoming: 720,
+    'upcoming-schedule': 720
   }
 
-  /**
-   * Get cache key for a specific request
-   */
   static getCacheKey(game, type, channelId) {
     return `${game}_${type}_${channelId}`
   }
 
-  /**
-   * Check if cached data is still valid
-   */
   static isCacheValid(cachedData, type) {
     if (!cachedData || !cachedData.timestamp) {
       return false
@@ -41,15 +37,13 @@ export class YouTubeCacheService {
     const expiryMinutes = this.CACHE_EXPIRY[type]
     const expiryMs = expiryMinutes * 60 * 1000
 
-    // Check basic time expiry (12h cho upcoming, 30ph cho live)
     const isTimeValid = (now - cacheTime) < expiryMs
 
-    // 🎯 Cho UPCOMING: kiểm tra thêm xem có event nào đã bắt đầu
-    if (type === 'upcoming' && isTimeValid && cachedData.data) {
+    if ((type === 'upcoming' || type === 'upcoming-schedule') && isTimeValid && cachedData.data) {
       const hasStartedEvents = this.hasEventsStarted(cachedData.data)
       
       if (hasStartedEvents) {
-        console.log(`📅 Upcoming cache invalid: Some events have started`)
+        console.log(`📅 ${type} cache invalid: Some events have started`)
         return false
       }
     }
@@ -57,29 +51,18 @@ export class YouTubeCacheService {
     return isTimeValid
   }
 
-  /**
-   * Check if any events in the data have started
-   */
   static hasEventsStarted(data) {
-    // 🛡️ Safety check: Xử lý các format data khác nhau
     if (!data) {
-      console.log(`⚠️ No data provided`)
       return false
     }
 
     let itemsToCheck = []
 
-    // Nếu data là array → sử dụng trực tiếp
     if (Array.isArray(data)) {
       itemsToCheck = data
-    }
-    // Nếu data là object với property items (YouTube API format)
-    else if (data.items && Array.isArray(data.items)) {
+    } else if (data.items && Array.isArray(data.items)) {
       itemsToCheck = data.items
-    }
-    // Nếu data là object khác → không có items để check
-    else {
-      console.log(`⚠️ Data format not recognized:`, typeof data, data)
+    } else {
       return false
     }
 
@@ -88,28 +71,19 @@ export class YouTubeCacheService {
     return itemsToCheck.some(item => {
       if (item?.liveStreamingDetails?.scheduledStartTime) {
         const scheduledTime = new Date(item.liveStreamingDetails.scheduledStartTime).getTime()
-        const hasStarted = now >= scheduledTime
-        if (hasStarted) {
-          console.log(`🕐 Event started: ${item.snippet?.title || 'Unknown'} at ${item.liveStreamingDetails.scheduledStartTime}`)
-        }
-        return hasStarted
+        return now >= scheduledTime
       }
-      
       return false
     })
   }
 
-  /**
-   * Get cached YouTube data với logic đồng bộ theo yêu cầu
-   */
   static async getCachedData(game, type, fetchFunction) {
     try {
-      const cacheKey = this.getCacheKey(game, type, game) // Use game as channelId
+      const cacheKey = this.getCacheKey(game, type, game)
       const docRef = doc(db, this.CACHE_COLLECTION, cacheKey)
       const docSnap = await getDoc(docRef)
 
       let needsFetch = false
-      let cacheInvalidReason = null
 
       if (docSnap.exists()) {
         const cachedData = docSnap.data()
@@ -119,31 +93,24 @@ export class YouTubeCacheService {
           return cachedData.data
         } else {
           needsFetch = true
-          cacheInvalidReason = 'expired_or_events_started'
         }
       } else {
         needsFetch = true
-        cacheInvalidReason = 'not_found'
       }
 
       if (needsFetch) {
-        console.log(`🔄 Fetching fresh ${game} ${type} data (reason: ${cacheInvalidReason})`)
+        console.log(`🔄 Fetching fresh ${game} ${type} data`)
         
-        // Fetch new data
         const freshData = await fetchFunction()
         
         if (freshData) {
-          // Save to cache
           await this.setCachedData(game, type, game, freshData)
           
-          // � LOGIC MỚI: CHỈ khi upcoming refresh → invalidate live cache
-          if (type === 'upcoming') {
-            console.log(`🔄 Upcoming refreshed → Invalidating live cache for ${game}`)
+          if (type === 'upcoming' || type === 'upcoming-schedule') {
+            console.log(`🔄 ${type} refreshed → Invalidating live cache for ${game}`)
             await this.clearCache(game, 'live')
             await this.clearCache(game, 'live-stats')
           }
-          
-          // 🚫 REMOVED: Live refresh KHÔNG invalidate upcoming cache
           
           return freshData
         }
@@ -156,9 +123,6 @@ export class YouTubeCacheService {
     }
   }
 
-  /**
-   * Save YouTube data to cache
-   */
   static async setCachedData(game, type, channelId, data) {
     try {
       const cacheKey = this.getCacheKey(game, type, channelId)
@@ -180,9 +144,6 @@ export class YouTubeCacheService {
     }
   }
 
-  /**
-   * Clear cache for a specific game/type
-   */
   static async clearCache(game, type = null) {
     try {
       const collectionRef = collection(db, this.CACHE_COLLECTION)
@@ -204,48 +165,6 @@ export class YouTubeCacheService {
       console.log(`🗑️ Cleared cache for ${game} ${type || 'all types'}`)
     } catch (error) {
       console.error(`❌ Error clearing cache for ${game}:`, error)
-    }
-  }
-
-  /**
-   * Force refresh cache (clear and refetch)
-   */
-  static async forceRefresh(game, type) {
-    try {
-      await this.clearCache(game, type)
-      console.log(`🔄 Force refresh triggered for ${game} ${type}`)
-    } catch (error) {
-      console.error(`❌ Error force refreshing cache:`, error)
-    }
-  }
-
-  /**
-   * Get cache statistics
-   */
-  static async getCacheStats() {
-    try {
-      const collectionRef = collection(db, this.CACHE_COLLECTION)
-      const querySnapshot = await getDocs(collectionRef)
-      
-      const stats = {
-        total: querySnapshot.size,
-        byGame: {},
-        byType: {}
-      }
-
-      querySnapshot.docs.forEach(doc => {
-        const data = doc.data()
-        const game = data.game
-        const type = data.type
-        
-        stats.byGame[game] = (stats.byGame[game] || 0) + 1
-        stats.byType[type] = (stats.byType[type] || 0) + 1
-      })
-
-      return stats
-    } catch (error) {
-      console.error('❌ Error getting cache stats:', error)
-      return null
     }
   }
 }
