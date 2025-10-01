@@ -193,6 +193,7 @@ const searchYouTubeLiveStream = async (match) => {
       `part=snippet&type=video&eventType=live&maxResults=3&order=viewCount&` +
       `q=${encodeURIComponent(searchQuery)}`
     );
+    console.log('YouTube Live Search Results:', data)
     
     if (!data) {
       return null
@@ -2210,6 +2211,7 @@ function WatchLiveButton({ match }) {
   const handleWatchLive = async () => {
     // If match already has stream, use it
     if (match.stream) {
+      console.log('Opening direct stream URL:', match.stream)
       window.open(match.stream, '_blank')
       return
     }
@@ -2490,7 +2492,6 @@ function MatchCard({ match, isDarkMode }) {
 
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              
                 <WatchLiveButton match={match} />
             </div>
           </div>
@@ -2635,7 +2636,6 @@ function MatchCard({ match, isDarkMode }) {
               </div>
               
               <div className="flex items-center gap-2">
-                
                 {/* Watch Live Button */}
                 <WatchLiveButton match={match} />
               </div>
