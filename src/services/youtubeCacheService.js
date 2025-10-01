@@ -81,7 +81,24 @@ export class YouTubeCacheService {
     try {
       const cacheKey = this.getCacheKey(game, type, game)
       const docRef = doc(db, this.CACHE_COLLECTION, cacheKey)
-      const docSnap = await getDoc(docRef)
+      
+      // 🛡️ Try to get cached data with timeout
+      let docSnap
+      try {
+        docSnap = await Promise.race([
+          getDoc(docRef),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Firebase timeout')), 5000)
+          )
+        ])
+      } catch (firebaseError) {
+        console.warn(`⚠️ Firebase blocked/timeout for ${game} ${type}, fetching fresh data`)
+        console.warn('Firebase error:', firebaseError.message)
+        
+        // Firebase bị block → fetch fresh data trực tiếp
+        const freshData = await fetchFunction()
+        return freshData
+      }
 
       let needsFetch = false
 
@@ -104,12 +121,22 @@ export class YouTubeCacheService {
         const freshData = await fetchFunction()
         
         if (freshData) {
-          await this.setCachedData(game, type, game, freshData)
+          // 🛡️ Try to save to cache with fallback
+          try {
+            await this.setCachedData(game, type, game, freshData)
+          } catch (cacheError) {
+            console.warn(`⚠️ Could not cache ${game} ${type} data (Firebase blocked):`, cacheError.message)
+            // Continue without caching
+          }
           
           if (type === 'upcoming' || type === 'upcoming-schedule') {
             console.log(`🔄 ${type} refreshed → Invalidating live cache for ${game}`)
-            await this.clearCache(game, 'live')
-            await this.clearCache(game, 'live-stats')
+            try {
+              await this.clearCache(game, 'live')
+              await this.clearCache(game, 'live-stats')
+            } catch (clearError) {
+              console.warn(`⚠️ Could not clear cache (Firebase blocked):`, clearError.message)
+            }
           }
           
           return freshData
@@ -137,10 +164,18 @@ export class YouTubeCacheService {
         expiryMinutes: this.CACHE_EXPIRY[type]
       }
 
-      await setDoc(docRef, cacheData)
+      // 🛡️ Try to save with timeout
+      await Promise.race([
+        setDoc(docRef, cacheData),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Firebase write timeout')), 5000)
+        )
+      ])
+      
       console.log(`💾 Cached ${game} ${type} data (${data?.length || 0} items)`)
     } catch (error) {
-      console.error(`❌ Error caching data for ${game} ${type}:`, error)
+      // Re-throw để caller xử lý
+      throw new Error(`Firebase cache error: ${error.message}`)
     }
   }
 
