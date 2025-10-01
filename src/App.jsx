@@ -194,6 +194,9 @@ const searchYouTubeLiveStream = async (match) => {
       `part=snippet&type=video&eventType=live&maxResults=3&order=viewCount&` +
       `q=${encodeURIComponent(searchQuery)}`
     );
+    console.log(      `https://www.googleapis.com/youtube/v3/search?` +
+      `part=snippet&type=video&eventType=live&maxResults=3&order=viewCount&` +
+      `q=${encodeURIComponent(searchQuery)}`)
     console.log('YouTube Live Search Results:', data)
     
     if (!data) {
