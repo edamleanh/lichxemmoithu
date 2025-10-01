@@ -186,9 +186,7 @@ const searchYouTubeLiveStream = async (match) => {
       'vs',
       shortenTeamName(match.away?.name) || '',
       match.league,
-      'live'
     ].filter(Boolean).join(' ')
-    
     
     const data = await youtubeApiManager.makeRequest(
       `https://www.googleapis.com/youtube/v3/search?` +

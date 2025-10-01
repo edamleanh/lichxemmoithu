@@ -61,23 +61,40 @@ export class YouTubeCacheService {
    * Check if any events in the data have started
    */
   static hasEventsStarted(data) {
+    // 🛡️ Safety check: Xử lý các format data khác nhau
+    if (!data) {
+      console.log(`⚠️ No data provided`)
+      return false
+    }
+
+    let itemsToCheck = []
+
+    // Nếu data là array → sử dụng trực tiếp
+    if (Array.isArray(data)) {
+      itemsToCheck = data
+    }
+    // Nếu data là object với property items (YouTube API format)
+    else if (data.items && Array.isArray(data.items)) {
+      itemsToCheck = data.items
+    }
+    // Nếu data là object khác → không có items để check
+    else {
+      console.log(`⚠️ Data format not recognized:`, typeof data, data)
+      return false
+    }
+
     const now = Date.now()
     
-    return data.some(item => {
-      if (item.liveStreamingDetails?.scheduledStartTime) {
+    return itemsToCheck.some(item => {
+      if (item?.liveStreamingDetails?.scheduledStartTime) {
         const scheduledTime = new Date(item.liveStreamingDetails.scheduledStartTime).getTime()
-        return now >= scheduledTime
+        const hasStarted = now >= scheduledTime
+        if (hasStarted) {
+          console.log(`🕐 Event started: ${item.snippet?.title || 'Unknown'} at ${item.liveStreamingDetails.scheduledStartTime}`)
+        }
+        return hasStarted
       }
-      // Kiểm tra cả items array nếu có
-      if (item.items) {
-        return item.items.some(subItem => {
-          if (subItem.liveStreamingDetails?.scheduledStartTime) {
-            const scheduledTime = new Date(subItem.liveStreamingDetails.scheduledStartTime).getTime()
-            return now >= scheduledTime
-          }
-          return false
-        })
-      }
+      
       return false
     })
   }
