@@ -181,6 +181,7 @@ const shortenTeamName = (teamName) => {
 const searchYouTubeLiveStream = async (match) => {
   try {
     // Build search query: team1 + team2 + league + "live"
+    console.log('Match:', match)
     const searchQuery = [
       shortenTeamName(match.home?.name) || '',
       'vs',
