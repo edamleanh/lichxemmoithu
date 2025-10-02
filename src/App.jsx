@@ -2717,7 +2717,7 @@ function MatchCard({ match, isDarkMode }) {
                     isDarkMode ? 'text-red-300' : 'text-red-800'
                   }`}>
                     {match.currentMinute ? `${match.currentMinute}'` : ''}
-                    {match.halfTime ? match.halfTime : 'Đang thi đấu'}
+                    {match.halfTime ? match.halfTime : ''}
                   </span>
                 )}
               </div>
@@ -2767,7 +2767,7 @@ function MatchCard({ match, isDarkMode }) {
                 <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
                   {match.referee && `Trọng tài: ${match.referee}`}
                   {match.venue && match.referee && ' • '}
-                  {match.venue && `Sân: ${match.venue}`}
+                  {match.venue && `${match.venue}`}
                 </div>
               </div>
             )}
