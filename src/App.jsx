@@ -43,6 +43,62 @@ import footballIcon from './images/football.png'
 import pubgIcon from './images/pubg.png'
 import tftIcon from './images/tft.png'
 
+// --- Lazy Image Component ------------------------------------------------
+// Component to lazy load images only when they enter the viewport
+const LazyImage = ({ src, alt, className = '', placeholder = null }) => {
+  const [imageSrc, setImageSrc] = useState(placeholder)
+  const [isLoading, setIsLoading] = useState(true)
+  const imgRef = useRef(null)
+
+  useEffect(() => {
+    // If no src, don't load
+    if (!src) {
+      setIsLoading(false)
+      return
+    }
+
+    // Create Intersection Observer
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Load image when it enters viewport
+            setImageSrc(src)
+            setIsLoading(false)
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      {
+        rootMargin: '50px', // Start loading 50px before entering viewport
+        threshold: 0.01,
+      }
+    )
+
+    if (imgRef.current) {
+      observer.observe(imgRef.current)
+    }
+
+    return () => {
+      if (imgRef.current) {
+        observer.unobserve(imgRef.current)
+      }
+    }
+  }, [src])
+
+  if (!src) return null
+
+  return (
+    <img
+      ref={imgRef}
+      src={imageSrc}
+      alt={alt}
+      className={`${className} ${isLoading ? 'opacity-50' : 'opacity-100'} transition-opacity duration-300`}
+      loading="lazy" // Native lazy loading as backup
+    />
+  )
+}
+
 // --- Styled Components ---------------------------------------------------
 const Button = ({ className = '', children, variant = 'default', size = 'default', isDarkMode = false, ...props }) => {
   const variants = {
@@ -340,6 +396,11 @@ const TeamLogoSearchService = {
   
   // Enhance team object with logo if missing
   async enhanceTeamWithLogo(team, sport) {
+    // Return early if feature is disabled
+    if (!this.config.enabled) {
+      return team
+    }
+    
     if (!team || !team.name || team.logo) {
       return team // Already has logo or no team name
     }
@@ -2636,7 +2697,11 @@ function MatchCard({ match, isDarkMode }) {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
             {match.home?.logo && (
-              <img src={match.home.logo} alt={match.home.name} className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" />
+              <LazyImage 
+                src={match.home.logo} 
+                alt={match.home.name} 
+                className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" 
+              />
             )}
             <span className={`font-semibold break-words leading-tight ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
@@ -2676,7 +2741,11 @@ function MatchCard({ match, isDarkMode }) {
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
             }`}>{shortenTeamName(match.away?.name) || 'TBD'}</span>
             {match.away?.logo && (
-              <img src={match.away.logo} alt={match.away.name} className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" />
+              <LazyImage 
+                src={match.away.logo} 
+                alt={match.away.name} 
+                className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" 
+              />
             )}
           </div>
         </div>

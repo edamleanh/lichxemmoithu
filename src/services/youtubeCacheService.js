@@ -82,13 +82,13 @@ export class YouTubeCacheService {
       const cacheKey = this.getCacheKey(game, type, game)
       const docRef = doc(db, this.CACHE_COLLECTION, cacheKey)
       
-      // 🛡️ Try to get cached data with timeout
+      // 🛡️ Try to get cached data with timeout (2s for faster loading)
       let docSnap
       try {
         docSnap = await Promise.race([
           getDoc(docRef),
           new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Firebase timeout')), 5000)
+            setTimeout(() => reject(new Error('Firebase timeout')), 2000)
           )
         ])
       } catch (firebaseError) {
@@ -164,11 +164,11 @@ export class YouTubeCacheService {
         expiryMinutes: this.CACHE_EXPIRY[type]
       }
 
-      // 🛡️ Try to save with timeout
+      // 🛡️ Try to save with timeout (2s for faster loading)
       await Promise.race([
         setDoc(docRef, cacheData),
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Firebase write timeout')), 5000)
+          setTimeout(() => reject(new Error('Firebase write timeout')), 2000)
         )
       ])
       
