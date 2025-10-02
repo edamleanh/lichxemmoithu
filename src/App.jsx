@@ -1781,6 +1781,9 @@ const FootballAdapter = {
               const minuteMatch = match.rawText?.match(/(\d+)'/)
               const currentMinute = minuteMatch ? parseInt(minuteMatch[1]) : undefined
               
+              // Check for Half Time status in rawText
+              const isHalfTime = match.rawText?.includes('HT') || match.rawText?.includes('Half Time')
+              
               // Parse date and time
               let matchDate = new Date()
               if (match.time) {
@@ -1811,6 +1814,7 @@ const FootballAdapter = {
                 stream: match.link || '',
                 status: 'live',
                 currentMinute: currentMinute,
+                halfTime: isHalfTime ? 'HT' : undefined,
                 commentator: match.blv,
                 source: match.source
               }
@@ -1903,8 +1907,8 @@ const FootballAdapter = {
               status: match.status === 'FINISHED' ? 'finished' :
                       match.status === 'IN_PLAY' || match.status === 'PAUSED' ? 'live' : 'upcoming',
               // Live-specific data for Football
-              currentMinute: (match.status === 'IN_PLAY' || match.status === 'PAUSED') ? match.minute : undefined,
-              halfTime: match.status === 'PAUSED' ? 'Giờ nghỉ giải lao' : undefined,
+              currentMinute: match.status === 'IN_PLAY' ? match.minute : undefined,
+              halfTime: match.status === 'PAUSED' ? 'HT' : undefined,
               referee: match.referees?.[0]?.name || undefined,
             }
             })
@@ -2785,8 +2789,17 @@ function MatchCard({ match, isDarkMode }) {
                   <span className={`font-semibold ${
                     isDarkMode ? 'text-red-300' : 'text-red-800'
                   }`}>
-                    {match.currentMinute ? `${match.currentMinute}'` : ''}
-                    {match.halfTime ? match.halfTime : ''}
+                    {match.halfTime ? (
+                      <span className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded bg-yellow-500 text-white text-xs font-bold">
+                          {match.halfTime}
+                        </span>
+                      </span>
+                    ) : match.currentMinute ? (
+                      `${match.currentMinute}'`
+                    ) : (
+                      ''
+                    )}
                   </span>
                 )}
               </div>
