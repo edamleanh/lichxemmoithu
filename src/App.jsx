@@ -1697,6 +1697,70 @@ const FootballAdapter = {
       ]
       
       let allMatches = []
+      let liveMatches = []
+      
+      // 🔴 STEP 1: Fetch Live Matches từ API mới
+      try {
+        const liveResponse = await fetch('https://apibongda.onrender.com/api/matches/live', {
+          signal: AbortSignal.timeout(8000) // 8 second timeout
+        })
+        
+        if (liveResponse.ok) {
+          const liveData = await liveResponse.json()
+          
+          if (liveData.success && liveData.data && liveData.data.length > 0) {
+            // Map live data to our format
+            liveMatches = liveData.data.map((match, index) => {
+              // Parse score from rawText
+              const scoreMatch = match.rawText?.match(/(\d+)\s*-\s*(\d+)/)
+              const homeScore = scoreMatch ? parseInt(scoreMatch[1]) : undefined
+              const awayScore = scoreMatch ? parseInt(scoreMatch[2]) : undefined
+              
+              // Parse minute from rawText
+              const minuteMatch = match.rawText?.match(/(\d+)'/)
+              const currentMinute = minuteMatch ? parseInt(minuteMatch[1]) : undefined
+              
+              // Parse date and time
+              let matchDate = new Date()
+              if (match.time) {
+                const [datePart, timePart] = match.time.split(' ')
+                const [day, month] = datePart.split('/')
+                const [hour, minute] = timePart.split(':')
+                matchDate = new Date(2025, parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute))
+              }
+              
+              return {
+                id: `live-${match.homeTeam}-${match.awayTeam}-${index}`.replace(/\s/g, '-'),
+                game: 'football',
+                league: match.league || 'Live Match',
+                stage: 'LIVE',
+                home: {
+                  name: match.homeTeam,
+                  logo: match.homeTeamLogo || null,
+                  score: homeScore
+                },
+                away: {
+                  name: match.awayTeam,
+                  logo: match.awayTeamLogo || null,
+                  score: awayScore
+                },
+                start: matchDate,
+                venue: match.source || 'Live Stream',
+                region: 'Live',
+                stream: match.link || '',
+                status: 'live',
+                currentMinute: currentMinute,
+                commentator: match.blv,
+                source: match.source
+              }
+            })
+            
+            console.log(`✅ Loaded ${liveMatches.length} live matches from apibongda.onrender.com`)
+          }
+        }
+      } catch (liveError) {
+        console.warn(`⚠️ Live API failed, will fallback to football-data.org IN_PLAY:`, liveError.message)
+      }
       
       // Format dates for API
       const formatDate = (date) => {
@@ -1706,6 +1770,7 @@ const FootballAdapter = {
       const dateFrom = formatDate(from || new Date())
       const dateTo = formatDate(to || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
       
+      // 📅 STEP 2: Fetch SCHEDULED & FINISHED matches từ football-data.org
       for (const league of leagues) {
         try {
           // Use proxy endpoint with correct URL structure
@@ -1726,7 +1791,23 @@ const FootballAdapter = {
           const data = await response.json()
           
           if (data.matches) {
-            const matches = data.matches.map(match => {
+            // 🎯 Filter: Chỉ lấy SCHEDULED và FINISHED
+            // Nếu có live data từ API mới → skip IN_PLAY
+            // Nếu không có live data → fallback lấy IN_PLAY
+            const shouldIncludeLive = liveMatches.length === 0
+            
+            const filteredMatches = data.matches.filter(match => {
+              if (match.status === 'SCHEDULED' || match.status === 'FINISHED') {
+                return true
+              }
+              // Fallback: Chỉ lấy IN_PLAY nếu live API failed
+              if (shouldIncludeLive && (match.status === 'IN_PLAY' || match.status === 'PAUSED')) {
+                return true
+              }
+              return false
+            })
+            
+            const matches = filteredMatches.map(match => {
               // Map competition names to preferred display names
               const leagueNameMap = {
                 'Primera Division': 'LaLiga',
@@ -1792,8 +1873,11 @@ const FootballAdapter = {
         }
       }
       
+      // 🔗 STEP 3: Merge live matches với scheduled/finished matches
+      const combinedMatches = [...liveMatches, ...allMatches]
+      
       // Remove duplicates
-      const uniqueMatches = allMatches.filter((match, index, self) => 
+      const uniqueMatches = combinedMatches.filter((match, index, self) => 
         index === self.findIndex(m => m.id === match.id)
       )
       
