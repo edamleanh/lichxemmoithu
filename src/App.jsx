@@ -428,6 +428,16 @@ const TeamLogoSearchService = {
 
 // --- API Adapters --------------------------------------------------------
 const ValorantAdapter = {
+  // Helper function to check if a league should be included
+  isValidLeague(leagueName) {
+    if (!leagueName) return false
+    
+    const leagueLower = leagueName.toLowerCase()
+    const validKeywords = ['champion', 'masters', 'apac', 'on live', 'onlive', 'ovs']
+    
+    return validKeywords.some(keyword => leagueLower.includes(keyword))
+  },
+
   // Helper function to process live matches  
   async processLiveMatches(data) {
     if (!data.data?.segments) return []
@@ -747,6 +757,7 @@ const ValorantAdapter = {
         .filter((match, index, self) => 
           index === self.findIndex(m => m.id === match.id)
         )
+        .filter(match => this.isValidLeague(match.league)) // Only keep major tournaments
 
       //console.log('📊 VALORANT All Matches Count:', allMatches.length)
       //console.log('📊 VALORANT Filtered Matches Count:', filteredMatches.length)
