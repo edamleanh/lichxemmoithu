@@ -241,7 +241,6 @@ const searchYouTubeLiveStream = async (match) => {
     const searchQuery = [
       match.league || `${match.home?.name || 'Team 1'} vs ${match.away?.name || 'Team 2'}`,
     ].filter(Boolean).join(' ')
-    
     const data = await youtubeApiManager.makeRequest(
       `https://www.googleapis.com/youtube/v3/search?` +
       `part=snippet&type=video&eventType=live&maxResults=3&order=viewCount&` +
