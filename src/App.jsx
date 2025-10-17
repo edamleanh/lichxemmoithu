@@ -433,8 +433,8 @@ const ValorantAdapter = {
     if (!leagueName) return false
     
     const leagueLower = leagueName.toLowerCase()
-    const validKeywords = ['champion', 'masters', 'apac', 'on live', 'onlive', 'ovs']
-    
+    const validKeywords = ['champions', 'champion', 'masters','master', 'apac', 'on live', 'onlive', 'ovs', 'pacific']
+
     return validKeywords.some(keyword => leagueLower.includes(keyword))
   },
 
