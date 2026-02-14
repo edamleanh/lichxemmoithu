@@ -6,12 +6,24 @@
   },
   "rewrites": [
     {
+      "source": "/api/football",
+      "destination": "/api/football"
+    },
+    {
       "source": "/api/football/(.*)",
       "destination": "/api/football"
     },
     {
+      "source": "/api/lol",
+      "destination": "/api/lol"
+    },
+    {
       "source": "/api/lol/(.*)",
       "destination": "/api/lol"
+    },
+    {
+      "source": "/api/valorant",
+      "destination": "/api/valorant"
     },
     {
       "source": "/api/valorant/(.*)",
