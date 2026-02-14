@@ -6,42 +6,52 @@ export const LolAdapter = {
     try {
       // Add timeout for LoL API
       const controller = new AbortController()
-      setTimeout(() => controller.abort(), 8000) // 8 second timeout
+      setTimeout(() => controller.abort(), 10000) // 10 second timeout
       
-      const response = await fetch('/api/lol', {
-        signal: controller.signal
-      })
-      
-      if (!response.ok) {
-        return [] // Return empty array instead of sample data
+      const leagues = [
+        { id: '98767991332355509', name: 'VCS' }, // Vietnam
+        { id: '98767991310872058', name: 'LCK' }, // Korea
+        { id: '98767991314006698', name: 'LPL' }, // China
+        { id: '98767991302996019', name: 'LEC' }, // EMEA
+        { id: '98767991299243165', name: 'LCS' }, // Americas
+        { id: '98767991325878492', name: 'MSI' }, 
+        { id: '98767975604023819', name: 'Worlds' }
+      ]
+
+      const fetchLeagueSchedule = async (league) => {
+        try {
+          const response = await fetch(`/api/lol/persisted/gw/getSchedule?hl=vi-VN&leagueId=${league.id}`, {
+            signal: controller.signal
+          })
+          
+          if (!response.ok) return []
+          
+          const data = await response.json()
+          return data.data?.schedule?.events || []
+        } catch (error) {
+          console.warn(`Failed to fetch LoL schedule for ${league.name}`, error)
+          return []
+        }
       }
+
+      const results = await Promise.all(leagues.map(fetchLeagueSchedule))
+      const allEvents = results.flat()
       
-      const data = await response.json()
+      if (allEvents.length === 0) return []
       
-      if (data.data?.schedule?.events) {
-        data.data.schedule.events.forEach((event, index) => {
-          if (event.streams && event.streams.length > 0) {
-            event.streams.forEach((stream, streamIndex) => {
-            })
-          }
-        })
-      }
-      
-      if (!data.data?.schedule?.events) return [] // Return empty array instead of sample data
-      
-      const matches = data.data.schedule.events.map(event => ({
+      const matches = allEvents.map(event => ({
         id: `lol-${event.match?.id || Math.random()}`,
         game: 'lol',
         league: event.league?.name || 'LoL Esports',
         stage: event.match?.strategy?.count ? `Bo${event.match.strategy.count}` : (event.match?.strategy?.type || event.blockName || ''),
         home: { 
           name: event.match?.teams?.[0]?.name || 'TBD', 
-          logo: event.match?.teams?.[0]?.image || null, // Will be enhanced if null
+          logo: event.match?.teams?.[0]?.image || null,
           score: (event.state === 'completed' || event.state === 'inProgress') ? event.match?.teams?.[0]?.result?.gameWins : undefined
         },
         away: { 
           name: event.match?.teams?.[1]?.name || 'TBD', 
-          logo: event.match?.teams?.[1]?.image || null, // Will be enhanced if null
+          logo: event.match?.teams?.[1]?.image || null,
           score: (event.state === 'completed' || event.state === 'inProgress') ? event.match?.teams?.[1]?.result?.gameWins : undefined
         },
         start: new Date(event.startTime),
@@ -55,13 +65,6 @@ export const LolAdapter = {
         bestOf: event.match?.strategy?.count || undefined,
         liveGameState: event.state === 'inProgress' ? 'In Progress' : undefined,
       })).filter(match => withinRange(match.start, from, to))
-        .filter(match => {
-          // Filter out EMEA Masters league
-          if (match.league === 'EMEA Masters') {
-            return false
-          }
-          return true
-        })
         .filter(match => {
           if (match.status === 'live') {
             return match.home?.name !== 'TBD' && match.away?.name !== 'TBD'

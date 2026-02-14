@@ -256,7 +256,7 @@ export const ValorantAdapter = {
 
       // Fetch LIVE matches first (highest priority)
       try {
-        const liveResponse = await fetch('/api/valorant?q=live_score')
+        const liveResponse = await fetch('/api/valorant/match?q=live_score')
         
         if (liveResponse.ok) {
           const liveData = await liveResponse.json()
@@ -270,7 +270,7 @@ export const ValorantAdapter = {
 
       // Fetch upcoming matches
       try {
-        const upcomingResponse = await fetch('/api/valorant?q=upcoming')
+        const upcomingResponse = await fetch('/api/valorant/match?q=upcoming')
         
         if (upcomingResponse.ok) {
           const upcomingData = await upcomingResponse.json()
@@ -284,7 +284,7 @@ export const ValorantAdapter = {
 
       // Fetch completed matches (results)
       try {
-        const resultsResponse = await fetch('/api/valorant?q=results')
+        const resultsResponse = await fetch('/api/valorant/match?q=results')
         
         if (resultsResponse.ok) {
           const resultsData = await resultsResponse.json()
