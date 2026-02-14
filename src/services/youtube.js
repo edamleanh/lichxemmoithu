@@ -2,13 +2,13 @@
 export const YouTubeAPIManager = {
   // Array of API keys - add your API keys here
   apiKeys: [
+    import.meta.env.VITE_YOUTUBE_API_KEY,
     'AIzaSyCZHYPprCcGOwLFrt1jGbtiKlvuVJtgoRY',
     'AIzaSyDo77udI07ntgKZ7uBqeDo2NavY9199TPE',
     'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294', 
     'AIzaSyCHmBLPsIMhKJpxuOVGWK5OSHrwsIvRQbI', 
     'AIzaSyBd8I64KQA5fS_eQEDh5kpMM4416R3arrc', 
-    
-  ],
+  ].filter(Boolean),
   
   currentKeyIndex: 0,
   
