@@ -135,12 +135,22 @@ function MainContent() {
   const groupedMatches = useMemo(() => {
     const groups = {}
     matches.forEach(match => {
-      const date = new Date(match.start)
-      const dateKey = date.toISOString().split('T')[0]
-      if (!groups[dateKey]) {
-        groups[dateKey] = []
+      try {
+        const date = new Date(match.start)
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          console.warn('Invalid match date:', match)
+          return
+        }
+        
+        const dateKey = date.toISOString().split('T')[0]
+        if (!groups[dateKey]) {
+          groups[dateKey] = []
+        }
+        groups[dateKey].push(match)
+      } catch (e) {
+        console.warn('Error grouping match:', match, e)
       }
-      groups[dateKey].push(match)
     })
     
     // Sort dates

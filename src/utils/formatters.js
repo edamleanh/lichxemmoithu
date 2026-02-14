@@ -4,6 +4,7 @@ export const toDate = (v) => (v instanceof Date ? v : new Date(v))
 
 export const fmtTime = (date, opts = {}) => {
   const d = toDate(date)
+  if (isNaN(d.getTime())) return 'Invalid Date'
   const now = new Date()
   
   // Check if match is today
@@ -46,9 +47,13 @@ export const fmtTime = (date, opts = {}) => {
   return `${dateStr}, ${timeStr}`
 }
 
-export const fmtDay = (d) => new Intl.DateTimeFormat('vi-VN', { 
-  weekday: 'long', day: '2-digit', month: 'long' 
-}).format(toDate(d))
+export const fmtDay = (d) => {
+  const date = toDate(d)
+  if (isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('vi-VN', { 
+    weekday: 'long', day: '2-digit', month: 'long' 
+  }).format(date)
+}
 
 export const withinRange = (d, from, to) => {
   const t = toDate(d).getTime()
