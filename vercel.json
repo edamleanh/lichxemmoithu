@@ -6,12 +6,16 @@
   },
   "rewrites": [
     {
-      "source": "/api/football/competitions",
+      "source": "/api/football/(.*)",
       "destination": "/api/football"
     },
     {
-      "source": "/api/football/competitions/(.*)",
-      "destination": "/api/football"
+      "source": "/api/lol/(.*)",
+      "destination": "/api/lol"
+    },
+    {
+      "source": "/api/valorant/(.*)",
+      "destination": "/api/valorant"
     }
   ],
   "headers": [
@@ -24,11 +28,11 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, PUT, DELETE, OPTIONS"
+          "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH"
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization, X-Auth-Token"
+          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Auth-Token, x-api-key"
         }
       ]
     }
