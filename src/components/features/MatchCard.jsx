@@ -8,6 +8,15 @@ import { fmtTime, shortenTeamName } from '../../utils/formatters.js'
 export function WatchLiveButton({ match }) {
   const [isSearching, setIsSearching] = useState(false)
   const [foundStream, setFoundStream] = useState(null)
+
+  // Helper to safely render icon
+  const renderIcon = (Icon, className) => {
+    if (!Icon) return null
+    if (typeof Icon === 'function' || typeof Icon === 'object') {
+      return <Icon className={className} />
+    }
+    return null
+  }
   
   const handleWatchLive = async () => {
     // If match already has stream, use it
@@ -55,7 +64,7 @@ export function WatchLiveButton({ match }) {
       className="animate-pulse"
       disabled={isSearching}
     >
-      <Play className="h-3 w-3" />
+      {renderIcon(Play, "h-3 w-3")}
       {match.status === 'upcoming' ? 'Đặt thông báo' : isSearching ? 'Đang tìm...' : 'Xem Live'}
     </Button>
   )

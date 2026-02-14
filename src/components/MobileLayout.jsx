@@ -305,6 +305,15 @@ function MobileNavigation({
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
+  // Helper to safely render icon
+  const renderIcon = (Icon, className) => {
+    if (!Icon) return null
+    if (typeof Icon === 'function' || typeof Icon === 'object') {
+      return <Icon className={className} />
+    }
+    return null
+  }
+
   return (
     <>
       {/* Mobile Header */}
@@ -343,7 +352,7 @@ function MobileNavigation({
                         onClick={() => onSectionScroll(status)}
                         className={`flex items-center gap-1 px-2 py-1 rounded ${config.color} text-white text-xs font-medium ${status === 'live' ? 'animate-pulse' : ''}`}
                       >
-                        <SectionIcon className="h-3 w-3" />
+                        {renderIcon(SectionIcon, "h-3 w-3")}
                         <span>{config.count}</span>
                       </button>
                     )
@@ -407,7 +416,7 @@ function MobileNavigation({
                       {sport.isImage ? (
                         <img src={sport.icon} alt={sport.label} className="h-3.5 w-3.5 object-contain" />
                       ) : (
-                        <SportIcon className="h-3.5 w-3.5" />
+                        renderIcon(SportIcon, "h-3.5 w-3.5")
                       )}
                       {sport.label}
                     </Button>
