@@ -40,11 +40,11 @@ const adapters = {
 }
 
 // --- Main Content Component -----------------------------------------------
+// --- Main Content Component -----------------------------------------------
 function MainContent() {
   const isMobile = useIsMobile()
   const [activeSport, setActiveSport] = useState('all')
   const [dateFilter, setDateFilter] = useState('today')
-  const [searchQuery, setSearchQuery] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
@@ -154,26 +154,11 @@ function MainContent() {
     }
   })
 
-  // Filter matches based on search query
-  const filteredMatches = useMemo(() => {
-    if (!searchQuery) return matches
-    
-    const query = searchQuery.toLowerCase()
-    return matches.filter(match => 
-      match.home?.name?.toLowerCase().includes(query) ||
-      match.away?.name?.toLowerCase().includes(query) ||
-      match.league?.toLowerCase().includes(query) ||
-      match.game?.toLowerCase().includes(query)
-    )
-  }, [matches, searchQuery])
-
-  // Group matches by date - REMOVED
-  
   // Mobile Layout Render
   if (isMobile) {
     return (
       <MobileLayout 
-        matches={filteredMatches} 
+        matches={matches} 
         loading={isLoading} 
         error={error} 
         refetch={refetch}
@@ -213,25 +198,6 @@ function MainContent() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className={`relative group rounded-2xl p-1 transition-all ${
-              isDarkMode ? 'bg-gray-800' : 'bg-white shadow-sm'
-            }`}>
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className={`h-5 w-5 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-              </div>
-              <input
-                type="text"
-                placeholder="Tìm kiếm đội, giải đấu..."
-                className={`block w-full sm:w-64 pl-10 pr-4 py-2 rounded-xl bg-transparent outline-none transition-all ${
-                  isDarkMode 
-                    ? 'text-white placeholder-gray-500 focus:bg-gray-700/50' 
-                    : 'text-gray-900 placeholder-gray-400 focus:bg-gray-50'
-                }`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            
             <Button
               variant="secondary"
               isDarkMode={isDarkMode}
@@ -326,7 +292,7 @@ function MainContent() {
               exit={{ opacity: 0 }}
               className="space-y-8"
             >
-              {filteredMatches.length === 0 ? (
+              {matches.length === 0 ? (
                 <div className="text-center py-20">
                   <div className={`mb-4 w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
                     isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
@@ -342,7 +308,7 @@ function MainContent() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredMatches.map((match) => (
+                  {matches.map((match) => (
                     <MatchCard 
                       key={match.id} 
                       match={match} 
@@ -358,6 +324,7 @@ function MainContent() {
     </div>
   )
 }
+
 
 function App() {
   return (
