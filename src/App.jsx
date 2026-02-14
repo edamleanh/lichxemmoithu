@@ -44,7 +44,7 @@ const adapters = {
 function MainContent() {
   const isMobile = useIsMobile()
   const [activeSport, setActiveSport] = useState('all')
-  const [dateFilter, setDateFilter] = useState('today')
+  // dateFilter removed, always 'today'
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
@@ -57,41 +57,21 @@ function MainContent() {
     }
   }, [isDarkMode])
 
-  // Date range calculation
+  // Date range calculation - Always Today
   const dateRange = useMemo(() => {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     
-    switch (dateFilter) {
-      case 'today':
-        return { 
-          from: today, 
-          // End of today
-          to: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1) 
-        }
-      case 'tomorrow':
-        const tomorrow = new Date(today)
-        tomorrow.setDate(tomorrow.getDate() + 1)
-        return { 
-          from: tomorrow, 
-          to: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000 - 1) 
-        }
-      case 'week':
-        const weekEnd = new Date(today)
-        weekEnd.setDate(weekEnd.getDate() + 7)
-        return { from: today, to: weekEnd }
-      default: // all
-        const past = new Date(today)
-        past.setDate(past.getDate() - 1) // Include yesterday for recent results
-        const future = new Date(today)
-        future.setDate(future.getDate() + 14) // 2 weeks ahead
-        return { from: past, to: future }
+    return { 
+      from: today, 
+      // End of today
+      to: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1) 
     }
-  }, [dateFilter])
+  }, [])
 
   // Fetch matches using TanStack Query
   const { data: matches = [], isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['matches', activeSport, dateFilter],
+    queryKey: ['matches', activeSport, 'today'], // Hardcoded 'today'
     queryFn: async () => {
       let allMatches = []
       
@@ -233,22 +213,7 @@ function MainContent() {
                 isDarkMode={isDarkMode}
               />
               
-              <div className="flex items-center gap-2">
-                <Select
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className={`w-40 font-medium ${
-                    isDarkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-gray-50 border-gray-200 text-gray-900'
-                  }`}
-                >
-                  <option value="today">Hôm nay</option>
-                  <option value="tomorrow">Ngày mai</option>
-                  <option value="week">Tuần này</option>
-                  <option value="all">Tất cả</option>
-                </Select>
-              </div>
+              {/* Date Filter Removed */}
             </div>
           </div>
         </div>
