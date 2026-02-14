@@ -150,11 +150,66 @@ function MainContent() {
     }, {})
   }, [matches])
 
+  // Mobile-specific state and refs
+  const liveRef = React.useRef(null)
+  const upcomingRef = React.useRef(null)
+  const finishedRef = React.useRef(null)
+  const [collapsedSections, setCollapsedSections] = useState({
+    live: false,
+    upcoming: false,
+    finished: false
+  })
+
+  // Mobile: Group matches by STATUS
+  const mobileGroupedMatches = useMemo(() => {
+    const groups = {
+      live: [],
+      upcoming: [],
+      finished: []
+    }
+    
+    matches.forEach(match => {
+      if (groups[match.status]) {
+        groups[match.status].push(match)
+      }
+    })
+    
+    // Sort logic is already applied in useQuery, so we just group them here
+    // However, we want to ensure specific order of keys: live, upcoming, finished
+    const result = []
+    if (groups.live.length > 0) result.push(['live', groups.live])
+    if (groups.upcoming.length > 0) result.push(['upcoming', groups.upcoming])
+    if (groups.finished.length > 0) result.push(['finished', groups.finished])
+      
+    return result
+  }, [matches])
+
+  const toggleSectionCollapse = (section) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
+
+  const scrollToSection = (section) => {
+    const refs = {
+      live: liveRef,
+      upcoming: upcomingRef,
+      finished: finishedRef
+    }
+    
+    const ref = refs[section]
+    if (ref && ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   // Mobile Layout Render
   if (isMobile) {
     return (
       <MobileLayout 
-        matches={matches} // Pass full matches, no filter
+        matches={matches} 
+        groupedData={mobileGroupedMatches}
         loading={isLoading} 
         error={error} 
         refetch={refetch}
@@ -162,6 +217,12 @@ function MainContent() {
         setActiveSport={setActiveSport}
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
+        collapsedSections={collapsedSections}
+        toggleSectionCollapse={toggleSectionCollapse}
+        scrollToSection={scrollToSection}
+        liveRef={liveRef}
+        upcomingRef={upcomingRef}
+        finishedRef={finishedRef}
       />
     )
   }
