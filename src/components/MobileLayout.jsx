@@ -290,7 +290,6 @@ function MobileNavigation({
   activeSport, 
   onSportChange, 
   isDarkMode, 
-  onThemeToggle,
   onThemeToggle
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
