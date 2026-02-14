@@ -56,6 +56,15 @@ function MobileMatchCard({ match, isDarkMode }) {
   const StatusIcon = statusInfo.icon
   const GameIcon = gameInfo.icon
 
+  // Helper to safely render icon
+  const renderIcon = (Icon, className) => {
+    if (!Icon) return null
+    if (typeof Icon === 'function' || typeof Icon === 'object') {
+      return <Icon className={className} />
+    }
+    return null
+  }
+
   // Compact layout for mobile
   return (
     <motion.div
@@ -85,7 +94,7 @@ function MobileMatchCard({ match, isDarkMode }) {
             {gameInfo.isImage ? (
               <img src={gameInfo.icon} alt={gameInfo.label} className="h-3 w-3 object-contain" />
             ) : (
-              <GameIcon className="h-3 w-3 text-white" />
+              renderIcon(GameIcon, "h-3 w-3 text-white")
             )}
           </div>
         </div>

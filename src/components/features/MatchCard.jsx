@@ -99,7 +99,7 @@ export function MatchCard({ match, isDarkMode }) {
         
         {/* PUBG YouTube Video Layout */}
         <div className="space-y-4">
-          {/* Header - Same format as other cards */}
+            {/* Header - Same format as other cards */}
           <div className="grid grid-cols-3 items-center mb-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
@@ -252,14 +252,14 @@ export function MatchCard({ match, isDarkMode }) {
                 {gameInfo.isImage ? (
                   <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
                 ) : (
-                  <GameIcon className="h-4 w-4 text-white" />
+                  renderIcon(GameIcon, "h-4 w-4 text-white")
                 )}
               </div>
             </div>
             
             <div className="flex items-center justify-center">
               <Badge variant={statusInfo.variant}>
-                <StatusIcon className="h-3 w-3" />
+                {renderIcon(StatusIcon, "h-3 w-3")}
                 {statusInfo.label}
               </Badge>
             </div>
