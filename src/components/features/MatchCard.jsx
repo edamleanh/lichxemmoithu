@@ -8,15 +8,6 @@ import { fmtTime, shortenTeamName } from '../../utils/formatters.js'
 export function WatchLiveButton({ match }) {
   const [isSearching, setIsSearching] = useState(false)
   const [foundStream, setFoundStream] = useState(null)
-
-  // Helper to safely render icon
-  const renderIcon = (Icon, className) => {
-    if (!Icon) return null
-    if (typeof Icon === 'function' || typeof Icon === 'object') {
-      return <Icon className={className} />
-    }
-    return null
-  }
   
   const handleWatchLive = async () => {
     // If match already has stream, use it
@@ -64,7 +55,7 @@ export function WatchLiveButton({ match }) {
       className="animate-pulse"
       disabled={isSearching}
     >
-      {renderIcon(Play, "h-3 w-3")}
+      <Play className="h-3 w-3" />
       {match.status === 'upcoming' ? 'Đặt thông báo' : isSearching ? 'Đang tìm...' : 'Xem Live'}
     </Button>
   )
@@ -72,21 +63,10 @@ export function WatchLiveButton({ match }) {
 
 // --- Match Card Component -------------------------------------------------
 export function MatchCard({ match, isDarkMode }) {
-  if (!match) return null
-
   const statusInfo = getStatusInfo(match.status)
   const gameInfo = getGameInfo(match.game)
   const StatusIcon = statusInfo.icon
   const GameIcon = gameInfo.icon
-
-  // Helper to safely render icon
-  const renderIcon = (Icon, className) => {
-    if (!Icon) return null
-    if (typeof Icon === 'function' || typeof Icon === 'object') {
-      return <Icon className={className} />
-    }
-    return null
-  }
 
   // Special layout for PUBG (YouTube-based)
   if (match.game === 'pubg') {
@@ -108,21 +88,22 @@ export function MatchCard({ match, isDarkMode }) {
         
         {/* PUBG YouTube Video Layout */}
         <div className="space-y-4">
-            {/* Header - Same format as other cards */}
+          {/* Header - Same format as other cards */}
           <div className="grid grid-cols-3 items-center mb-4">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
                 {gameInfo.isImage ? (
                   <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
                 ) : (
-                  renderIcon(GameIcon, "h-4 w-4 text-white")
+                  <GameIcon className="h-4 w-4 text-white" />
                 )}
               </div>
             </div>
             
             <div className="flex items-center justify-center">
+
               <Badge variant={statusInfo.variant}>
-                {renderIcon(StatusIcon, "h-3 w-3")}
+                <StatusIcon className="h-3 w-3" />
                 {statusInfo.label}
               </Badge>
             </div>
@@ -130,7 +111,7 @@ export function MatchCard({ match, isDarkMode }) {
             <div className={`flex items-center gap-2 text-sm justify-end ${
               isDarkMode ? 'text-gray-400' : 'text-gray-500'
             }`}>
-              {renderIcon(Clock, "h-4 w-4")}
+              <Clock className="h-4 w-4" />
               {fmtTime(match.start)}
             </div>
           </div>
@@ -196,7 +177,7 @@ export function MatchCard({ match, isDarkMode }) {
               
               {match.viewCount > 0 && (
                 <div className="flex items-center gap-1">
-                  {renderIcon(Eye, "h-3 w-3")}
+                  <Eye className="h-3 w-3" />
                   <span>{match.viewCount.toLocaleString()} lượt xem</span>
                 </div>
               )}
@@ -261,14 +242,14 @@ export function MatchCard({ match, isDarkMode }) {
                 {gameInfo.isImage ? (
                   <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
                 ) : (
-                  renderIcon(GameIcon, "h-4 w-4 text-white")
+                  <GameIcon className="h-4 w-4 text-white" />
                 )}
               </div>
             </div>
             
             <div className="flex items-center justify-center">
               <Badge variant={statusInfo.variant}>
-                {renderIcon(StatusIcon, "h-3 w-3")}
+                <StatusIcon className="h-3 w-3" />
                 {statusInfo.label}
               </Badge>
             </div>
@@ -276,7 +257,7 @@ export function MatchCard({ match, isDarkMode }) {
             <div className={`flex items-center gap-2 text-sm justify-end ${
               isDarkMode ? 'text-gray-400' : 'text-gray-500'
             }`}>
-              {renderIcon(Clock, "h-4 w-4")}
+              <Clock className="h-4 w-4" />
               {fmtTime(match.start)}
             </div>
           </div>
@@ -304,7 +285,7 @@ export function MatchCard({ match, isDarkMode }) {
               
               {match.viewCount > 0 && (
                 <div className="flex items-center gap-1">
-                  {renderIcon(Eye, "h-3 w-3")}
+                  <Eye className="h-3 w-3" />
                   <span>{match.viewCount.toLocaleString()} lượt xem</span>
                 </div>
               )}
@@ -345,14 +326,14 @@ export function MatchCard({ match, isDarkMode }) {
             {gameInfo.isImage ? (
               <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
             ) : (
-              renderIcon(GameIcon, "h-4 w-4 text-white")
+              <GameIcon className="h-4 w-4 text-white" />
             )}
           </div>
         </div>
         
         <div className="flex items-center justify-center">
           <Badge variant={statusInfo.variant}>
-            {renderIcon(StatusIcon, "h-3 w-3")}
+            <StatusIcon className="h-3 w-3" />
             {statusInfo.label}
           </Badge>
         </div>
@@ -360,7 +341,7 @@ export function MatchCard({ match, isDarkMode }) {
         <div className={`flex items-center gap-2 text-sm justify-end ${
           isDarkMode ? 'text-gray-400' : 'text-gray-500'
         }`}>
-          {renderIcon(Clock, "h-4 w-4")}
+          <Clock className="h-4 w-4" />
           {fmtTime(match.start)}
         </div>
       </div>

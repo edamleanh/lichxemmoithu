@@ -56,15 +56,6 @@ function MobileMatchCard({ match, isDarkMode }) {
   const StatusIcon = statusInfo.icon
   const GameIcon = gameInfo.icon
 
-  // Helper to safely render icon
-  const renderIcon = (Icon, className) => {
-    if (!Icon) return null
-    if (typeof Icon === 'function' || typeof Icon === 'object') {
-      return <Icon className={className} />
-    }
-    return null
-  }
-
   // Compact layout for mobile
   return (
     <motion.div
@@ -94,7 +85,7 @@ function MobileMatchCard({ match, isDarkMode }) {
             {gameInfo.isImage ? (
               <img src={gameInfo.icon} alt={gameInfo.label} className="h-3 w-3 object-contain" />
             ) : (
-              renderIcon(GameIcon, "h-3 w-3 text-white")
+              <GameIcon className="h-3 w-3 text-white" />
             )}
           </div>
         </div>
@@ -305,15 +296,6 @@ function MobileNavigation({
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
-  // Helper to safely render icon
-  const renderIcon = (Icon, className) => {
-    if (!Icon) return null
-    if (typeof Icon === 'function' || typeof Icon === 'object') {
-      return <Icon className={className} />
-    }
-    return null
-  }
-
   return (
     <>
       {/* Mobile Header */}
@@ -352,7 +334,7 @@ function MobileNavigation({
                         onClick={() => onSectionScroll(status)}
                         className={`flex items-center gap-1 px-2 py-1 rounded ${config.color} text-white text-xs font-medium ${status === 'live' ? 'animate-pulse' : ''}`}
                       >
-                        {renderIcon(SectionIcon, "h-3 w-3")}
+                        <SectionIcon className="h-3 w-3" />
                         <span>{config.count}</span>
                       </button>
                     )
@@ -416,7 +398,7 @@ function MobileNavigation({
                       {sport.isImage ? (
                         <img src={sport.icon} alt={sport.label} className="h-3.5 w-3.5 object-contain" />
                       ) : (
-                        renderIcon(SportIcon, "h-3.5 w-3.5")
+                        <SportIcon className="h-3.5 w-3.5" />
                       )}
                       {sport.label}
                     </Button>
@@ -456,15 +438,6 @@ export default function MobileLayout({
     { id: 'lol', label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true },
     { id: 'football', label: 'Bóng Đá', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true },
   ]
-
-  // Helper to safely render icon
-  const renderIcon = (Icon, className) => {
-    if (!Icon) return null
-    if (typeof Icon === 'function' || typeof Icon === 'object') {
-      return <Icon className={className} />
-    }
-    return null
-  }
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -520,9 +493,9 @@ export default function MobileLayout({
               ? 'border-gray-600 bg-gray-800/50' 
               : 'border-gray-200 bg-gray-50'
           }`}>
-            {renderIcon(Gamepad2, `h-12 w-12 mx-auto mb-3 ${
+            <Gamepad2 className={`h-12 w-12 mx-auto mb-3 ${
               isDarkMode ? 'text-gray-500' : 'text-gray-400'
-            }`)}
+            }`} />
             <h3 className={`text-lg font-semibold mb-2 ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
             }`}>Không có trận đấu</h3>
@@ -530,7 +503,7 @@ export default function MobileLayout({
               isDarkMode ? 'text-gray-300' : 'text-gray-600'
             }`}>Không tìm thấy trận đấu nào</p>
             <Button variant="primary" size="sm" isDarkMode={isDarkMode} onClick={refetch}>
-              {renderIcon(RefreshCw, "h-3.5 w-3.5")}
+              <RefreshCw className="h-3.5 w-3.5" />
               Làm mới
             </Button>
           </div>

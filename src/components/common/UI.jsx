@@ -146,9 +146,7 @@ export const getStatusInfo = (status) => {
 }
 
 export const getGameInfo = (game) => {
-  if (!game || typeof game !== 'string') return { variant: 'default', label: 'GAME', icon: Gamepad2, color: 'from-gray-500 to-gray-600', isImage: false }
-  
-  switch (game && game.toLowerCase()) {
+  switch (game) {
     case 'valorant': return { variant: 'valorant', label: 'VALORANT', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true }
     case 'pubg': return { variant: 'pubg', label: 'PUBG', icon: pubgIcon, color: 'from-orange-500 to-yellow-500', isImage: true }
     case 'lol': return { variant: 'lol', label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true }

@@ -43,6 +43,8 @@ const adapters = {
 function MainContent() {
   const isMobile = useIsMobile()
   const [activeSport, setActiveSport] = useState('all')
+  const [dateFilter, setDateFilter] = useState('today')
+  const [searchQuery, setSearchQuery] = useState('')
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
@@ -55,21 +57,41 @@ function MainContent() {
     }
   }, [isDarkMode])
 
-  // Fixed date range (Equivalent to "All": Yesterday to +14 days)
+  // Date range calculation
   const dateRange = useMemo(() => {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     
-    const past = new Date(today)
-    past.setDate(past.getDate() - 1) // Include yesterday for recent results
-    const future = new Date(today)
-    future.setDate(future.getDate() + 14) // 2 weeks ahead
-    return { from: past, to: future }
-  }, [])
+    switch (dateFilter) {
+      case 'today':
+        return { 
+          from: today, 
+          // End of today
+          to: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1) 
+        }
+      case 'tomorrow':
+        const tomorrow = new Date(today)
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        return { 
+          from: tomorrow, 
+          to: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000 - 1) 
+        }
+      case 'week':
+        const weekEnd = new Date(today)
+        weekEnd.setDate(weekEnd.getDate() + 7)
+        return { from: today, to: weekEnd }
+      default: // all
+        const past = new Date(today)
+        past.setDate(past.getDate() - 1) // Include yesterday for recent results
+        const future = new Date(today)
+        future.setDate(future.getDate() + 14) // 2 weeks ahead
+        return { from: past, to: future }
+    }
+  }, [dateFilter])
 
   // Fetch matches using TanStack Query
   const { data: matches = [], isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['matches', activeSport], // Removed dateFilter from key
+    queryKey: ['matches', activeSport, dateFilter],
     queryFn: async () => {
       let allMatches = []
       
@@ -77,6 +99,7 @@ function MainContent() {
       const standardTo = dateRange.to
       
       // Extended range for YouTube-based games (PUBG, TFT)
+      // because they might not have exact schedule data often
       const extendedFrom = new Date(standardFrom)
       extendedFrom.setDate(extendedFrom.getDate() - 1)
       const extendedTo = new Date(standardTo)
@@ -131,26 +154,29 @@ function MainContent() {
     }
   })
 
-  // Group matches by date directly from matches (no search filter)
+  // Filter matches based on search query
+  const filteredMatches = useMemo(() => {
+    if (!searchQuery) return matches
+    
+    const query = searchQuery.toLowerCase()
+    return matches.filter(match => 
+      match.home?.name?.toLowerCase().includes(query) ||
+      match.away?.name?.toLowerCase().includes(query) ||
+      match.league?.toLowerCase().includes(query) ||
+      match.game?.toLowerCase().includes(query)
+    )
+  }, [matches, searchQuery])
+
+  // Group matches by date
   const groupedMatches = useMemo(() => {
     const groups = {}
-    matches.forEach(match => {
-      try {
-        const date = new Date(match.start)
-        // Check if date is valid
-        if (isNaN(date.getTime())) {
-          console.warn('Invalid match date:', match)
-          return
-        }
-        
-        const dateKey = date.toISOString().split('T')[0]
-        if (!groups[dateKey]) {
-          groups[dateKey] = []
-        }
-        groups[dateKey].push(match)
-      } catch (e) {
-        console.warn('Error grouping match:', match, e)
+    filteredMatches.forEach(match => {
+      const date = new Date(match.start)
+      const dateKey = date.toISOString().split('T')[0]
+      if (!groups[dateKey]) {
+        groups[dateKey] = []
       }
+      groups[dateKey].push(match)
     })
     
     // Sort dates
@@ -158,68 +184,13 @@ function MainContent() {
       acc[key] = groups[key]
       return acc
     }, {})
-  }, [matches])
-
-  // Mobile-specific state and refs
-  const liveRef = React.useRef(null)
-  const upcomingRef = React.useRef(null)
-  const finishedRef = React.useRef(null)
-  const [collapsedSections, setCollapsedSections] = useState({
-    live: false,
-    upcoming: false,
-    finished: false
-  })
-
-  // Mobile: Group matches by STATUS
-  const mobileGroupedMatches = useMemo(() => {
-    const groups = {
-      live: [],
-      upcoming: [],
-      finished: []
-    }
-    
-    matches.forEach(match => {
-      if (groups[match.status]) {
-        groups[match.status].push(match)
-      }
-    })
-    
-    // Sort logic is already applied in useQuery, so we just group them here
-    // However, we want to ensure specific order of keys: live, upcoming, finished
-    const result = []
-    if (groups.live.length > 0) result.push(['live', groups.live])
-    if (groups.upcoming.length > 0) result.push(['upcoming', groups.upcoming])
-    if (groups.finished.length > 0) result.push(['finished', groups.finished])
-      
-    return result
-  }, [matches])
-
-  const toggleSectionCollapse = (section) => {
-    setCollapsedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }))
-  }
-
-  const scrollToSection = (section) => {
-    const refs = {
-      live: liveRef,
-      upcoming: upcomingRef,
-      finished: finishedRef
-    }
-    
-    const ref = refs[section]
-    if (ref && ref.current) {
-      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }
+  }, [filteredMatches])
 
   // Mobile Layout Render
   if (isMobile) {
     return (
       <MobileLayout 
-        matches={matches} 
-        groupedData={mobileGroupedMatches}
+        matches={filteredMatches} 
         loading={isLoading} 
         error={error} 
         refetch={refetch}
@@ -227,12 +198,6 @@ function MainContent() {
         setActiveSport={setActiveSport}
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
-        collapsedSections={collapsedSections}
-        toggleSectionCollapse={toggleSectionCollapse}
-        scrollToSection={scrollToSection}
-        liveRef={liveRef}
-        upcomingRef={upcomingRef}
-        finishedRef={finishedRef}
       />
     )
   }
@@ -265,6 +230,25 @@ function MainContent() {
           </div>
 
           <div className="flex items-center gap-4">
+            <div className={`relative group rounded-2xl p-1 transition-all ${
+              isDarkMode ? 'bg-gray-800' : 'bg-white shadow-sm'
+            }`}>
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className={`h-5 w-5 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+              </div>
+              <input
+                type="text"
+                placeholder="Tìm kiếm đội, giải đấu..."
+                className={`block w-full sm:w-64 pl-10 pr-4 py-2 rounded-xl bg-transparent outline-none transition-all ${
+                  isDarkMode 
+                    ? 'text-white placeholder-gray-500 focus:bg-gray-700/50' 
+                    : 'text-gray-900 placeholder-gray-400 focus:bg-gray-50'
+                }`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
             <Button
               variant="secondary"
               isDarkMode={isDarkMode}
@@ -299,6 +283,23 @@ function MainContent() {
                 setActiveSport={setActiveSport} 
                 isDarkMode={isDarkMode}
               />
+              
+              <div className="flex items-center gap-2">
+                <Select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className={`w-40 font-medium ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
+                >
+                  <option value="today">Hôm nay</option>
+                  <option value="tomorrow">Ngày mai</option>
+                  <option value="week">Tuần này</option>
+                  <option value="all">Tất cả</option>
+                </Select>
+              </div>
             </div>
           </div>
         </div>
