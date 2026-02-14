@@ -130,7 +130,7 @@ export function MatchCard({ match, isDarkMode }) {
             <div className={`flex items-center gap-2 text-sm justify-end ${
               isDarkMode ? 'text-gray-400' : 'text-gray-500'
             }`}>
-              <Clock className="h-4 w-4" />
+              {renderIcon(Clock, "h-4 w-4")}
               {fmtTime(match.start)}
             </div>
           </div>
@@ -196,7 +196,7 @@ export function MatchCard({ match, isDarkMode }) {
               
               {match.viewCount > 0 && (
                 <div className="flex items-center gap-1">
-                  <Eye className="h-3 w-3" />
+                  {renderIcon(Eye, "h-3 w-3")}
                   <span>{match.viewCount.toLocaleString()} lượt xem</span>
                 </div>
               )}
@@ -276,7 +276,7 @@ export function MatchCard({ match, isDarkMode }) {
             <div className={`flex items-center gap-2 text-sm justify-end ${
               isDarkMode ? 'text-gray-400' : 'text-gray-500'
             }`}>
-              <Clock className="h-4 w-4" />
+              {renderIcon(Clock, "h-4 w-4")}
               {fmtTime(match.start)}
             </div>
           </div>
@@ -304,7 +304,7 @@ export function MatchCard({ match, isDarkMode }) {
               
               {match.viewCount > 0 && (
                 <div className="flex items-center gap-1">
-                  <Eye className="h-3 w-3" />
+                  {renderIcon(Eye, "h-3 w-3")}
                   <span>{match.viewCount.toLocaleString()} lượt xem</span>
                 </div>
               )}
@@ -345,14 +345,14 @@ export function MatchCard({ match, isDarkMode }) {
             {gameInfo.isImage ? (
               <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
             ) : (
-              <GameIcon className="h-4 w-4 text-white" />
+              renderIcon(GameIcon, "h-4 w-4 text-white")
             )}
           </div>
         </div>
         
         <div className="flex items-center justify-center">
           <Badge variant={statusInfo.variant}>
-            <StatusIcon className="h-3 w-3" />
+            {renderIcon(StatusIcon, "h-3 w-3")}
             {statusInfo.label}
           </Badge>
         </div>
@@ -360,7 +360,7 @@ export function MatchCard({ match, isDarkMode }) {
         <div className={`flex items-center gap-2 text-sm justify-end ${
           isDarkMode ? 'text-gray-400' : 'text-gray-500'
         }`}>
-          <Clock className="h-4 w-4" />
+          {renderIcon(Clock, "h-4 w-4")}
           {fmtTime(match.start)}
         </div>
       </div>

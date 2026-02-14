@@ -457,6 +457,15 @@ export default function MobileLayout({
     { id: 'football', label: 'Bóng Đá', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true },
   ]
 
+  // Helper to safely render icon
+  const renderIcon = (Icon, className) => {
+    if (!Icon) return null
+    if (typeof Icon === 'function' || typeof Icon === 'object') {
+      return <Icon className={className} />
+    }
+    return null
+  }
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
       isDarkMode 
@@ -511,9 +520,9 @@ export default function MobileLayout({
               ? 'border-gray-600 bg-gray-800/50' 
               : 'border-gray-200 bg-gray-50'
           }`}>
-            <Gamepad2 className={`h-12 w-12 mx-auto mb-3 ${
+            {renderIcon(Gamepad2, `h-12 w-12 mx-auto mb-3 ${
               isDarkMode ? 'text-gray-500' : 'text-gray-400'
-            }`} />
+            }`)}
             <h3 className={`text-lg font-semibold mb-2 ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
             }`}>Không có trận đấu</h3>
@@ -521,7 +530,7 @@ export default function MobileLayout({
               isDarkMode ? 'text-gray-300' : 'text-gray-600'
             }`}>Không tìm thấy trận đấu nào</p>
             <Button variant="primary" size="sm" isDarkMode={isDarkMode} onClick={refetch}>
-              <RefreshCw className="h-3.5 w-3.5" />
+              {renderIcon(RefreshCw, "h-3.5 w-3.5")}
               Làm mới
             </Button>
           </div>
