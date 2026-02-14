@@ -19,6 +19,15 @@ export function FilterBar({ activeSport, setActiveSport, isDarkMode }) {
     { id: 'tft', label: 'TFT', icon: tftIcon, color: 'from-purple-500 to-indigo-500', isImage: true },
   ]
 
+  // Helper to safely render icon
+  const renderIcon = (Icon, className) => {
+    if (!Icon) return null
+    if (typeof Icon === 'function' || typeof Icon === 'object') {
+      return <Icon className={className} />
+    }
+    return null
+  }
+
   return (
     <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
       {sports.map((sport) => {
@@ -50,7 +59,7 @@ export function FilterBar({ activeSport, setActiveSport, isDarkMode }) {
               {sport.isImage ? (
                 <img src={sport.icon} alt={sport.label} className="w-4 h-4 object-contain" />
               ) : (
-                <Icon className="w-4 h-4" />
+                renderIcon(Icon, "w-4 h-4")
               )}
               {sport.label}
             </span>
