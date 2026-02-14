@@ -128,16 +128,28 @@ function MainContent() {
         }
       }
       
-      // Sort matches: LIVE first, then by start time
+      // Sort matches: LIVE first, then UPCOMING, then FINISHED
       return allMatches.sort((a, b) => {
-        const aPriority = a.status === 'live' ? 0 : 1
-        const bPriority = b.status === 'live' ? 0 : 1
+        const getPriority = (status) => {
+          if (status === 'live') return 0
+          if (status === 'upcoming') return 1
+          return 2 // finished
+        }
+
+        const aPriority = getPriority(a.status)
+        const bPriority = getPriority(b.status)
         
-        if (aPriority === bPriority) {
-          return new Date(a.start) - new Date(b.start)
+        if (aPriority !== bPriority) {
+          return aPriority - bPriority
         }
         
-        return aPriority - bPriority
+        // If same priority, sort by time
+        // For Finished matches, sort descending (most recent first)
+        if (a.status === 'finished') {
+          return new Date(b.start) - new Date(a.start)
+        }
+        // For Live and Upcoming, sort ascending (soonest first)
+        return new Date(a.start) - new Date(b.start)
       })
     }
   })
