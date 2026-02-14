@@ -1,3371 +1,386 @@
-// Esports + Football Schedule — Professional Sports Calendar
-// Stack: React + Vite, TailwindCSS, Framer Motion, Lucide React
-// -------------------------------------------------------------------------
-// Professional sports calendar with real-time API integration
-// Features: Multi-sport support, real-time updates, beautiful UI, mobile responsive
-// Sports: Valorant, PUBG, League of Legends, Football
-// -------------------------------------------------------------------------
-
-import React, { useEffect, useMemo, useState, useRef } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Filter, Search, Sun, Moon, RefreshCw, Menu, X, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 
-// Import mobile layout and hooks
+// Import components
 import MobileLayout from './components/MobileLayout'
+import { Button, Input, Select, Badge } from './components/common/UI'
+import { MatchCard } from './components/features/MatchCard'
+import { FilterBar } from './components/features/FilterBar'
 import { useIsMobile } from './hooks/useIsMobile'
-import youtubeCacheService from './services/youtubeCacheService'
 
-import {
-  Calendar as CalendarIcon,
-  Clock,
-  Globe2,
-  MapPin,
-  RefreshCw,
-  Trophy,
-  Eye,
-  Play,
-  Users,
-  Target,
-  Zap,
+// Import services and utils
+import { ValorantAdapter } from './services/valorant'
+import { LolAdapter } from './services/lol'
+import { FootballAdapter } from './services/football'
+import { PubgAdapter } from './services/pubg'
+import { TftAdapter } from './services/tft'
+import { fmtDay } from './utils/formatters'
 
-  TrendingUp,
-  Gamepad2,
-  Medal,
-  Moon,
-  Sun,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react'
+import './App.css'
 
-// Import custom game icons
-import valorantIcon from './images/valorant.png'
-import lolIcon from './images/lol.png'
-import footballIcon from './images/football.png'
-import pubgIcon from './images/pubg.png'
-import tftIcon from './images/tft.png'
-
-// --- Lazy Image Component ------------------------------------------------
-// Component to lazy load images only when they enter the viewport
-const LazyImage = ({ src, alt, className = '', placeholder = null }) => {
-  const [imageSrc, setImageSrc] = useState(placeholder)
-  const [isLoading, setIsLoading] = useState(true)
-  const imgRef = useRef(null)
-
-  useEffect(() => {
-    // If no src, don't load
-    if (!src) {
-      setIsLoading(false)
-      return
-    }
-
-    // Create Intersection Observer
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            // Load image when it enters viewport
-            setImageSrc(src)
-            setIsLoading(false)
-            observer.unobserve(entry.target)
-          }
-        })
-      },
-      {
-        rootMargin: '50px', // Start loading 50px before entering viewport
-        threshold: 0.01,
-      }
-    )
-
-    if (imgRef.current) {
-      observer.observe(imgRef.current)
-    }
-
-    return () => {
-      if (imgRef.current) {
-        observer.unobserve(imgRef.current)
-      }
-    }
-  }, [src])
-
-  if (!src) return null
-
-  return (
-    <img
-      ref={imgRef}
-      src={imageSrc}
-      alt={alt}
-      className={`${className} ${isLoading ? 'opacity-50' : 'opacity-100'} transition-opacity duration-300`}
-      loading="lazy" // Native lazy loading as backup
-    />
-  )
-}
-
-// --- Styled Components ---------------------------------------------------
-const Button = ({ className = '', children, variant = 'default', size = 'default', isDarkMode = false, ...props }) => {
-  const variants = {
-    default: isDarkMode 
-      ? 'bg-gray-700/80 hover:bg-gray-600/80 border border-gray-600 text-gray-200 hover:text-white'
-      : 'bg-white/80 hover:bg-white border border-gray-200 text-gray-700 hover:text-gray-900',
-    primary: 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0',
-    secondary: isDarkMode
-      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600'
-      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200',
-    outline: 'border-2 border-current bg-transparent hover:bg-current/10',
-    ghost: isDarkMode
-      ? 'bg-transparent hover:bg-gray-700/50 text-gray-300'
-      : 'bg-transparent hover:bg-gray-100 text-gray-700',
-    danger: 'bg-red-500 hover:bg-red-600 text-white border-0',
-  }
-  
-  const sizes = {
-    sm: 'px-3 py-1.5 text-sm rounded-lg',
-    default: 'px-4 py-2 text-sm rounded-xl',
-    lg: 'px-6 py-3 text-base rounded-xl',
-  }
-
-  return (
-    <button
-      {...props}
-      className={`inline-flex items-center gap-2 font-medium shadow-sm outline-none transition-all duration-200 active:scale-95 ${variants[variant]} ${sizes[size]} ${className}`}
-    >
-      {children}
-    </button>
-  )
-}
-
-const Input = ({ className = '', ...props }) => (
-  <input
-    {...props}
-    className={`w-full rounded-xl border border-gray-200 bg-white/50 backdrop-blur px-4 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 ${className}`}
-  />
-)
-
-const Select = ({ className = '', children, ...props }) => (
-  <select
-    {...props}
-    className={`w-full rounded-xl border border-gray-200 bg-white/50 backdrop-blur px-4 py-2.5 text-sm outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 ${className}`}
-  >
-    {children}
-  </select>
-)
-
-const Badge = ({ children, variant = 'default', className = '' }) => {
-  const variants = {
-    default: 'bg-gray-100 text-gray-800',
-    live: 'bg-red-50 text-red-700 border border-red-200 animate-pulse',
-    upcoming: 'bg-blue-50 text-blue-700 border border-blue-200',
-    finished: 'bg-green-50 text-green-700 border border-green-200',
-    valorant: 'bg-red-50 text-red-700 border border-red-200',
-    pubg: 'bg-orange-50 text-orange-700 border border-orange-200',
-    lol: 'bg-blue-50 text-blue-700 border border-blue-200',
-    tft: 'bg-purple-50 text-purple-700 border border-purple-200',
-    football: 'bg-green-50 text-green-700 border border-green-200',
-  }
-  
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${variants[variant]} ${className}`}>
-      {children}
-    </span>
-  )
-}
-
-// --- Utility Functions ---------------------------------------------------
-const toDate = (v) => (v instanceof Date ? v : new Date(v))
-const fmtTime = (d, opts = {}) => new Intl.DateTimeFormat('vi-VN', {
-  hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'numeric', ...opts,
-}).format(toDate(d))
-const fmtDay = (d) => new Intl.DateTimeFormat('vi-VN', { 
-  weekday: 'long', day: '2-digit', month: 'long' 
-}).format(toDate(d))
-const withinRange = (d, from, to) => {
-  const t = toDate(d).getTime()
-  return (!from || t >= toDate(from).getTime()) && (!to || t <= toDate(to).getTime())
-}
-
-// Helper function to clean team names by removing unnecessary words
-const shortenTeamName = (teamName) => {
-  if (!teamName || teamName === 'TBD') return teamName
-  
-  // Words to remove from team names
-  const wordsToRemove = [
-    'FC', 'CF', 'AC', 'SC', 'AS', 'RC', 'CD', 'CD.', 'C.D.',
-    'Esports', 'Esport', 'E-sports', 'Gaming', 'Team',
-    'Club', 'Football Club', 'Soccer Club',
-     'Athletic', 'Atletico',
-     'Town', 'County', 'Sport', 'de', 'Fútbol', 'Fútbol', 'Fútbol Club', 'F.C.', 'C.F.', 'A.C.', 'S.C.', 'A.S.', 'R.C.', 'C.D.', 'C.D',
-  ]
-  
-  // Split team name into words
-  let words = teamName.split(' ')
-  
-  // Remove unnecessary words (case insensitive)
-  words = words.filter(word => {
-    const wordLower = word.toLowerCase().replace(/[.,]/g, '')
-    return !wordsToRemove.some(removeWord => 
-      removeWord.toLowerCase() === wordLower
-    )
-  })
-  
-  // If all words were removed, return original name
-  if (words.length === 0) {
-    return teamName
-  }
-  
-  // Join remaining words
-  let cleanName = words.join(' ')
-  
-  // Special cases for common abbreviations
-  const specialCases = {
-    'Manchester Utd': 'Manchester United',
-    'Man Utd': 'Manchester United',
-    'Barcelona': 'Barça',
-    'Bayern München': 'Bayern Munich',
-    'Inter Milan': 'Inter',
-    'AC Milan': 'Milan'
-  }
-  
-  // Check if cleaned name matches any special case
-  for (const [key, value] of Object.entries(specialCases)) {
-    if (cleanName === key) {
-      return value
-    }
-  }
-  
-  return cleanName
-}
-
-// Helper function to search for live streams on YouTube
-const searchYouTubeLiveStream = async (match) => {
-  try {
-    // Build search query: team1 + team2 + league + "live"
-    console.log('Match:', match)
-    const searchQuery = [
-      match.league || `${match.home?.name || 'Team 1'} vs ${match.away?.name || 'Team 2'}`,
-    ].filter(Boolean).join(' ')
-    const data = await youtubeApiManager.makeRequest(
-      `https://www.googleapis.com/youtube/v3/search?` +
-      `part=snippet&type=video&eventType=live&maxResults=3&order=viewCount&` +
-      `q=${encodeURIComponent(searchQuery)}`
-    );
-    console.log('YouTube Live Search Results:', data)
-    
-    if (!data) {
-      return null
-    }
-    
-    if (data.items && data.items.length > 0) {
-      const video = data.items[0]
-      const youtubeUrl = `https://www.youtube.com/watch?v=${video.id.videoId}`
-      
-      return youtubeUrl
-    }
-    
-    return null
-    
-  } catch (error) {
-    return null
-  }
-}
-
-// Status helpers
-const getStatusInfo = (status) => {
-  switch (status) {
-    case 'live': return { variant: 'live', label: 'LIVE', icon: Play }
-    case 'finished': return { variant: 'finished', label: 'ENDED', icon: Medal }
-    default: return { variant: 'upcoming', label: 'UPCOMING', icon: Clock }
-  }
-}
-
-const getGameInfo = (game) => {
-  switch (game) {
-    case 'valorant': return { variant: 'valorant', label: 'VALORANT', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true }
-    case 'pubg': return { variant: 'pubg', label: 'PUBG', icon: pubgIcon, color: 'from-orange-500 to-yellow-500', isImage: true }
-    case 'lol': return { variant: 'lol', label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true }
-    case 'tft': return { variant: 'tft', label: 'TFT', icon: tftIcon, color: 'from-purple-500 to-indigo-500', isImage: true }
-    case 'football': return { variant: 'football', label: 'BÓNG ĐÁ', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true }
-    default: return { variant: 'default', label: game.toUpperCase(), icon: Gamepad2, color: 'from-gray-500 to-gray-600', isImage: false }
-  }
-}
-
-// Helper function to adjust Valorant API timezone (UTC to GMT+7)
-const adjustValorantTimezone = (timestamp) => {
-  if (!timestamp) return new Date()
-  // If timestamp is in seconds, convert to milliseconds
-  const timestampMs = timestamp < 1e12 ? timestamp * 1000 : timestamp
-  const date = new Date(timestampMs)
-  // Add 7 hours to convert from UTC to Vietnam timezone
-  return new Date(date.getTime() + 7 * 60 * 60 * 1000)
-}
-
-// --- Team Logo Search Service --------------------------------------------
-const TeamLogoSearchService = {
-  // Cache to store team logo search results to avoid repeated API calls
-  cache: new Map(),
-  
-  // Configuration
-  config: {
-    enabled: false, // TẮT tính năng tìm logo tạm thời
-    maxCacheSize: 100, // Maximum number of cached results
-    searchTimeout: 10000, // 10 seconds timeout for search requests
+// Initialize QueryClient
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute
+      refetchOnWindowFocus: false,
+    },
   },
-  
-  // Search for team logo using Google Custom Search API
-  async searchTeamLogo(teamName, sport) {
-    if (!teamName || !this.config.enabled) return null
-    
-    // Create cache key
-    const cacheKey = `${sport}-${teamName.toLowerCase().trim()}`
-    
-    // Check cache first
-    if (this.cache.has(cacheKey)) {
-      const cachedResult = this.cache.get(cacheKey)
-      return cachedResult
-    }
-    
-    try {
-      
-      // Clean team name for better search results
-      const cleanTeamName = teamName
-        .replace(/\s*(Gaming|Esports|E-sports|Team|Club|FC|United)$/i, '')
-        .trim()
-      
-      // Call our image search API with timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), this.config.searchTimeout)
-      
-      const response = await fetch(`/api/image-search?teamName=${encodeURIComponent(cleanTeamName)}&sport=${encodeURIComponent(sport)}`, {
-        signal: controller.signal
-      })
-      
-      clearTimeout(timeoutId)
-      
-      if (!response.ok) {
-        throw new Error(`Search API error: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      
-      // Extract the best logo URL from search results
-      let logoUrl = null
-      if (data.images && data.images.length > 0) {
-        // Prefer images with smaller dimensions (likely logos) and from official sources
-        const bestImage = data.images.find(img => {
-          const domain = img.displayLink?.toLowerCase() || ''
-          const isOfficialSource = domain.includes('liquipedia') || 
-                                 domain.includes('vlr.gg') || 
-                                 domain.includes('leaguepedia') ||
-                                 domain.includes('lolesports') ||
-                                 domain.includes('valorant') ||
-                                 domain.includes('riotgames') ||
-                                 domain.includes('fifa.com') ||
-                                 domain.includes('uefa.com')
-          
-          const hasGoodDimensions = img.width && img.height && 
-                                  img.width >= 64 && img.height >= 64 &&
-                                  img.width <= 512 && img.height <= 512
-          
-          return isOfficialSource || hasGoodDimensions
-        }) || data.images[0] // Fall back to first result
-        
-        logoUrl = bestImage.url
-      }
-      
-      // Cache the result (even if null to avoid repeated failed searches)
-      this.addToCache(cacheKey, logoUrl)
-      
-      return logoUrl
-      
-    } catch (error) {
-      
-      // Cache null result to avoid repeated failed searches
-      this.addToCache(cacheKey, null)
-      return null
-    }
-  },
-  
-  // Enhanced cache management with size limit
-  addToCache(key, value) {
-    // Remove oldest entries if cache is full
-    if (this.cache.size >= this.config.maxCacheSize) {
-      const firstKey = this.cache.keys().next().value
-      this.cache.delete(firstKey)
-    }
-    
-    this.cache.set(key, value)
-  },
-  
-  // Enhance team object with logo if missing
-  async enhanceTeamWithLogo(team, sport) {
-    // Return early if feature is disabled
-    if (!this.config.enabled) {
-      return team
-    }
-    
-    if (!team || !team.name || team.logo) {
-      return team // Already has logo or no team name
-    }
-    
-    const logoUrl = await this.searchTeamLogo(team.name, sport)
-    return {
-      ...team,
-      logo: logoUrl || team.logo
-    }
-  },
-  
-  // Clear cache (useful for testing or memory management)
-  clearCache() {
-    this.cache.clear()
-  },
-  
-  // Get cache statistics
-  getCacheStats() {
-    return {
-      size: this.cache.size,
-      maxSize: this.config.maxCacheSize,
-      enabled: this.config.enabled
-    }
-  }
-}
+})
 
-// --- API Adapters --------------------------------------------------------
-const ValorantAdapter = {
-  // Helper function to check if a league should be included
-  isValidLeague(leagueName) {
-    if (!leagueName) return false
-    
-    const leagueLower = leagueName.toLowerCase()
-    const validKeywords = ['champions', 'champion', 'masters','master', 'apac', 'on live', 'onlive', 'ovs', 'pacific']
-
-    return validKeywords.some(keyword => leagueLower.includes(keyword))
-  },
-
-  // Helper function to process live matches  
-  async processLiveMatches(data) {
-    if (!data.data?.segments) return []
-    
-    const matches = data.data.segments
-      .filter(match => match.time_until_match === 'LIVE')
-      .filter(match => match.team1 && match.team1 !== 'TBD' && match.team2 && match.team2 !== 'TBD') // Filter out TBD teams for LIVE matches
-      .map(match => ({
-        id: `val-live-${match.match_page?.split('/')[1] || Math.random()}`,
-        game: 'valorant',
-        league: match.match_event || 'VCT',
-        stage: match.match_series || '',
-        home: { 
-          name: match.team1 || 'TBD', 
-          logo: match.team1_logo || null,
-          score: parseInt(match.score1) || 0,
-          // Additional live data
-          roundsCT: match.team1_round_ct !== 'N/A' ? parseInt(match.team1_round_ct) || 0 : null,
-          roundsT: match.team1_round_t !== 'N/A' ? parseInt(match.team1_round_t) || 0 : null,
-        },
-        away: { 
-          name: match.team2 || 'TBD', 
-          logo: match.team2_logo || null,
-          score: parseInt(match.score2) || 0,
-          // Additional live data
-          roundsCT: match.team2_round_ct !== 'N/A' ? parseInt(match.team2_round_ct) || 0 : null,
-          roundsT: match.team2_round_t !== 'N/A' ? parseInt(match.team2_round_t) || 0 : null,
-        },
-        start: new Date(), // Live matches show current time
-        region: 'International',
-        stream: '', // Use YouTube search instead of API stream
-        venue: match.match_event || '',
-        status: 'live',
-        // Live-specific data
-        currentMap: match.current_map || '',
-        mapNumber: match.map_number || '',
-      }))
-
-    // Enhance matches with team logos for teams that don't have logos
-    const enhancedMatches = await Promise.all(
-      matches.map(async (match) => {
-        try {
-          // Only search for logos if they're missing
-          const enhancedHome = match.home.logo ? match.home : await TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'valorant')
-          const enhancedAway = match.away.logo ? match.away : await TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'valorant')
-          
-          return {
-            ...match,
-            home: enhancedHome,
-            away: enhancedAway
-          }
-        } catch (error) {
-          return match // Return original match if enhancement fails
-        }
-      })
-    )
-
-    return enhancedMatches
-  },
-
-  // Helper function to process upcoming matches
-  async processUpcomingMatches(data) {
-    if (!data.data?.segments) {
-      //console.log('🔵 VALORANT UPCOMING: No segments in data')
-      return []
-    }
-    
-    //console.log('🔵 VALORANT UPCOMING: Raw segments:', data.data.segments)
-    
-    const now = Date.now()
-    const oneDayMs = 24 * 60 * 60 * 1000
-    
-    const matches = data.data.segments
-      .filter(match => {
-        // Only include matches within 1 day
-        if (match.time_until_match) {
-          const timeUntilMs = this.parseTimeUntil(match.time_until_match)
-          //console.log(`🔵 VALORANT UPCOMING: Match ${match.team1} vs ${match.team2}, time_until: ${match.time_until_match}, timeUntilMs: ${timeUntilMs}, within1day: ${timeUntilMs <= oneDayMs}`)
-          return timeUntilMs <= oneDayMs
-        }
-        //console.log(`🔵 VALORANT UPCOMING: Match ${match.team1} vs ${match.team2}, no time_until_match - including`)
-        return true // Include if no time info
-      })
-      .map(match => {
-        //console.log(`🔵 VALORANT UPCOMING: Processing match ${match.team1} vs ${match.team2}`)
-        return {
-          id: `val-upcoming-${match.match_page?.split('/')[1] || Math.random()}`,
-          game: 'valorant',
-          league: match.match_event || 'VCT',
-          stage: match.match_series || '',
-          home: { 
-            name: match.team1 || 'TBD', 
-            logo: match.team1_logo || null,
-            score: undefined // upcoming matches don't have scores
-          },
-          away: { 
-            name: match.team2 || 'TBD', 
-            logo: match.team2_logo || null,
-            score: undefined // upcoming matches don't have scores
-          },
-          start: match.unix_timestamp ? adjustValorantTimezone(match.unix_timestamp) : new Date(Date.now() + Math.random() * 86400000),
-          region: 'International',
-          stream: '', // Use YouTube search instead of API stream
-          venue: match.match_event || '',
-          status: 'upcoming',
-        }
-      })
-    
-    //console.log('🔵 VALORANT UPCOMING: Filtered matches:', matches)
-
-    // Enhance matches with team logos for teams that don't have logos
-    const enhancedMatches = await Promise.all(
-      matches.map(async (match) => {
-        try {
-          // Only search for logos if they're missing
-          const enhancedHome = match.home.logo ? match.home : await TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'valorant')
-          const enhancedAway = match.away.logo ? match.away : await TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'valorant')
-          
-          return {
-            ...match,
-            home: enhancedHome,
-            away: enhancedAway
-          }
-        } catch (error) {
-          return match // Return original match if enhancement fails
-        }
-      })
-    )
-
-    return enhancedMatches
-  },
-
-  // Helper function to process completed matches (results)
-  async processCompletedMatches(data) {
-    if (!data.data?.segments) {
-      //console.log('🟢 VALORANT RESULTS: No segments in data')
-      return []
-    }
-    
-    //console.log('🟢 VALORANT RESULTS: Raw segments:', data.data.segments)
-    
-    const oneDayMs = 24 * 60 * 60 * 1000
-    
-    const matches = data.data.segments
-      .filter(match => {
-        // Only include matches completed within 1 day
-        if (match.time_completed) {
-          const timeCompletedMs = this.parseTimeAgo(match.time_completed)
-          const withinOneDay = timeCompletedMs <= oneDayMs
-          //console.log(`🟢 VALORANT RESULTS: Match ${match.team1} vs ${match.team2}, time_completed: ${match.time_completed}, timeCompletedMs: ${timeCompletedMs}, within1day: ${withinOneDay}`)
-          return withinOneDay
-        }
-        //console.log(`🟢 VALORANT RESULTS: Match ${match.team1} vs ${match.team2}, no time_completed - including`)
-        return true // Include if no time info
-      })
-      .map(match => {
-        //console.log(`🟢 VALORANT RESULTS: Processing match ${match.team1} vs ${match.team2}`)
-        return {
-          id: `val-completed-${match.match_page?.split('/')[1] || Math.random()}`,
-          game: 'valorant',
-          league: match.tournament_name || 'VCT',
-          stage: match.round_info || '',
-          home: { 
-            name: match.team1 || 'TBD', 
-            logo: null, // Will be enhanced with logo search
-            score: parseInt(match.score1) || 0
-          },
-          away: { 
-            name: match.team2 || 'TBD', 
-            logo: null, // Will be enhanced with logo search
-            score: parseInt(match.score2) || 0
-          },
-          start: new Date(), // Use current time for completed matches within 1 day
-          region: 'International',
-          stream: '', // Use YouTube search instead of API stream
-          venue: match.tournament_name || '',
-          status: 'finished',
-        }
-      })
-    
-    //console.log('🟢 VALORANT RESULTS: Filtered matches:', matches)
-
-    // Enhance matches with team logos asynchronously
-    const enhancedMatches = await Promise.all(
-      matches.map(async (match) => {
-        try {
-          // Search for team logos if missing
-          const [enhancedHome, enhancedAway] = await Promise.all([
-            TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'valorant'),
-            TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'valorant')
-          ])
-          
-          return {
-            ...match,
-            home: enhancedHome,
-            away: enhancedAway
-          }
-        } catch (error) {
-          return match // Return original match if enhancement fails
-        }
-      })
-    )
-
-    return enhancedMatches
-  },
-
-  // Helper function to parse "4h 7m ago" or "2w 0d ago" format into milliseconds
-  parseTimeAgo(timeString) {
-    if (!timeString) return 0
-    
-    const regex = /(\d+)([wdhm])/g
-    let totalMs = 0
-    let match
-    
-    while ((match = regex.exec(timeString)) !== null) {
-      const value = parseInt(match[1])
-      const unit = match[2]
-      
-      switch (unit) {
-        case 'w': totalMs += value * 7 * 24 * 60 * 60 * 1000; break  // weeks
-        case 'd': totalMs += value * 24 * 60 * 60 * 1000; break      // days
-        case 'h': totalMs += value * 60 * 60 * 1000; break          // hours
-        case 'm': totalMs += value * 60 * 1000; break               // minutes
-      }
-    }
-    
-    return totalMs
-  },
-
-  // Helper function to parse "20h 0m from now" or "1w 2d from now" format into milliseconds
-  parseTimeUntil(timeString) {
-    if (!timeString) return 0
-    
-    const regex = /(\d+)([wdhm])/g
-    let totalMs = 0
-    let match
-    
-    while ((match = regex.exec(timeString)) !== null) {
-      const value = parseInt(match[1])
-      const unit = match[2]
-      
-      switch (unit) {
-        case 'w': totalMs += value * 7 * 24 * 60 * 60 * 1000; break  // weeks
-        case 'd': totalMs += value * 24 * 60 * 60 * 1000; break      // days
-        case 'h': totalMs += value * 60 * 60 * 1000; break          // hours
-        case 'm': totalMs += value * 60 * 1000; break               // minutes
-      }
-    }
-    
-    return totalMs
-  },
-
-  async fetch({ from, to }) {
-    try {
-      let allMatches = []
-
-      // Fetch LIVE matches first (highest priority)
-      try {
-        const liveResponse = await fetch('/api/valorant?q=live_score')
-        
-        if (liveResponse.ok) {
-          const liveData = await liveResponse.json()
-          //console.log('🔴 VALORANT LIVE API Response:', liveData)
-          //console.log('🔴 VALORANT LIVE Segments Count:', liveData.data?.segments?.length || 0)
-          
-          const liveMatches = await this.processLiveMatches(liveData)
-          //console.log('🔴 VALORANT LIVE Processed Matches:', liveMatches)
-          allMatches = [...allMatches, ...liveMatches]
-        } else {
-          //console.error('❌ VALORANT LIVE API Error - Response not OK:', liveResponse.status)
-        }
-      } catch (error) {
-        //console.error('❌ VALORANT LIVE API Error:', error)
-      }
-
-      // Fetch upcoming matches
-      try {
-        const upcomingResponse = await fetch('/api/valorant?q=upcoming')
-        
-        if (upcomingResponse.ok) {
-          const upcomingData = await upcomingResponse.json()
-          //console.log('🔵 VALORANT UPCOMING API Response:', upcomingData)
-          //console.log('🔵 VALORANT UPCOMING Segments Count:', upcomingData.data?.segments?.length || 0)
-          
-          const upcomingMatches = await this.processUpcomingMatches(upcomingData)
-          //console.log('🔵 VALORANT UPCOMING Processed Matches:', upcomingMatches)
-          allMatches = [...allMatches, ...upcomingMatches]
-        } else {
-          //console.error('❌ VALORANT UPCOMING API Error - Response not OK:', upcomingResponse.status)
-        }
-      } catch (error) {
-        //console.error('❌ VALORANT UPCOMING API Error:', error)
-      }
-
-      // Fetch completed matches (results)
-      try {
-        const resultsResponse = await fetch('/api/valorant?q=results')
-        
-        if (resultsResponse.ok) {
-          const resultsData = await resultsResponse.json()
-          //console.log('🟢 VALORANT RESULTS API Response:', resultsData)
-          //console.log('🟢 VALORANT RESULTS Segments Count:', resultsData.data?.segments?.length || 0)
-          
-          const completedMatches = await this.processCompletedMatches(resultsData)
-          //console.log('🟢 VALORANT RESULTS Processed Matches:', completedMatches)
-          allMatches = [...allMatches, ...completedMatches]
-        } else {
-          //console.error('❌ VALORANT RESULTS API Error - Response not OK:', resultsResponse.status)
-        }
-      } catch (error) {
-        //console.error('❌ VALORANT RESULTS API Error:', error)
-      }
-
-      // Filter matches by date range and remove duplicates
-      const filteredMatches = allMatches
-        .filter(match => withinRange(match.start, from, to))
-        .filter((match, index, self) => 
-          index === self.findIndex(m => m.id === match.id)
-        )
-        .filter(match => this.isValidLeague(match.league)) // Only keep major tournaments
-
-      //console.log('📊 VALORANT All Matches Count:', allMatches.length)
-      //console.log('📊 VALORANT Filtered Matches Count:', filteredMatches.length)
-      //console.log('📊 VALORANT Filtered Matches:', filteredMatches)
-
-      // If no matches found, return empty array instead of sample data
-      if (filteredMatches.length === 0) {
-        //console.log('⚠️ VALORANT No matches found, returning empty array')
-        return []
-      }
-
-      const sortedMatches = filteredMatches.sort((a, b) => {
-        // LIVE matches get highest priority
-        const aPriority = a.status === 'live' ? 0 : 1
-        const bPriority = b.status === 'live' ? 0 : 1
-        
-        if (aPriority === bPriority) {
-          return new Date(a.start) - new Date(b.start)
-        }
-        
-        return aPriority - bPriority
-      })
-      
-      //console.log('✅ VALORANT Final Sorted Matches:', sortedMatches)
-      //console.log('✅ VALORANT Final Match Count:', sortedMatches.length)
-      
-      return sortedMatches
-    } catch (error) {
-      //console.error('💥 VALORANT Adapter Fatal Error:', error)
-      return [] // Return empty array instead of sample data
-    }
-  },
-}
-
-// Helper function to check YouTube API health and provide debugging info
-const checkYouTubeAPIHealth = async (apiKey) => {
-  try {
-    const testResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?` +
-      `part=snippet&q=test&type=video&maxResults=1&key=${apiKey}`
-    )
-    
-    if (testResponse.ok) {
-      return true
-    } else {
-      const errorData = await testResponse.json()
-      
-      if (testResponse.status === 403) {
-      }
-      return false
-    }
-  } catch (error) {
-    return false
-  }
-}
-
-// YouTube API Key Manager with fallback support
-const YouTubeAPIManager = {
-  // Array of API keys - add your API keys here
-  apiKeys: [
-    'AIzaSyCZHYPprCcGOwLFrt1jGbtiKlvuVJtgoRY',
-    'AIzaSyDo77udI07ntgKZ7uBqeDo2NavY9199TPE',
-    'AIzaSyC4ktJ7bCFJp30sFmHIggs4vgvXklny294', 
-    'AIzaSyCHmBLPsIMhKJpxuOVGWK5OSHrwsIvRQbI', 
-    'AIzaSyBd8I64KQA5fS_eQEDh5kpMM4416R3arrc', 
-    
-  ],
-  
-  currentKeyIndex: 0,
-  
-  // Get current active API key
-  getCurrentKey() {
-    return this.apiKeys[this.currentKeyIndex]
-  },
-  
-  // Switch to next available API key
-  switchToNextKey() {
-    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length
-    const newKey = this.getCurrentKey()
-    return newKey
-  },
-  
-  // Check if we've tried all keys
-  hasMoreKeys() {
-    return this.currentKeyIndex < this.apiKeys.length - 1
-  },
-  
-  // Reset to first key
-  resetToFirstKey() {
-    this.currentKeyIndex = 0
-  },
-  
-  // Make request with fallback to other keys
-  async makeRequest(url, retryCount = 0) {
-    const currentKey = this.getCurrentKey()
-    const fullUrl = url.includes('key=') ? url : `${url}&key=${currentKey}`
-    
-    try {
-      const response = await fetch(fullUrl)
-      
-      if (response.ok) {
-        const data = await response.json()
-        return data
-      } else if (response.status === 403 && this.hasMoreKeys() && retryCount < this.apiKeys.length) {
-        this.switchToNextKey()
-        return this.makeRequest(url, retryCount + 1)
-      } else {
-        return null // Return null for failed requests
-      }
-    } catch (error) {
-      if (this.hasMoreKeys() && retryCount < this.apiKeys.length) {
-        this.switchToNextKey()
-        return this.makeRequest(url, retryCount + 1)
-      } else {
-        return null
-      }
-    }
-  }
-}
-
-// Create alias for easier access
-const youtubeApiManager = YouTubeAPIManager
-
-const PubgAdapter = {
-  async fetch({ from, to }) {
-    try {
-      
-      // PUBG BATTLEGROUNDS VIETNAM channel ID
-      const CHANNEL_ID = 'UCeX2iXaH63w3BZ8Wae_JdEA' // Channel ID cho @PUBGBATTLEGROUNDSVIETNAM
-      
-      let allMatches = []
-      
-      // 1. Fetch live streams (with cache)
-      try {
-        const liveResponse = await youtubeCacheService.getCachedData(
-          'pubg',
-          'live',
-          () => youtubeApiManager.makeRequest(
-            `https://www.googleapis.com/youtube/v3/search?` +
-            `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
-            `maxResults=10&order=date`
-          )
-        )
-        
-        if (liveResponse) {
-          const liveData = liveResponse
-          
-          // Get video IDs for additional details (view count, etc.)
-          const videoIds = liveData.items?.map(item => item.id.videoId).join(',')
-          
-          let liveVideosWithStats = liveData.items || []
-          
-          // Fetch video statistics if we have video IDs
-          if (videoIds) {
-            try {
-              const statsData = await youtubeCacheService.getCachedData(
-                'pubg',
-                'live-stats',
-                () => youtubeApiManager.makeRequest(
-                  `https://www.googleapis.com/youtube/v3/videos?` +
-                  `part=statistics,liveStreamingDetails&id=${videoIds}`
-                )
-              )
-              
-              if (statsData) {
-                
-                // Merge statistics with video data
-                liveVideosWithStats = liveData.items.map(video => {
-                  const stats = statsData.items?.find(stat => stat.id === video.id.videoId)
-                  return {
-                    ...video,
-                    statistics: stats?.statistics,
-                    liveStreamingDetails: stats?.liveStreamingDetails
-                  }
-                })
-                
-                // Sort by view count (descending) - videos with more views first
-                liveVideosWithStats.sort((a, b) => {
-                  const viewsA = parseInt(a.statistics?.viewCount || '0')
-                  const viewsB = parseInt(b.statistics?.viewCount || '0')
-                  return viewsB - viewsA
-                })
-                
-              }
-            } catch (statsError) {
-            }
-          }
-          
-          const liveMatches = this.processLiveVideos(liveVideosWithStats)
-          allMatches = [...allMatches, ...liveMatches]
-        } else {
-        }
-      } catch (error) {
-      }
-      
-      // 2. Fetch upcoming streams (with cache)
-      try {
-        const upcomingResponse = await youtubeCacheService.getCachedData(
-          'pubg',
-          'upcoming',
-          () => youtubeApiManager.makeRequest(
-            `https://www.googleapis.com/youtube/v3/search?` +
-            `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
-            `maxResults=10&order=date`
-          )
-        )
-        
-        if (upcomingResponse) {
-          const upcomingData = upcomingResponse
-          
-          // Filter out videos that are not truly upcoming
-          const trulyUpcomingVideos = upcomingData.items?.filter(item => {
-            // Only include videos with liveBroadcastContent: "upcoming"
-            const isUpcoming = item.snippet.liveBroadcastContent === 'upcoming'
-            
-            if (!isUpcoming) {
-            }
-            
-            return isUpcoming
-          }) || []
-          
-          // Get video IDs for additional details (scheduled start time)
-          const videoIds = trulyUpcomingVideos?.map(item => item.id.videoId).join(',')
-          
-          let upcomingVideosWithSchedule = trulyUpcomingVideos || []
-          
-          // Fetch scheduled start time if we have video IDs
-          if (videoIds) {
-            try {
-              const scheduleData = await youtubeCacheService.getCachedData(
-                'pubg',
-                'upcoming-schedule',
-                () => youtubeApiManager.makeRequest(
-                  `https://www.googleapis.com/youtube/v3/videos?` +
-                  `part=liveStreamingDetails&id=${videoIds}`
-                )
-              )
-              
-              if (scheduleData) {
-                
-                // Merge schedule details with video data
-                upcomingVideosWithSchedule = trulyUpcomingVideos.map(video => {
-                  const schedule = scheduleData.items?.find(sched => sched.id === video.id.videoId)
-                  return {
-                    ...video,
-                    liveStreamingDetails: schedule?.liveStreamingDetails
-                  }
-                })
-                
-                upcomingVideosWithSchedule.forEach(video => {
-                  const scheduledTime = video.liveStreamingDetails?.scheduledStartTime
-                  if (scheduledTime) {
-                    const startTime = new Date(scheduledTime)
-                  } else {
-                  }
-                })
-              }
-            } catch (scheduleError) {
-            }
-          } else {
-          }
-          
-          const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithSchedule)
-          allMatches = [...allMatches, ...upcomingMatches]
-        } else {
-          // Handle API errors for upcoming streams
-          const errorText = await upcomingResponse.text()
-          if (upcomingResponse.status === 403) {
-          }
-        }
-      } catch (error) {
-      }
-      
-      // Filter by date range
-      const filteredMatches = allMatches
-        .filter(match => withinRange(match.start, from, to))
-        .filter((match, index, self) => 
-          index === self.findIndex(m => m.id === match.id)
-        )
-      
-      // If no matches found, return empty array (don't show anything)
-      if (filteredMatches.length === 0) {
-        return []
-      }
-      
-      // Sort matches: LIVE first (with view count priority), then by start time
-      return filteredMatches.sort((a, b) => {
-        const aPriority = a.status === 'live' ? 0 : 1
-        const bPriority = b.status === 'live' ? 0 : 1
-        
-        if (aPriority === bPriority) {
-          // If both are live, sort by view count (descending)
-          if (a.status === 'live' && b.status === 'live') {
-            const aViews = a.viewCount || 0
-            const bViews = b.viewCount || 0
-            if (aViews !== bViews) {
-              return bViews - aViews // Higher view count first
-            }
-            // If view counts are same, try concurrent viewers
-            const aConcurrent = a.concurrentViewers || 0
-            const bConcurrent = b.concurrentViewers || 0
-            if (aConcurrent !== bConcurrent) {
-              return bConcurrent - aConcurrent // Higher concurrent viewers first
-            }
-          }
-          return new Date(a.start) - new Date(b.start)
-        }
-        
-        return aPriority - bPriority
-      })
-      
-    } catch (error) {
-      return [] // Return empty array instead of sample data
-    }
-  },
-
-  // Process live videos - only return the one with highest view count
-  processLiveVideos(items) {
-    const liveMatches = items
-      .map(item => ({
-        id: `pubg-live-${item.id.videoId}`,
-        game: 'pubg',
-        league: this.extractLeague(item.snippet.title),
-        stage: this.extractStage(item.snippet.title),
-        title: item.snippet.title, // Full YouTube video title
-        description: item.snippet.description, // Video description
-        thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
-        channelTitle: item.snippet.channelTitle,
-        publishedAt: item.snippet.publishedAt,
-        // Add view count and live streaming details
-        viewCount: item.statistics?.viewCount ? parseInt(item.statistics.viewCount) : 0,
-        concurrentViewers: item.liveStreamingDetails?.concurrentViewers ? 
-          parseInt(item.liveStreamingDetails.concurrentViewers) : null,
-        actualStartTime: item.liveStreamingDetails?.actualStartTime,
-        home: { 
-          name: this.extractTeam1(item.snippet.title),
-          logo: null,
-          score: undefined
-        },
-        away: { 
-          name: this.extractTeam2(item.snippet.title),
-          logo: null,
-          score: undefined
-        },
-        start: new Date(),
-        region: 'Vietnam',
-        stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-        venue: 'PUBG BATTLEGROUNDS VIETNAM',
-        status: 'live',
-        videoId: item.id.videoId
-      }))
-    
-    // Return only the video with highest view count
-    if (liveMatches.length === 0) {
-      return []
-    }
-    
-    // Find the video with highest view count
-    const topVideo = liveMatches.reduce((prev, current) => {
-      const prevViews = prev.viewCount || 0
-      const currentViews = current.viewCount || 0
-      
-      // If view counts are equal, prefer the one with more concurrent viewers
-      if (prevViews === currentViews) {
-        const prevConcurrent = prev.concurrentViewers || 0
-        const currentConcurrent = current.concurrentViewers || 0
-        return currentConcurrent > prevConcurrent ? current : prev
-      }
-      
-      return currentViews > prevViews ? current : prev
-    })
-    
-    
-    return [topVideo] // Return array with only the top video
-  },
-
-  // Process upcoming videos - return all upcoming videos
-  processUpcomingVideos(items) {
-    const upcomingMatches = items.map(item => ({
-      id: `pubg-upcoming-${item.id.videoId}`,
-      game: 'pubg',
-      league: this.extractLeague(item.snippet.title),
-      stage: this.extractStage(item.snippet.title),
-      title: item.snippet.title, // Full YouTube video title
-      description: item.snippet.description, // Video description
-      thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
-      channelTitle: item.snippet.channelTitle,
-      publishedAt: item.snippet.publishedAt,
-      // Use scheduled start time if available, otherwise fall back to publishedAt
-      scheduledStartTime: item.liveStreamingDetails?.scheduledStartTime,
-      home: { 
-        name: this.extractTeam1(item.snippet.title),
-        logo: null,
-        score: undefined
-      },
-      away: { 
-        name: this.extractTeam2(item.snippet.title),
-        logo: null,
-        score: undefined
-      },
-      start: item.liveStreamingDetails?.scheduledStartTime ? 
-             new Date(item.liveStreamingDetails.scheduledStartTime) : 
-             new Date(item.snippet.publishedAt),
-      region: 'Vietnam',
-      stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-      venue: 'PUBG BATTLEGROUNDS VIETNAM',
-      status: 'upcoming',
-      videoId: item.id.videoId
-    }))
-
-    upcomingMatches.forEach(video => {
-      const startTime = video.start
-    })
-
-    return upcomingMatches // Return all upcoming videos
-  },
-
-  // Helper: Check if video title is a PUBG match
-  isPUBGMatch(title) {
-    const matchKeywords = [
-      'vs', 'VS', 'v/s', 'đấu với', 'gặp',
-      'final', 'finale', 'chung kết',
-      'semi', 'bán kết', 'playoff',
-      'match', 'trận', 'game',
-      'tournament', 'giải đấu', 'championship'
-    ]
-    
-    const lowerTitle = title.toLowerCase()
-    return matchKeywords.some(keyword => lowerTitle.includes(keyword.toLowerCase()))
-  },
-
-  // Helper: Extract league name from title
-  extractLeague(title) {
-    const leaguePatterns = [
-      /PMPL|PML|PMC|PGS|PUBG Mobile Pro League/i,
-      /Vietnam Championship|VN Championship|Việt Nam/i,
-      /Southeast Asia|SEA|Đông Nam Á/i,
-      /Global Championship|World|Thế giới/i
-    ]
-    
-    for (const pattern of leaguePatterns) {
-      const match = title.match(pattern)
-      if (match) return match[0]
-    }
-    
-    return 'PUBG Tournament'
-  },
-
-  // Helper: Extract stage from title
-  extractStage(title) {
-    const stagePatterns = [
-      /Grand Final|Chung kết/i,
-      /Semi.?Final|Bán kết/i,
-      /Quarter.?Final|Tứ kết/i,
-      /Group Stage|Vòng bảng/i,
-      /Playoff|Loại trực tiếp/i,
-      /Week \d+|Tuần \d+/i,
-      /Day \d+|Ngày \d+/i,
-      /Round \d+|Vòng \d+/i
-    ]
-    
-    for (const pattern of stagePatterns) {
-      const match = title.match(pattern)
-      if (match) return match[0]
-    }
-    
-    return 'Tournament Match'
-  },
-
-  // Helper: Extract team names (basic implementation)
-  extractTeam1(title) {
-    // Look for pattern: Team1 vs Team2 or Team1 đấu với Team2
-    const vsPattern = /(.+?)\s+(vs|VS|v\/s|đấu với|gặp)\s+(.+)/i
-    const match = title.match(vsPattern)
-    
-    if (match) {
-      return match[1].trim().split(/\s+/).slice(-2).join(' ') // Get last 2 words before 'vs'
-    }
-    
-    return 'Team A'
-  },
-
-  extractTeam2(title) {
-    const vsPattern = /(.+?)\s+(vs|VS|v\/s|đấu với|gặp)\s+(.+)/i
-    const match = title.match(vsPattern)
-    
-    if (match) {
-      return match[3].trim().split(/\s+/).slice(0, 2).join(' ') // Get first 2 words after 'vs'
-    }
-    
-  }
-}
-
-const TftAdapter = {
-  async fetch({ from, to }) {
-    try {
-      
-      // TFT Esports channel ID (example - có thể thay đổi)
-      const CHANNEL_ID = 'UCKxbHR8VG9AyXL-W07ocrWA' // Channel ID cho Riot Games hoặc kênh TFT chính thức
-      
-      let allMatches = []
-      
-      // 1. Fetch live streams (with cache)
-      try {
-        const liveResponse = await youtubeCacheService.getCachedData(
-          'tft',
-          'live',
-          () => youtubeApiManager.makeRequest(
-            `https://www.googleapis.com/youtube/v3/search?` +
-            `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=live&` +
-            `maxResults=10&order=date`
-          )
-        )
-        
-        if (liveResponse) {
-          const liveData = liveResponse
-          
-          // Get video IDs for additional details (view count, etc.)
-          const videoIds = liveData.items?.map(item => item.id.videoId).join(',')
-          
-          let liveVideosWithStats = liveData.items || []
-          
-          // Fetch video statistics if we have video IDs
-          if (videoIds) {
-            try {
-              const statsData = await youtubeCacheService.getCachedData(
-                'tft',
-                'live-stats',
-                () => youtubeApiManager.makeRequest(
-                  `https://www.googleapis.com/youtube/v3/videos?` +
-                  `part=statistics,liveStreamingDetails&id=${videoIds}`
-                )
-              )
-              
-              if (statsData) {
-                
-                // Merge statistics with video data
-                liveVideosWithStats = liveData.items.map(video => {
-                  const stats = statsData.items?.find(stat => stat.id === video.id.videoId)
-                  return {
-                    ...video,
-                    statistics: stats?.statistics,
-                    liveStreamingDetails: stats?.liveStreamingDetails
-                  }
-                })
-                
-                // Sort by view count (descending) - videos with more views first
-                liveVideosWithStats.sort((a, b) => {
-                  const viewsA = parseInt(a.statistics?.viewCount || '0')
-                  const viewsB = parseInt(b.statistics?.viewCount || '0')
-                  return viewsB - viewsA
-                })
-                
-                liveVideosWithStats.forEach(video => {
-                  const views = parseInt(video.statistics?.viewCount || '0')
-                })
-              }
-            } catch (statsError) {
-            }
-          }
-          
-          const liveMatches = this.processLiveVideos(liveVideosWithStats)
-          allMatches = [...allMatches, ...liveMatches]
-        } else {
-          // Handle API errors for TFT live streams
-          const errorText = await liveResponse.text()
-          if (liveResponse.status === 403) {
-          }
-        }
-      } catch (error) {
-      }
-      
-      // 2. Fetch upcoming streams (with cache)
-      try {
-        const upcomingResponse = await youtubeCacheService.getCachedData(
-          'tft',
-          'upcoming',
-          () => youtubeApiManager.makeRequest(
-            `https://www.googleapis.com/youtube/v3/search?` +
-            `part=snippet&channelId=${CHANNEL_ID}&type=video&eventType=upcoming&` +
-            `maxResults=10&order=date`
-          )
-        )
-        
-        if (upcomingResponse) {
-          const upcomingData = upcomingResponse
-          
-          // Filter out videos that are not truly upcoming
-          const trulyUpcomingVideos = upcomingData.items?.filter(item => {
-            // Only include videos with liveBroadcastContent: "upcoming"
-            const isUpcoming = item.snippet.liveBroadcastContent === 'upcoming'
-            
-            if (!isUpcoming) {
-            }
-            
-            return isUpcoming
-          }) || []
-          
-          // Get video IDs for additional details (scheduled start time)
-          const videoIds = trulyUpcomingVideos?.map(item => item.id.videoId).join(',')
-          
-          let upcomingVideosWithSchedule = trulyUpcomingVideos || []
-          
-          // Fetch scheduled start time if we have video IDs
-          if (videoIds) {
-            try {
-              const scheduleData = await youtubeCacheService.getCachedData(
-                'tft',
-                'upcoming-schedule',
-                () => youtubeApiManager.makeRequest(
-                  `https://www.googleapis.com/youtube/v3/videos?` +
-                  `part=liveStreamingDetails&id=${videoIds}`
-                )
-              )
-              
-              if (scheduleData) {
-                
-                // Merge schedule details with video data
-                upcomingVideosWithSchedule = trulyUpcomingVideos.map(video => {
-                  const schedule = scheduleData.items?.find(sched => sched.id === video.id.videoId)
-                  return {
-                    ...video,
-                    liveStreamingDetails: schedule?.liveStreamingDetails
-                  }
-                })
-                
-                upcomingVideosWithSchedule.forEach(video => {
-                  const scheduledTime = video.liveStreamingDetails?.scheduledStartTime
-                  if (scheduledTime) {
-                    const startTime = new Date(scheduledTime)
-                  } else {
-                  }
-                })
-              }
-            } catch (scheduleError) {
-            }
-          } else {
-          }
-          
-          const upcomingMatches = this.processUpcomingVideos(upcomingVideosWithSchedule)
-          allMatches = [...allMatches, ...upcomingMatches]
-        } else {
-          // Handle API errors for TFT upcoming streams
-          const errorText = await upcomingResponse.text()
-          if (upcomingResponse.status === 403) {
-          }
-        }
-      } catch (error) {
-      }
-      
-      // Filter by date range
-      const filteredMatches = allMatches
-        .filter(match => withinRange(match.start, from, to))
-        .filter((match, index, self) => 
-          index === self.findIndex(m => m.id === match.id)
-        )
-      
-      // If no matches found, return empty array (don't show anything)
-      if (filteredMatches.length === 0) {
-        return []
-      }
-      
-      // Sort matches: LIVE first (with view count priority), then by start time
-      return filteredMatches.sort((a, b) => {
-        const aPriority = a.status === 'live' ? 0 : 1
-        const bPriority = b.status === 'live' ? 0 : 1
-        
-        if (aPriority === bPriority) {
-          // If both are live, sort by view count (descending)
-          if (a.status === 'live' && b.status === 'live') {
-            const aViews = a.viewCount || 0
-            const bViews = b.viewCount || 0
-            if (aViews !== bViews) {
-              return bViews - aViews // Higher view count first
-            }
-            // If view counts are same, try concurrent viewers
-            const aConcurrent = a.concurrentViewers || 0
-            const bConcurrent = b.concurrentViewers || 0
-            if (aConcurrent !== bConcurrent) {
-              return bConcurrent - aConcurrent // Higher concurrent viewers first
-            }
-          }
-          return new Date(a.start) - new Date(b.start)
-        }
-        
-        return aPriority - bPriority
-      })
-      
-    } catch (error) {
-      return [] // Return empty array instead of sample data
-    }
-  },
-
-  // Process live videos - only return the one with highest view count
-  processLiveVideos(items) {
-    const liveMatches = items
-      .map(item => ({
-        id: `tft-live-${item.id.videoId}`,
-        game: 'tft',
-        league: this.extractLeague(item.snippet.title),
-        stage: this.extractStage(item.snippet.title),
-        title: item.snippet.title, // Full YouTube video title
-        description: item.snippet.description, // Video description
-        thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
-        channelTitle: item.snippet.channelTitle,
-        publishedAt: item.snippet.publishedAt,
-        // Add view count and live streaming details
-        viewCount: item.statistics?.viewCount ? parseInt(item.statistics.viewCount) : 0,
-        concurrentViewers: item.liveStreamingDetails?.concurrentViewers ? 
-          parseInt(item.liveStreamingDetails.concurrentViewers) : null,
-        actualStartTime: item.liveStreamingDetails?.actualStartTime,
-        home: { 
-          name: this.extractPlayer1(item.snippet.title),
-          logo: null,
-          score: undefined
-        },
-        away: { 
-          name: this.extractPlayer2(item.snippet.title),
-          logo: null,
-          score: undefined
-        },
-        start: new Date(),
-        region: 'Global',
-        stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-        venue: 'TFT Championship',
-        status: 'live',
-        videoId: item.id.videoId
-      }))
-    
-    // Return only the video with highest view count
-    if (liveMatches.length === 0) {
-      return []
-    }
-    
-    // Find the video with highest view count
-    const topVideo = liveMatches.reduce((prev, current) => {
-      const prevViews = prev.viewCount || 0
-      const currentViews = current.viewCount || 0
-      
-      // If view counts are equal, prefer the one with more concurrent viewers
-      if (prevViews === currentViews) {
-        const prevConcurrent = prev.concurrentViewers || 0
-        const currentConcurrent = current.concurrentViewers || 0
-        return currentConcurrent > prevConcurrent ? current : prev
-      }
-      
-      return currentViews > prevViews ? current : prev
-    })
-    
-    
-    return [topVideo] // Return array with only the top video
-  },
-
-  // Process upcoming videos - return all upcoming videos
-  processUpcomingVideos(items) {
-    const upcomingMatches = items.map(item => ({
-      id: `tft-upcoming-${item.id.videoId}`,
-      game: 'tft',
-      league: this.extractLeague(item.snippet.title),
-      stage: this.extractStage(item.snippet.title),
-      title: item.snippet.title, // Full YouTube video title
-      description: item.snippet.description, // Video description
-      thumbnail: item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url, // Best quality thumbnail
-      channelTitle: item.snippet.channelTitle,
-      publishedAt: item.snippet.publishedAt,
-      // Use scheduled start time if available, otherwise fall back to publishedAt
-      scheduledStartTime: item.liveStreamingDetails?.scheduledStartTime,
-      home: { 
-        name: this.extractPlayer1(item.snippet.title),
-        logo: null,
-        score: undefined
-      },
-      away: { 
-        name: this.extractPlayer2(item.snippet.title),
-        logo: null,
-        score: undefined
-      },
-      start: item.liveStreamingDetails?.scheduledStartTime ? 
-             new Date(item.liveStreamingDetails.scheduledStartTime) : 
-             new Date(item.snippet.publishedAt),
-      region: 'Global',
-      stream: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-      venue: 'TFT Championship',
-      status: 'upcoming',
-      videoId: item.id.videoId
-    }))
-
-    upcomingMatches.forEach(video => {
-      const startTime = video.start
-    })
-
-    return upcomingMatches // Return all upcoming videos
-  },
-
-  // Helper: Extract league name from title
-  extractLeague(title) {
-    const leaguePatterns = [
-      /TFT World Championship|TFT Worlds|Teamfight Tactics World Championship/i,
-      /TFT Championship|Teamfight Tactics Championship/i,
-      /TFT Set \d+ Championship|Set \d+ Championship/i,
-      /TFT Regional|TFT Masters|TFT Challenger/i,
-      /TFT Tournament|Teamfight Tactics Tournament/i,
-      /TFT Set \d+|Set \d+/i,
-      /Riot Games.*TFT|TFT.*Riot/i,
-      /Teamfight Tactics/i
-    ]
-    
-    for (const pattern of leaguePatterns) {
-      const match = title.match(pattern)
-      if (match) return match[0]
-    }
-    
-    return 'TFT Esports'
-  },
-
-  // Helper: Extract stage from title
-  extractStage(title) {
-    const stagePatterns = [
-      /Grand Final|Chung kết|Finals/i,
-      /Semi.?Final|Bán kết|Semifinals/i,
-      /Quarter.?Final|Tứ kết|Quarterfinals/i,
-      /Group Stage|Vòng bảng|Groups/i,
-      /Playoff|Loại trực tiếp|Playoffs/i,
-      /Week \d+|Tuần \d+|W\d+/i,
-      /Day \d+|Ngày \d+|D\d+/i,
-      /Round \d+|Vòng \d+|R\d+/i,
-      /Set \d+ Championship|Set \d+/i,
-      /Regional|Masters|Challenger/i
-    ]
-    
-    for (const pattern of stagePatterns) {
-      const match = title.match(pattern)
-      if (match) return match[0]
-    }
-    
-    return 'Championship'
-  },
-
-  // Helper: Extract player names (TFT is individual players, not teams)
-  extractPlayer1(title) {
-    // Look for pattern: Player1 vs Player2
-    const vsPattern = /(.+?)\s+(vs|VS|v\/s|against)\s+(.+)/i
-    const match = title.match(vsPattern)
-    
-    if (match) {
-      return match[1].trim().split(/\s+/).slice(-1).join(' ') // Get last word before 'vs'
-    }
-    
-    return 'Player A'
-  },
-
-  extractPlayer2(title) {
-    const vsPattern = /(.+?)\s+(vs|VS|v\/s|against)\s+(.+)/i
-    const match = title.match(vsPattern)
-    
-    if (match) {
-      return match[3].trim().split(/\s+/).slice(0, 1).join(' ') // Get first word after 'vs'
-    }
-    
-    return 'Player B'
-  }
-}
-
-const LolAdapter = {
-  async fetch({ from, to }) {
-    try {
-      // Add timeout for LoL API
-      const controller = new AbortController()
-      setTimeout(() => controller.abort(), 8000) // 8 second timeout
-      
-      const response = await fetch('/api/lol', {
-        signal: controller.signal
-      })
-      
-      if (!response.ok) {
-        return [] // Return empty array instead of sample data
-      }
-      
-      const data = await response.json()
-      
-      // DEBUG: Log toàn bộ response từ LoL API
-      // DEBUG: Log cụ thể phần events
-      if (data.data?.schedule?.events) {
-        
-        // DEBUG: Check streams data specifically
-        data.data.schedule.events.forEach((event, index) => {
-          if (event.streams && event.streams.length > 0) {
-            event.streams.forEach((stream, streamIndex) => {
-            })
-          } else {
-          }
-        })
-      } else {
-      }
-      
-      if (!data.data?.schedule?.events) return [] // Return empty array instead of sample data
-      
-      const matches = data.data.schedule.events.map(event => ({
-        id: `lol-${event.match?.id || Math.random()}`,
-        game: 'lol',
-        league: event.league?.name || 'LoL Esports',
-        stage: event.match?.strategy?.count ? `Bo${event.match.strategy.count}` : (event.match?.strategy?.type || event.blockName || ''),
-        home: { 
-          name: event.match?.teams?.[0]?.name || 'TBD', 
-          logo: event.match?.teams?.[0]?.image || null, // Will be enhanced if null
-          score: (event.state === 'completed' || event.state === 'inProgress') ? event.match?.teams?.[0]?.result?.gameWins : undefined
-        },
-        away: { 
-          name: event.match?.teams?.[1]?.name || 'TBD', 
-          logo: event.match?.teams?.[1]?.image || null, // Will be enhanced if null
-          score: (event.state === 'completed' || event.state === 'inProgress') ? event.match?.teams?.[1]?.result?.gameWins : undefined
-        },
-        start: new Date(event.startTime),
-        region: event.league?.region || 'International',
-        stream: '', // Use YouTube search instead of API stream
-        venue: event.league?.name || '',
-        status: event.state === 'inProgress' ? 'live' :
-                event.state === 'completed' ? 'finished' : 'upcoming',
-        // Live-specific data for LoL
-        currentGame: event.state === 'inProgress' ? (event.match?.games?.find(game => game.state === 'inProgress')?.number || '') : undefined,
-        bestOf: event.match?.strategy?.count || undefined,
-        liveGameState: event.state === 'inProgress' ? 'In Progress' : undefined,
-      })).filter(match => withinRange(match.start, from, to))
-        .filter(match => {
-          // Filter out EMEA Masters league
-          if (match.league === 'EMEA Masters') {
-            return false
-          }
-          return true
-        })
-        .filter(match => {
-          if (match.status === 'live') {
-            return match.home?.name !== 'TBD' && match.away?.name !== 'TBD'
-          }
-          return true // Keep all non-live matches
-        })
-
-      // Enhance matches with team logos for teams that don't have logos
-      const enhancedMatches = await Promise.all(
-        matches.map(async (match) => {
-          try {
-            // Only search for logos if they're missing
-            const enhancedHome = match.home.logo ? match.home : await TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'lol')
-            const enhancedAway = match.away.logo ? match.away : await TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'lol')
-            
-            return {
-              ...match,
-              home: enhancedHome,
-              away: enhancedAway
-            }
-          } catch (error) {
-            return match // Return original match if enhancement fails
-          }
-        })
-      )
-      
-      // DEBUG: Log processed matches
-      
-      // Sort LoL matches: LIVE first, then by start time
-      const sortedMatches = enhancedMatches.sort((a, b) => {
-        const aPriority = a.status === 'live' ? 0 : 1
-        const bPriority = b.status === 'live' ? 0 : 1
-        
-        if (aPriority === bPriority) {
-          return new Date(a.start) - new Date(b.start)
-        }
-        
-        return aPriority - bPriority
-      })
-      
-      // 🔍 DEBUG: Log final sorted matches
-      
-      return sortedMatches
-    } catch (error) {
-      return [] // Return empty array instead of sample data
-    }
-  }
-}
-
-const FootballAdapter = {
-  async fetch({ from, to }) {
-    try {
-      // Use Vite proxy instead of direct API calls
-      const baseURL = '/api/football'
-      
-      // Test API connection first with timeout
-      try {
-        const controller = new AbortController()
-        setTimeout(() => controller.abort(), 5000) // 5 second timeout
-        
-        const testResponse = await fetch('/api/football/competitions', {
-          signal: controller.signal
-        })
-        if (!testResponse.ok) {
-          // If test fails, return empty array immediately
-          return []
-        }
-      } catch (apiError) {
-        // If API fails, return empty array immediately
-        return []
-      }
-      
-      // Major league IDs on football-data.org (reduced list to avoid rate limits)
-      const leagues = [
-        { id: 'PL', name: 'Premier League' },
-        { id: 'PD', name: 'LaLiga' },
-        { id: 'CL', name: 'Champions League' },
-      ]
-      
-      let allMatches = []
-      let liveMatches = []
-      
-      // 🔴 STEP 1: Fetch Live Matches từ API mới
-      try {
-        const liveResponse = await fetch('https://apibongda.onrender.com/api/matches/live', {
-          signal: AbortSignal.timeout(8000) // 8 second timeout
-        })
-        
-        if (liveResponse.ok) {
-          const liveData = await liveResponse.json()
-          
-          if (liveData.success && liveData.data && liveData.data.length > 0) {
-            // Map live data to our format
-            liveMatches = liveData.data.map((match, index) => {
-              // Parse score from rawText
-              const scoreMatch = match.rawText?.match(/(\d+)\s*-\s*(\d+)/)
-              const homeScore = scoreMatch ? parseInt(scoreMatch[1]) : undefined
-              const awayScore = scoreMatch ? parseInt(scoreMatch[2]) : undefined
-              
-              // Parse minute from rawText
-              const minuteMatch = match.rawText?.match(/(\d+)'/)
-              const currentMinute = minuteMatch ? parseInt(minuteMatch[1]) : undefined
-              
-              // Check for Half Time status in rawText
-              const isHalfTime = match.rawText?.includes('HT') || match.rawText?.includes('Half Time')
-              
-              // Parse date and time
-              let matchDate = new Date()
-              if (match.time) {
-                const [datePart, timePart] = match.time.split(' ')
-                const [day, month] = datePart.split('/')
-                const [hour, minute] = timePart.split(':')
-                matchDate = new Date(2025, parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute))
-              }
-              
-              return {
-                id: `live-${match.homeTeam}-${match.awayTeam}-${index}`.replace(/\s/g, '-'),
-                game: 'football',
-                league: match.league || 'Live Match',
-                stage: 'LIVE',
-                home: {
-                  name: match.homeTeam,
-                  logo: match.homeTeamLogo || null,
-                  score: homeScore
-                },
-                away: {
-                  name: match.awayTeam,
-                  logo: match.awayTeamLogo || null,
-                  score: awayScore
-                },
-                start: matchDate,
-                venue: match.source || 'Live Stream',
-                region: 'Live',
-                stream: match.link || '',
-                status: 'live',
-                currentMinute: currentMinute,
-                halfTime: isHalfTime ? 'HT' : undefined,
-                commentator: match.blv,
-                source: match.source
-              }
-            })
-            
-            console.log(`✅ Loaded ${liveMatches.length} live matches from apibongda.onrender.com`)
-          }
-        }
-      } catch (liveError) {
-        console.warn(`⚠️ Live API failed, will fallback to football-data.org IN_PLAY:`, liveError.message)
-      }
-      
-      // Format dates for API
-      const formatDate = (date) => {
-        return date.toISOString().split('T')[0]
-      }
-      
-      const dateFrom = formatDate(from || new Date())
-      const dateTo = formatDate(to || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
-      
-      // 📅 STEP 2: Fetch SCHEDULED & FINISHED matches từ football-data.org
-      for (const league of leagues) {
-        try {
-          // Use proxy endpoint with correct URL structure
-          const response = await fetch(
-            `/api/football/competitions/${league.id}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`
-          )
-          
-          if (!response.ok) {
-            const errorText = await response.text()
-            
-            // If it's a 400 error (bad request), likely API key issue
-            if (response.status === 400) {
-              return [] // Return empty array instead of sample data
-            }
-            continue
-          }
-          
-          const data = await response.json()
-          
-          if (data.matches) {
-            // 🎯 Filter: Chỉ lấy SCHEDULED và FINISHED
-            // Nếu có live data từ API mới → skip IN_PLAY
-            // Nếu không có live data → fallback lấy IN_PLAY
-            const shouldIncludeLive = liveMatches.length === 0
-            
-            const filteredMatches = data.matches.filter(match => {
-              if (match.status === 'SCHEDULED' || match.status === 'FINISHED') {
-                return true
-              }
-              // Fallback: Chỉ lấy IN_PLAY nếu live API failed
-              if (shouldIncludeLive && (match.status === 'IN_PLAY' || match.status === 'PAUSED')) {
-                return true
-              }
-              return false
-            })
-            
-            const matches = filteredMatches.map(match => {
-              // Map competition names to preferred display names
-              const leagueNameMap = {
-                'Primera Division': 'LaLiga',
-                'Primera División': 'LaLiga',
-                'Premier League': 'Premier League',
-                'UEFA Champions League': 'Champions League'
-              }
-              
-              const displayLeagueName = leagueNameMap[match.competition?.name] || match.competition?.name || league.name
-              
-              return {
-                id: `foot-${match.id}`,
-                game: 'football',
-                league: displayLeagueName,
-              stage: match.stage === 'REGULAR_SEASON' ? 
-                `Vòng ${match.matchday || ''}` : 
-                match.stage?.replace('_', ' ') || '',
-              home: { 
-                name: match.homeTeam?.name || 'Home',
-                logo: match.homeTeam?.crest || null, // Will be enhanced if null
-                score: (match.status === 'FINISHED' || match.status === 'IN_PLAY' || match.status === 'PAUSED') ? match.score?.fullTime?.home : undefined
-              },
-              away: { 
-                name: match.awayTeam?.name || 'Away',
-                logo: match.awayTeam?.crest || null, // Will be enhanced if null
-                score: (match.status === 'FINISHED' || match.status === 'IN_PLAY' || match.status === 'PAUSED') ? match.score?.fullTime?.away : undefined
-              },
-              start: new Date(match.utcDate),
-              venue: match.venue || '',
-              region: match.area?.name || match.competition?.area?.name || 'International',
-              stream: '', // Use YouTube search instead of API stream
-              status: match.status === 'FINISHED' ? 'finished' :
-                      match.status === 'IN_PLAY' || match.status === 'PAUSED' ? 'live' : 'upcoming',
-              // Live-specific data for Football
-              currentMinute: match.status === 'IN_PLAY' ? match.minute : undefined,
-              halfTime: match.status === 'PAUSED' ? 'HT' : undefined,
-              referee: match.referees?.[0]?.name || undefined,
-            }
-            })
-            
-            // Enhance matches with team logos for teams that don't have logos
-            const enhancedMatches = await Promise.all(
-              matches.map(async (match) => {
-                try {
-                  // Only search for logos if they're missing
-                  const enhancedHome = match.home.logo ? match.home : await TeamLogoSearchService.enhanceTeamWithLogo(match.home, 'football')
-                  const enhancedAway = match.away.logo ? match.away : await TeamLogoSearchService.enhanceTeamWithLogo(match.away, 'football')
-                  
-                  return {
-                    ...match,
-                    home: enhancedHome,
-                    away: enhancedAway
-                  }
-                } catch (error) {
-                  return match // Return original match if enhancement fails
-                }
-              })
-            )
-            
-            allMatches = [...allMatches, ...enhancedMatches]
-          }
-        } catch (err) {
-        }
-      }
-      
-      // 🔗 STEP 3: Merge live matches với scheduled/finished matches
-      const combinedMatches = [...liveMatches, ...allMatches]
-      
-      // Remove duplicates
-      const uniqueMatches = combinedMatches.filter((match, index, self) => 
-        index === self.findIndex(m => m.id === match.id)
-      )
-      
-      const filteredMatches = uniqueMatches
-        .filter(match => withinRange(match.start, from, to))
-        .filter(match => {
-          // Filter out LIVE matches with TBD teams
-          if (match.status === 'live') {
-            return match.home?.name !== 'TBD' && match.away?.name !== 'TBD' && 
-                   match.home?.name !== 'Home' && match.away?.name !== 'Away'
-          }
-          return true // Keep all non-live matches
-        })
-      
-      if (filteredMatches.length === 0) {
-        return [] // Return empty array instead of sample data
-      }
-      
-      // Sort Football matches: LIVE first, then by start time
-      return filteredMatches.sort((a, b) => {
-        const aPriority = a.status === 'live' ? 0 : 1
-        const bPriority = b.status === 'live' ? 0 : 1
-        
-        if (aPriority === bPriority) {
-          return new Date(a.start) - new Date(b.start)
-        }
-        
-        return aPriority - bPriority
-      })
-    } catch (error) {
-      return [] // Return empty array instead of sample data
-    }
-  }
-}
-
-// Sample data generator for fallback
-function createSampleData(game, from, to) {
-  const now = new Date()
-  const sampleData = {
-    valorant: [
-      {
-        id: `val-sample-live`,
-        game: 'valorant',
-        league: 'Valorant Champions 2025',
-        stage: 'Playoffs: Lower Round 1',
-        home: { 
-          name: 'Team Heretics', 
-          score: 1,
-          roundsCT: null,
-          roundsT: 3,
-          logo: 'https://owcdn.net/img/637b755224c12.png'
-        },
-        away: { 
-          name: 'GIANTX', 
-          score: 0,
-          roundsCT: 12,
-          roundsT: null,
-          logo: 'https://owcdn.net/img/657b2f3fcd199.png'
-        },
-        start: new Date(),
-        region: 'International',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'Valorant Champions 2025',
-        status: 'live',
-        currentMap: 'Lotus',
-        mapNumber: '2',
-      },
-      {
-        id: `val-sample-1`,
-        game: 'valorant',
-        league: 'Valorant Champions 2025',
-        stage: 'Playoffs: Upper Semifinals',
-        home: { name: 'FNATIC', score: 2 },
-        away: { name: 'Paper Rex', score: 1 },
-        start: new Date(now.getTime() - 3 * 60 * 60 * 1000),
-        region: 'International',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'Valorant Champions 2025',
-        status: 'finished',
-      },
-      {
-        id: `val-sample-2`,
-        game: 'valorant',
-        league: 'Valorant Champions 2025',
-        stage: 'Playoffs: Lower Round 1',
-        home: { name: 'DRX', score: 2 },
-        away: { name: 'G2 Esports', score: 1 },
-        start: new Date(now.getTime() - 4 * 60 * 60 * 1000),
-        region: 'International',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'Valorant Champions 2025',
-        status: 'finished',
-      },
-      {
-        id: `val-sample-3`,
-        game: 'valorant',
-        league: 'Valorant Champions 2025',
-        stage: 'Playoffs: Upper Semifinals',
-        home: { name: 'Sentinels' },
-        away: { name: 'Team Liquid' },
-        start: new Date(now.getTime() + 20 * 60 * 60 * 1000),
-        region: 'International',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'Valorant Champions 2025',
-        status: 'upcoming',
-      }
-    ],
-    pubg: [
-      {
-        id: `pubg-sample-1`,
-        game: 'pubg',
-        league: 'PGS Championships',
-        stage: 'Grand Finals',
-        title: 'PUBG Global Championship 2025 - Grand Finals: Gen.G vs DAMWON KIA',
-        description: 'Trận chung kết gay cấn nhất PGS 2025 giữa hai đội tuyển hàng đầu. Ai sẽ trở thành nhà vô địch?',
-        thumbnail: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-        channelTitle: 'PUBG BATTLEGROUNDS VIETNAM',
-        home: { name: 'Gen.G', score: 2 },
-        away: { name: 'DAMWON KIA', score: 0 },
-        start: new Date(now.getTime() - 2 * 60 * 60 * 1000),
-        region: 'Global',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'Seoul Arena',
-        status: 'finished',
-        videoId: 'sample123'
-      },
-      {
-        id: `pubg-sample-live`,
-        game: 'pubg',
-        league: 'PMPL Vietnam',
-        stage: 'Week 3',
-        title: '[LIVE] PMPL Vietnam Season 5 - Team Flash vs Divine Esports',
-        description: 'Trực tiếp trận đấu PMPL Vietnam giữa Team Flash và Divine Esports. Đây là trận đấu quyết định vị trí đầu bảng!',
-        thumbnail: 'https://i.ytimg.com/vi/live_stream/maxresdefault_live.jpg',
-        channelTitle: 'PUBG BATTLEGROUNDS VIETNAM',
-        viewCount: 15420,
-        concurrentViewers: 8750,
-        home: { name: 'Team Flash', score: 1 },
-        away: { name: 'Divine Esports', score: 0 },
-        start: new Date(),
-        region: 'Vietnam',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'PUBG BATTLEGROUNDS VIETNAM',
-        status: 'live',
-        videoId: 'live456'
-      }
-    ],
-    tft: [
-      {
-        id: `tft-sample-live`,
-        game: 'tft',
-        league: 'TFT World Championship',
-        stage: 'Grand Finals',
-        title: '[LIVE] TFT World Championship 2025 - dishsoap vs Socks',
-        description: 'Trận chung kết TFT World Championship 2025 giữa dishsoap và Socks. Ai sẽ trở thành nhà vô địch thế giới?',
-        thumbnail: 'https://i.ytimg.com/vi/tft_live/maxresdefault_live.jpg',
-        channelTitle: 'Riot Games',
-        viewCount: 45230,
-        concurrentViewers: 28500,
-        home: { name: 'dishsoap', score: 2 },
-        away: { name: 'Socks', score: 1 },
-        start: new Date(),
-        region: 'Global',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'TFT Championship',
-        status: 'live',
-        videoId: 'tft_live123'
-      },
-      {
-        id: `tft-sample-1`,
-        game: 'tft',
-        league: 'TFT World Championship',
-        stage: 'Semi Finals',
-        title: 'TFT World Championship 2025 - Milk vs spaceball',
-        description: 'Trận bán kết căng thẳng giữa Milk và spaceball tại TFT World Championship 2025.',
-        thumbnail: 'https://i.ytimg.com/vi/tft_finished/maxresdefault.jpg',
-        channelTitle: 'Riot Games',
-        home: { name: 'Milk', score: 3 },
-        away: { name: 'spaceball', score: 2 },
-        start: new Date(now.getTime() - 3 * 60 * 60 * 1000),
-        region: 'Global',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'TFT Championship',
-        status: 'finished',
-        videoId: 'tft_finished456'
-      },
-      {
-        id: `tft-sample-2`,
-        game: 'tft',
-        league: 'TFT Set 12 Tournament',
-        stage: 'Round 1',
-        title: 'TFT Set 12 Championship - kurumx vs aespa',
-        description: 'Upcoming match trong TFT Set 12 Championship giữa kurumx và aespa.',
-        thumbnail: 'https://i.ytimg.com/vi/tft_upcoming/maxresdefault.jpg',
-        channelTitle: 'Riot Games',
-        home: { name: 'kurumx' },
-        away: { name: 'aespa' },
-        start: new Date(now.getTime() + 8 * 60 * 60 * 1000),
-        region: 'Global',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'TFT Championship',
-        status: 'upcoming',
-        videoId: 'tft_upcoming789'
-      }
-    ],
-    lol: [
-      {
-        id: `lol-sample-live`,
-        game: 'lol',
-        league: 'LCK',
-        stage: 'Spring Playoffs',
-        home: { name: 'T1', score: 1 },
-        away: { name: 'Gen.G', score: 0 },
-        start: new Date(),
-        region: 'Korea',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'LoL Park',
-        status: 'live',
-        currentGame: 'Game 2',
-        bestOf: 5,
-        liveGameState: 'In Progress',
-      },
-      {
-        id: `lol-sample-1`,
-        game: 'lol',
-        league: 'LCK',
-        stage: 'Spring Playoffs',
-        home: { name: 'DRX', score: 3 },
-        away: { name: 'KT Rolster', score: 1 },
-        start: new Date(now.getTime() - 4 * 60 * 60 * 1000),
-        region: 'Korea',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'LoL Park',
-        status: 'finished',
-      },
-      {
-        id: `lol-sample-2`,
-        game: 'lol',
-        league: 'LPL',
-        stage: 'Regular Season',
-        home: { name: 'JDG' },
-        away: { name: 'BLG' },
-        start: new Date(now.getTime() + 26 * 60 * 60 * 1000),
-        region: 'China',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'LPL Arena',
-        status: 'upcoming',
-      }
-    ],
-    football: [
-      {
-        id: `foot-sample-live`,
-        game: 'football',
-        league: 'Premier League',
-        stage: 'Vòng 8',
-        home: { name: 'Manchester United', score: 1 },
-        away: { name: 'Liverpool', score: 1 },
-        start: new Date(),
-        region: 'England',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'Old Trafford',
-        status: 'live',
-        currentMinute: 67,
-        referee: 'Michael Oliver',
-      },
-      {
-        id: `foot-sample-1`,
-        game: 'football',
-        league: 'Premier League',
-        stage: 'Vòng 8',
-        home: { name: 'Manchester City', score: 2 },
-        away: { name: 'Arsenal', score: 1 },
-        start: new Date(now.getTime() - 5 * 60 * 60 * 1000),
-        region: 'England',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'Etihad Stadium',
-        status: 'finished',
-      },
-      {
-        id: `foot-sample-2`,
-        game: 'football',
-        league: 'LaLiga',
-        stage: 'Vòng 9',
-        home: { name: 'Real Madrid' },
-        away: { name: 'Barcelona' },
-        start: new Date(now.getTime() + 72 * 60 * 60 * 1000),
-        region: 'Spain',
-        stream: '', // Use YouTube search instead of hardcoded stream
-        venue: 'Santiago Bernabéu',
-        status: 'upcoming',
-      }
-    ]
-  }
-  
-  return (sampleData[game] || []).filter(match => withinRange(match.start, from, to))
-}
-
+// Service adapters map
 const adapters = {
   valorant: ValorantAdapter,
-  pubg: PubgAdapter,
-  tft: TftAdapter,
   lol: LolAdapter,
   football: FootballAdapter,
+  pubg: PubgAdapter,
+  tft: TftAdapter,
 }
 
-// --- Sport Categories -----------------------------------------------------
-const sports = [
-  { id: 'all', label: 'Tất cả', icon: TrendingUp, color: 'from-purple-500 to-pink-500', isImage: false },
-  { id: 'valorant', label: 'Valorant', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true },
-  { id: 'pubg', label: 'PUBG', icon: pubgIcon, color: 'from-orange-500 to-yellow-500', isImage: true },
-  { id: 'tft', label: 'TFT', icon: tftIcon, color: 'from-purple-500 to-indigo-500', isImage: true },
-  { id: 'lol', label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true },
-  { id: 'football', label: 'Bóng Đá', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true },
-]
-
-// --- Custom Hook for Schedule Data ---------------------------------------
-function useSchedule({ activeSport, from, to }) {
-  const [data, setData] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    let isMounted = true
-    
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        let allMatches = []
-        
-        if (activeSport === 'all') {
-          // For "all" mode, use different time ranges for different game types
-          const now = new Date()
-          
-          // Extended time range for PUBG/TFT (30 days future)
-          const extendedFrom = new Date(now.getTime() - 1 * 60 * 60 * 1000) // 1 hour ago
-          const extendedTo = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days
-          
-          // Standard time range for other sports (48 hours)
-          const standardFrom = from // Use the passed from parameter (24 hours ago)
-          const standardTo = to // Use the passed to parameter (48 hours)
-          
-          // Fetch from all adapters with appropriate time ranges
-          const results = await Promise.allSettled([
-            adapters.valorant.fetch({ from: standardFrom, to: standardTo }),
-            adapters.pubg.fetch({ from: extendedFrom, to: extendedTo }),
-            adapters.tft.fetch({ from: extendedFrom, to: extendedTo }),
-            adapters.lol.fetch({ from: standardFrom, to: standardTo }),
-            adapters.football.fetch({ from: standardFrom, to: standardTo }),
-          ])
-          
-          results.forEach((result, index) => {
-            const adapterNames = ['valorant', 'pubg', 'tft', 'lol', 'football']
-            if (result.status === 'fulfilled') {
-              allMatches = [...allMatches, ...result.value]
-            } else {
-            }
-          })
-        } else {
-          // Fetch from specific adapter
-          const adapter = adapters[activeSport]
-          if (adapter) {
-            allMatches = await adapter.fetch({ from, to })
-          } else {
-          }
-        }
-        
-        if (isMounted) {
-          // Sort matches: LIVE first, then by start time
-          const sortedMatches = allMatches.sort((a, b) => {
-            // LIVE matches get highest priority (0)
-            const aPriority = a.status === 'live' ? 0 : 1
-            const bPriority = b.status === 'live' ? 0 : 1
-            
-            // If both have same priority, sort by start time
-            if (aPriority === bPriority) {
-              return new Date(a.start) - new Date(b.start)
-            }
-            
-            // Otherwise, sort by priority (LIVE first)
-            return aPriority - bPriority
-          })
-          
-          setData(sortedMatches)
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err.message || 'Không thể tải dữ liệu')
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    fetchData()
-    
-    return () => {
-      isMounted = false
-    }
-  }, [activeSport, from?.toString(), to?.toString()])
-
-  return { data, loading, error, refetch: () => window.location.reload() }
-}
-
-// --- Watch Live Button Component ------------------------------------------
-function WatchLiveButton({ match }) {
-  const [isSearching, setIsSearching] = useState(false)
-  const [foundStream, setFoundStream] = useState(null)
-  
-  const handleWatchLive = async () => {
-    // If match already has stream, use it
-    if (match.stream) {
-      console.log('Opening direct stream URL:', match.stream)
-      window.open(match.stream, '_blank')
-      return
-    }
-
-    if (match.videoId) {
-      const youtubeUrl = `https://www.youtube.com/watch?v=${match.videoId}`
-      window.open(youtubeUrl, '_blank')
-    }
-    
-    // If we already found a stream, use it
-    if (foundStream) {
-      window.open(foundStream, '_blank')
-      return
-    }
-    
-    // Special handling for football matches
-    if (match.game === 'football') {
-      window.open('https://www.xaycon.live', '_blank')
-      return
-    }
-    
-    // Search for YouTube live stream for other sports
-    setIsSearching(true)
-    try {
-      const youtubeUrl = await searchYouTubeLiveStream(match)
-      if (youtubeUrl) {
-        setFoundStream(youtubeUrl)
-        window.open(youtubeUrl, '_blank')
-      } else {
-        alert('Không tìm thấy live stream cho trận đấu này trên YouTube')
-      }
-    } catch (error) {
-      alert('Lỗi khi tìm kiếm live stream')
-    } finally {
-      setIsSearching(false)
-    }
-  }
-  
-  return (
-    <Button
-      variant={match.status === 'upcoming' ? "primary" : "danger"}
-      size="sm"
-      onClick={handleWatchLive}
-      className="animate-pulse"
-      disabled={isSearching}
-    >
-      <Play className="h-3 w-3" />
-      {match.status === 'upcoming' ? 'Đặt thông báo' : isSearching ? 'Đang tìm...' : 'Xem Live'}
-    </Button>
-  )
-}
-
-// --- Match Card Component -------------------------------------------------
-function MatchCard({ match, isDarkMode }) {
-  const statusInfo = getStatusInfo(match.status)
-  const gameInfo = getGameInfo(match.game)
-  const StatusIcon = statusInfo.icon
-  const GameIcon = gameInfo.icon
-
-  // Special layout for PUBG (YouTube-based)
-  if (match.game === 'pubg') {
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        whileHover={{ y: -4 }}
-        className={`group relative overflow-hidden rounded-2xl backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 ${
-          isDarkMode 
-            ? 'bg-gray-800/95 border border-gray-600/60 hover:bg-gray-700/95' 
-            : 'bg-gray-200/95 border border-gray-400/60 hover:bg-gray-100/95'
-        } p-6`}
-      >
-        {/* Background Gradient */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-        
-        {/* PUBG YouTube Video Layout */}
-        <div className="space-y-4">
-          {/* Header - Same format as other cards */}
-          <div className="grid grid-cols-3 items-center mb-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
-                {gameInfo.isImage ? (
-                  <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
-                ) : (
-                  <GameIcon className="h-4 w-4 text-white" />
-                )}
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-center">
-
-              <Badge variant={statusInfo.variant}>
-                <StatusIcon className="h-3 w-3" />
-                {statusInfo.label}
-              </Badge>
-            </div>
-            
-            <div className={`flex items-center gap-2 text-sm justify-end ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              <Clock className="h-4 w-4" />
-              {fmtTime(match.start)}
-            </div>
-          </div>
-
-          {/* Video Thumbnail - Only show for live videos, not upcoming */}
-          {match.thumbnail && match.status !== 'upcoming' && (
-            <div 
-              className="relative rounded-lg overflow-hidden aspect-video bg-gray-900 cursor-pointer hover:opacity-90 transition-opacity"
-              onClick={() => {
-                if (match.stream) {
-                  window.open(match.stream, '_blank')
-                } else {
-                  // Fallback to YouTube search if no direct stream URL
-                  const searchQuery = `${match.title || match.league} live stream`
-                  const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
-                  window.open(youtubeSearchUrl, '_blank')
-                }
-              }}
-            >
-              <img 
-                src={match.thumbnail} 
-                alt={match.title}
-                className="w-full h-full object-cover"
-              />
-              {/* Play overlay for live streams */}
-              {match.status === 'live' && (
-                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-                  <div className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-2 animate-pulse">
-                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                    LIVE
-                  </div>
-                </div>
-              )}
-              {/* Click hint overlay */}
-              <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
-                <div className="bg-black/60 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                  Click để xem
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Video Title */}
-          <div>
-            <h3 className={`font-semibold text-lg leading-tight line-clamp-2 ${
-              isDarkMode ? 'text-gray-100' : 'text-gray-900'
-            }`}>
-              {match.title || match.league || 'PUBG Tournament'}
-            </h3>
-            
-            {/* View count and live viewers info */}
-            <div className={`flex items-center gap-4 mt-2 text-sm ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              {match.status === 'live' && match.concurrentViewers && (
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="font-medium">
-                    {match.concurrentViewers.toLocaleString()} đang xem
-                  </span>
-                </div>
-              )}
-              
-              {match.viewCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <Eye className="h-3 w-3" />
-                  <span>{match.viewCount.toLocaleString()} lượt xem</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-                <WatchLiveButton match={match} />
-            </div>
-          </div>
-
-          {/* Live match info for PUBG */}
-          {/* {match.status === 'live' && (
-            <div className={`p-3 rounded-lg ${
-              isDarkMode 
-                ? 'bg-gray-700/80 border border-gray-600/60' 
-                : 'bg-red-50 border border-red-200'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className={`font-semibold ${
-                    isDarkMode ? 'text-red-300' : 'text-red-800'
-                  }`}>
-                    Đang phát trực tiếp
-                  </span>
-                </div>
-                
-                <WatchLiveButton match={match} />
-              </div>
-            </div>
-          )} */}
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Special layout for TFT (YouTube-based, similar to PUBG)
-  if (match.game === 'tft') {
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        whileHover={{ y: -4 }}
-        className={`group relative overflow-hidden rounded-2xl backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 ${
-          isDarkMode 
-            ? 'bg-gray-800/95 border border-gray-600/60 hover:bg-gray-700/95' 
-            : 'bg-gray-200/95 border border-gray-400/60 hover:bg-gray-100/95'
-        } p-6`}
-      >
-        {/* Background Gradient */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-        
-        {/* TFT YouTube Video Layout */}
-        <div className="space-y-4">
-          {/* Header - Same format as PUBG cards */}
-          <div className="grid grid-cols-3 items-center mb-4">
-            <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
-                {gameInfo.isImage ? (
-                  <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
-                ) : (
-                  <GameIcon className="h-4 w-4 text-white" />
-                )}
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-center">
-              <Badge variant={statusInfo.variant}>
-                <StatusIcon className="h-3 w-3" />
-                {statusInfo.label}
-              </Badge>
-            </div>
-            
-            <div className={`flex items-center gap-2 text-sm justify-end ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              <Clock className="h-4 w-4" />
-              {fmtTime(match.start)}
-            </div>
-          </div>
-
-          {/* Video Title */}
-          <div>
-            <h3 className={`font-semibold text-lg leading-tight line-clamp-2 ${
-              isDarkMode ? 'text-gray-100' : 'text-gray-900'
-            }`}>
-              {match.title || match.league || 'TFT Tournament'}
-            </h3>
-            
-            {/* View count and live viewers info */}
-            <div className={`flex items-center gap-4 mt-2 text-sm ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              {match.status === 'live' && match.concurrentViewers && (
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="font-medium">
-                    {match.concurrentViewers.toLocaleString()} đang xem
-                  </span>
-                </div>
-              )}
-              
-              {match.viewCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <Eye className="h-3 w-3" />
-                  <span>{match.viewCount.toLocaleString()} lượt xem</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-                <WatchLiveButton match={match} />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    )
-  }
-
-  // Default layout for other games
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      whileHover={{ y: -4 }}
-      className={`group relative overflow-hidden rounded-2xl backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 ${
-        isDarkMode 
-          ? 'bg-gray-800/95 border border-gray-600/60 hover:bg-gray-700/95' 
-          : 'bg-gray-200/95 border border-gray-400/60 hover:bg-gray-100/95'
-      } p-6`}
-    >
-      {/* Background Gradient */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${gameInfo.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
-      
-      {/* Header */}
-      <div className="grid grid-cols-3 items-center mb-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
-            {gameInfo.isImage ? (
-              <img src={gameInfo.icon} alt={gameInfo.label} className="h-4 w-4 object-contain" />
-            ) : (
-              <GameIcon className="h-4 w-4 text-white" />
-            )}
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-center">
-          <Badge variant={statusInfo.variant}>
-            <StatusIcon className="h-3 w-3" />
-            {statusInfo.label}
-          </Badge>
-        </div>
-        
-        <div className={`flex items-center gap-2 text-sm justify-end ${
-          isDarkMode ? 'text-gray-400' : 'text-gray-500'
-        }`}>
-          <Clock className="h-4 w-4" />
-          {fmtTime(match.start)}
-        </div>
-      </div>
-
-      {/* Teams */}
-      <div className="mb-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            {match.home?.logo && (
-              <LazyImage 
-                src={match.home.logo} 
-                alt={match.home.name} 
-                className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" 
-              />
-            )}
-            <span className={`font-semibold break-words leading-tight ${
-              isDarkMode ? 'text-gray-100' : 'text-gray-900'
-            }`}>{shortenTeamName(match.home?.name) || 'TBD'}</span>
-          </div>
-          
-          <div className="flex items-center gap-3 min-w-0">
-            {(match.status === 'finished' || match.status === 'live') && (match.home?.score !== undefined || match.away?.score !== undefined) ? (
-              <>
-                <span className={`px-2 py-1 rounded-lg text-sm font-bold ${
-                  match.status === 'live' 
-                    ? 'bg-red-100 text-red-800 animate-pulse' 
-                    : (match.home?.score > (match.away?.score || 0)) 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {match.home?.score || 0}
-                </span>
-                <span className={`text-lg font-bold ${match.status === 'live' ? 'text-red-600' : 'text-gray-600'}`}>-</span>
-                <span className={`px-2 py-1 rounded-lg text-sm font-bold ${
-                  match.status === 'live' 
-                    ? 'bg-red-100 text-red-800 animate-pulse' 
-                    : (match.away?.score > (match.home?.score || 0)) 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {match.away?.score || 0}
-                </span>
-              </>
-            ) : (
-              <span className="text-gray-400 font-medium">VS</span>
-            )}
-          </div>
-          
-          <div className="flex items-start gap-3 flex-1 justify-end min-w-0">
-            <span className={`font-semibold break-words leading-tight text-right ${
-              isDarkMode ? 'text-gray-100' : 'text-gray-900'
-            }`}>{shortenTeamName(match.away?.name) || 'TBD'}</span>
-            {match.away?.logo && (
-              <LazyImage 
-                src={match.away.logo} 
-                alt={match.away.name} 
-                className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" 
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Live Match Additional Info */}
-        {match.status === 'live' && (
-          <div className={`mt-3 p-3 rounded-lg ${
-            isDarkMode 
-              ? 'bg-gray-700/80 border border-gray-600/60' 
-              : 'bg-red-50 border border-red-200'
-          }`}>
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                
-                {/* Valorant LIVE info */}
-                {match.game === 'valorant' && match.currentMap && (
-                  <span className={`font-semibold ${
-                    isDarkMode ? 'text-red-300' : 'text-red-800'
-                  }`}>
-                    Map {match.mapNumber}: {match.currentMap}
-                  </span>
-                )}
-                
-                {/* LoL LIVE info */}
-                {match.game === 'lol' && (
-                  <span className={`font-semibold ${
-                    isDarkMode ? 'text-red-300' : 'text-red-800'
-                  }`}>
-                    {match.currentGame && `${match.currentGame}`}
-                    {match.liveGameState && `${match.liveGameState}`}
-                  </span>
-                )}
-                
-                {/* Football LIVE info */}
-                {match.game === 'football' && (
-                  <span className={`font-semibold ${
-                    isDarkMode ? 'text-red-300' : 'text-red-800'
-                  }`}>
-                    {match.halfTime ? (
-                      <span className="flex items-center gap-1">
-                        <span className="px-2 py-0.5 rounded bg-yellow-500 text-white text-xs font-bold">
-                          {match.halfTime}
-                        </span>
-                      </span>
-                    ) : match.currentMinute ? (
-                      `${match.currentMinute}'`
-                    ) : (
-                      ''
-                    )}
-                  </span>
-                )}
-              </div>
-              
-              <div className="flex items-center gap-2">
-                {/* Watch Live Button */}
-                <WatchLiveButton match={match} />
-              </div>
-            </div>
-            
-            {/* Valorant Round scores */}
-            {match.game === 'valorant' && (match.home?.roundsCT !== null || match.home?.roundsT !== null) && (
-              <div className="mt-2 grid grid-cols-2 gap-4 text-xs">
-                <div className="text-center">
-                  <div className={`font-medium ${
-                    isDarkMode ? 'text-gray-200' : 'text-gray-700'
-                  }`}>{match.home?.name}</div>
-                  <div className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                    {match.home?.roundsCT !== null && `CT: ${match.home.roundsCT}`}
-                    {match.home?.roundsT !== null && ` T: ${match.home.roundsT}`}
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className={`font-medium ${
-                    isDarkMode ? 'text-gray-200' : 'text-gray-700'
-                  }`}>{match.away?.name}</div>
-                  <div className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>
-                    {match.away?.roundsCT !== null && `CT: ${match.away.roundsCT}`}
-                    {match.away?.roundsT !== null && ` T: ${match.away.roundsT}`}
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* LoL Additional Info */}
-            {match.game === 'lol' && (
-              <div className="mt-2 text-xs text-center">
-                <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                  {match.bestOf && `Best of ${match.bestOf} series`}
-                </div>
-              </div>
-            )}
-            
-            {/* Football Additional Info */}
-            {match.game === 'football' && (
-              <div className="mt-2 text-xs text-center">
-                <div className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
-                  {match.referee && `Trọng tài: ${match.referee}`}
-                  {match.venue && match.referee && ' • '}
-                  {match.venue && `${match.venue}`}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Match Info */}
-      <div className="mb-4 space-y-2">
-        {match.league && (
-          <div className={`flex items-center gap-2 text-sm ${
-            isDarkMode ? 'text-gray-300' : 'text-gray-600'
-          }`}>
-            <Trophy className="h-4 w-4" />
-            <span className="font-medium">{match.league}</span>
-            {match.stage && <span className={isDarkMode ? 'text-gray-500' : 'text-gray-400'}>• {match.stage}</span>}
-          </div>
-        )}
-        
-        <div className={`flex items-center gap-4 text-sm ${
-          isDarkMode ? 'text-gray-400' : 'text-gray-500'
-        }`}>
-        </div>
-      </div>
-
-    </motion.div>
-  )
-}
-
-// --- Main App Component ---------------------------------------------------
-export default function App() {
-  // State management
-  const [activeSport, setActiveSport] = useState('all')
-  const [collapsedSections, setCollapsedSections] = useState({}) // Track collapsed sections
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage for saved preference
-    const saved = localStorage.getItem('darkMode')
-    return saved ? JSON.parse(saved) : false
-  })
-
-  // Mobile detection
+// --- Main Content Component -----------------------------------------------
+function MainContent() {
   const isMobile = useIsMobile()
+  const [activeSport, setActiveSport] = useState('all')
+  const [dateFilter, setDateFilter] = useState('today')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isDarkMode, setIsDarkMode] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
-  // Toggle section collapse state
-  const toggleSectionCollapse = (sectionKey) => {
-    setCollapsedSections(prev => ({
-      ...prev,
-      [sectionKey]: !prev[sectionKey]
-    }))
-  }
-
-  // Refs for section navigation
-  const liveRef = useRef(null)
-  const upcomingRef = useRef(null)
-  const finishedRef = useRef(null)
-
-  // Function to scroll to specific section
-  const scrollToSection = (sectionType) => {
-    const refs = {
-      live: liveRef,
-      upcoming: upcomingRef,
-      finished: finishedRef
-    }
-    
-    const targetRef = refs[sectionType]
-    if (targetRef?.current) {
-      // Calculate offset to account for sticky header
-      const headerHeight = isMobile ? 64 : 120 // Smaller header on mobile
-      const elementPosition = targetRef.current.getBoundingClientRect().top
-      const offsetPosition = elementPosition + window.pageYOffset - headerHeight
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      })
-    }
-  }
-
-  // Save dark mode preference to localStorage
+  // Toggle Dark Mode
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode))
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
   }, [isDarkMode])
 
-  
-  // Time range with different filters for different game types
-  const dateFrom = useMemo(() => {
+  // Date range calculation
+  const dateRange = useMemo(() => {
     const now = new Date()
-    // For PUBG and TFT: show events from current time (no past events)
-    if (activeSport === 'pubg' || activeSport === 'tft') {
-      return new Date(now.getTime() - 1 * 60 * 60 * 1000) // 1 hour ago to catch recently started events
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    
+    switch (dateFilter) {
+      case 'today':
+        return { 
+          from: today, 
+          // End of today
+          to: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1) 
+        }
+      case 'tomorrow':
+        const tomorrow = new Date(today)
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        return { 
+          from: tomorrow, 
+          to: new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000 - 1) 
+        }
+      case 'week':
+        const weekEnd = new Date(today)
+        weekEnd.setDate(weekEnd.getDate() + 7)
+        return { from: today, to: weekEnd }
+      default: // all
+        const past = new Date(today)
+        past.setDate(past.getDate() - 1) // Include yesterday for recent results
+        const future = new Date(today)
+        future.setDate(future.getDate() + 14) // 2 weeks ahead
+        return { from: past, to: future }
     }
-    // For "all" mode and other sports: 24 hours ago to include recent matches
-    return new Date(now.getTime() - 24 * 60 * 60 * 1000) // 24 hours ago
-  }, [activeSport])
-  
-  const dateTo = useMemo(() => {
-    const now = new Date()
-    // For PUBG and TFT only: show all upcoming events (30 days)
-    if (activeSport === 'pubg' || activeSport === 'tft') {
-      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
-    }
-    // For "all" mode: 24 hours to include Football/Valorant/LoL upcoming matches
-    if (activeSport === 'all') {
-      return new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24 hours from now
-    }
-    // For other individual sports: 24 hours from now
-    return new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24 hours from now
-  }, [activeSport])
+  }, [dateFilter])
 
-  // Fetch data
-  const { data, loading, error, refetch } = useSchedule({ 
-    activeSport, 
-    from: dateFrom, 
-    to: dateTo 
+  // Fetch matches using TanStack Query
+  const { data: matches = [], isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ['matches', activeSport, dateFilter],
+    queryFn: async () => {
+      let allMatches = []
+      
+      const standardFrom = dateRange.from
+      const standardTo = dateRange.to
+      
+      // Extended range for YouTube-based games (PUBG, TFT)
+      // because they might not have exact schedule data often
+      const extendedFrom = new Date(standardFrom)
+      extendedFrom.setDate(extendedFrom.getDate() - 1)
+      const extendedTo = new Date(standardTo)
+      extendedTo.setDate(extendedTo.getDate() + 2)
+
+      if (activeSport === 'all') {
+        const results = await Promise.allSettled([
+          adapters.valorant.fetch({ from: standardFrom, to: standardTo }),
+          adapters.pubg.fetch({ from: extendedFrom, to: extendedTo }),
+          adapters.tft.fetch({ from: extendedFrom, to: extendedTo }),
+          adapters.lol.fetch({ from: standardFrom, to: standardTo }),
+          adapters.football.fetch({ from: standardFrom, to: standardTo }),
+        ])
+        
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            allMatches = [...allMatches, ...result.value]
+          }
+        })
+      } else {
+        const adapter = adapters[activeSport]
+        if (adapter) {
+          const from = (activeSport === 'pubg' || activeSport === 'tft') ? extendedFrom : standardFrom
+          const to = (activeSport === 'pubg' || activeSport === 'tft') ? extendedTo : standardTo
+          allMatches = await adapter.fetch({ from, to })
+        }
+      }
+      
+      // Sort matches: LIVE first, then by start time
+      return allMatches.sort((a, b) => {
+        const aPriority = a.status === 'live' ? 0 : 1
+        const bPriority = b.status === 'live' ? 0 : 1
+        
+        if (aPriority === bPriority) {
+          return new Date(a.start) - new Date(b.start)
+        }
+        
+        return aPriority - bPriority
+      })
+    }
   })
 
-  // No additional filtering needed - just use the data as is
-  const filteredData = data
-
-  // Group by status: Live, Upcoming, Finished
-  const groupedData = useMemo(() => {
-    const groups = {
-      live: [],
-      upcoming: [],
-      finished: []
-    }
+  // Filter matches based on search query
+  const filteredMatches = useMemo(() => {
+    if (!searchQuery) return matches
     
-    filteredData.forEach(match => {
-      if (match.status === 'live') {
-        groups.live.push(match)
-      } else if (match.status === 'upcoming') {
-        groups.upcoming.push(match)
-      } else if (match.status === 'finished') {
-        groups.finished.push(match)
+    const query = searchQuery.toLowerCase()
+    return matches.filter(match => 
+      match.home?.name?.toLowerCase().includes(query) ||
+      match.away?.name?.toLowerCase().includes(query) ||
+      match.league?.toLowerCase().includes(query) ||
+      match.game?.toLowerCase().includes(query)
+    )
+  }, [matches, searchQuery])
+
+  // Group matches by date
+  const groupedMatches = useMemo(() => {
+    const groups = {}
+    filteredMatches.forEach(match => {
+      const date = new Date(match.start)
+      const dateKey = date.toISOString().split('T')[0]
+      if (!groups[dateKey]) {
+        groups[dateKey] = []
       }
+      groups[dateKey].push(match)
     })
     
-    // Sort matches within each group by start time
-    groups.live.sort((a, b) => new Date(a.start) - new Date(b.start))
-    groups.upcoming.sort((a, b) => new Date(a.start) - new Date(b.start))
-    groups.finished.sort((a, b) => new Date(b.start) - new Date(a.start)) // Finished: newest first
-    
-    // Create result array with non-empty groups in priority order
-    const result = []
-    
-    if (groups.live.length > 0) {
-      result.push(['live', groups.live])
-    }
-    
-    if (groups.upcoming.length > 0) {
-      result.push(['upcoming', groups.upcoming])
-    }
-    
-    if (groups.finished.length > 0) {
-      result.push(['finished', groups.finished])
-    }
-    
-    return result
-  }, [filteredData])
+    // Sort dates
+    return Object.keys(groups).sort().reduce((acc, key) => {
+      acc[key] = groups[key]
+      return acc
+    }, {})
+  }, [filteredMatches])
 
-  // Use mobile layout for mobile devices
+  // Mobile Layout Render
   if (isMobile) {
     return (
-      <MobileLayout
-        isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
+      <MobileLayout 
+        matches={filteredMatches} 
+        loading={isLoading} 
+        error={error} 
+        refetch={refetch}
         activeSport={activeSport}
         setActiveSport={setActiveSport}
-        groupedData={groupedData}
-        loading={loading}
-        error={error}
-        refetch={refetch}
-        collapsedSections={collapsedSections}
-        toggleSectionCollapse={toggleSectionCollapse}
-        scrollToSection={scrollToSection}
-        liveRef={liveRef}
-        upcomingRef={upcomingRef}
-        finishedRef={finishedRef}
+        isDarkMode={isDarkMode}
+        setIsDarkMode={setIsDarkMode}
       />
     )
   }
 
-  // Desktop layout (existing code)
+  // Desktop Layout Render
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
-      isDarkMode 
-        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-        : 'bg-gradient-to-br from-blue-50 via-white to-purple-50'
+      isDarkMode ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'
     }`}>
-      {/* Header */}
-      <header className={`sticky top-0 z-50 backdrop-blur-lg border-b transition-colors duration-300 ${
-        isDarkMode 
-          ? 'bg-gray-800/80 border-gray-700/50' 
-          : 'bg-white/80 border-gray-200/50'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                🏆 Lịch Thi Đấu Esports
-              </h1>
-              <p className={`mt-1 transition-colors duration-300 ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-600'
-              }`}>
-                Theo dõi lịch thi đấu Valorant, PUBG, Liên Minh Huyền Thoại và Bóng đá
-              </p>
+      {/* Background decoration */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className={`absolute -top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full blur-[100px] opacity-20 ${
+          isDarkMode ? 'bg-blue-600' : 'bg-blue-400'
+        }`} />
+        <div className={`absolute top-[40%] -left-[10%] w-[40%] h-[40%] rounded-full blur-[100px] opacity-20 ${
+          isDarkMode ? 'bg-purple-600' : 'bg-purple-400'
+        }`} />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div>
+            <h1 className="text-4xl font-black tracking-tight mb-2 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+              ESPORTS CALENDAR
+            </h1>
+            <p className={`text-lg ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Theo dõi lịch thi đấu & kết quả trực tiếp
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className={`relative group rounded-2xl p-1 transition-all ${
+              isDarkMode ? 'bg-gray-800' : 'bg-white shadow-sm'
+            }`}>
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className={`h-5 w-5 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+              </div>
+              <input
+                type="text"
+                placeholder="Tìm kiếm đội, giải đấu..."
+                className={`block w-full sm:w-64 pl-10 pr-4 py-2 rounded-xl bg-transparent outline-none transition-all ${
+                  isDarkMode 
+                    ? 'text-white placeholder-gray-500 focus:bg-gray-700/50' 
+                    : 'text-gray-900 placeholder-gray-400 focus:bg-gray-50'
+                }`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
             
-            <div className="flex items-center gap-2 flex-wrap justify-end">
-              {/* Quick Navigation Buttons - Only show when data is available */}
-              {!loading && !error && groupedData.length > 0 && (
-                <>
-                  {groupedData.map(([status, matches]) => {
-                    const sectionConfig = {
-                      live: {
-                        label: 'LIVE',
-                        icon: Play,
-                        bgColor: isDarkMode ? 'bg-red-600 hover:bg-red-700' : 'bg-red-500 hover:bg-red-600',
-                        textColor: 'text-white',
-                        badgeBg: isDarkMode ? 'bg-red-800' : 'bg-red-400',
-                        badgeText: 'text-white',
-                        animate: 'animate-pulse'
-                      },
-                      upcoming: {
-                        label: 'Sắp tới',
-                        icon: Clock,
-                        bgColor: isDarkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600',
-                        textColor: 'text-white',
-                        badgeBg: isDarkMode ? 'bg-blue-800' : 'bg-blue-400',
-                        badgeText: 'text-white',
-                        animate: ''
-                      },
-                      finished: {
-                        label: 'Diễn ra rồi',
-                        icon: Trophy,
-                        bgColor: isDarkMode ? 'bg-green-600 hover:bg-green-700' : 'bg-green-500 hover:bg-green-600',
-                        textColor: 'text-white',
-                        badgeBg: isDarkMode ? 'bg-green-800' : 'bg-green-400',
-                        badgeText: 'text-white',
-                        animate: ''
-                      }
-                    }
-                    
-                    const config = sectionConfig[status]
-                    if (!config) return null
-                    
-                    const SectionIcon = config.icon
-                    
-                    return (
-                      <button
-                        key={status}
-                        onClick={() => scrollToSection(status)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 hover:shadow-md ${
-                          config.bgColor
-                        } ${config.textColor} ${config.animate}`}
-                        title={`Nhảy đến ${config.label}`}
-                      >
-                        <SectionIcon className="h-4 w-4" />
-                        <span className="hidden sm:inline text-sm">{config.label}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                          config.badgeBg
-                        } ${config.badgeText}`}>
-                          {matches.length}
-                        </span>
-                      </button>
-                    )
-                  })}
-                  
-                  {/* Separator */}
-                  <div className={`w-px h-6 ${
-                    isDarkMode ? 'bg-gray-600' : 'bg-gray-300'
-                  }`} />
-                </>
-              )}
-              
-              <Button
-                variant="ghost"
+            <Button
+              variant="secondary"
+              isDarkMode={isDarkMode}
+              onClick={refetch}
+              className={isFetching ? 'animate-spin' : ''}
+              title="Cập nhật dữ liệu"
+            >
+              <RefreshCw className="h-5 w-5" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              isDarkMode={isDarkMode}
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="rounded-full w-10 h-10 p-0 flex items-center justify-center"
+            >
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+          </div>
+        </header>
+
+        {/* Filters and Controls */}
+        <div className="sticky top-4 z-40 mb-8 space-y-4">
+          <div className={`p-4 rounded-2xl shadow-lg backdrop-blur-md border transition-all ${
+            isDarkMode 
+              ? 'bg-gray-800/80 border-gray-700/50' 
+              : 'bg-white/80 border-gray-200/50'
+          }`}>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <FilterBar 
+                activeSport={activeSport} 
+                setActiveSport={setActiveSport} 
                 isDarkMode={isDarkMode}
-                onClick={() => setIsDarkMode(!isDarkMode)}
-              >
-                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                {isDarkMode ? 'Sáng' : 'Tối'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Sport Categories */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-3">
-            {sports.map((sport) => {
-              const SportIcon = sport.icon
-              return (
-                <Button
-                  key={sport.id}
-                  variant={activeSport === sport.id ? 'primary' : 'default'}
-                  isDarkMode={isDarkMode}
-                  onClick={() => setActiveSport(sport.id)}
-                  className={activeSport === sport.id ? '' : isDarkMode 
-                    ? 'hover:bg-gradient-to-r hover:from-gray-600 hover:to-gray-700' 
-                    : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100'}
+              />
+              
+              <div className="flex items-center gap-2">
+                <Select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className={`w-40 font-medium ${
+                    isDarkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-gray-50 border-gray-200 text-gray-900'
+                  }`}
                 >
-                  {sport.isImage ? (
-                    <img src={sport.icon} alt={sport.label} className="h-5 w-5 object-contain" />
-                  ) : (
-                    <SportIcon className="h-5 w-5" />
-                  )}
-                  {sport.label}
-                </Button>
-              )
-            })}
-          </div>
-        </div>
-
-
-
-        {/* Content */}
-        <div className="space-y-8">
-          {loading && (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">Đang tải dữ liệu...</p>
+                  <option value="today">Hôm nay</option>
+                  <option value="tomorrow">Ngày mai</option>
+                  <option value="week">Tuần này</option>
+                  <option value="all">Tất cả</option>
+                </Select>
               </div>
             </div>
-          )}
-
-          {error && (
-            <div className={`rounded-2xl border p-6 text-center ${
-              isDarkMode 
-                ? 'border-red-600/60 bg-red-900/30' 
-                : 'border-red-200 bg-red-50'
-            }`}>
-              <p className={isDarkMode ? 'text-red-300' : 'text-red-600'}>{error}</p>
-              <Button variant="outline" isDarkMode={isDarkMode} onClick={refetch} className="mt-4">
-                Thử lại
-              </Button>
-            </div>
-          )}
-
-          {!loading && !error && groupedData.length === 0 && (
-            <div className={`rounded-2xl border p-12 text-center ${
-              isDarkMode 
-                ? 'border-gray-600 bg-gray-800/50' 
-                : 'border-gray-200 bg-gray-50'
-            }`}>
-              <Gamepad2 className={`h-16 w-16 mx-auto mb-4 ${
-                isDarkMode ? 'text-gray-500' : 'text-gray-400'
-              }`} />
-              <h3 className={`text-xl font-semibold mb-2 ${
-                isDarkMode ? 'text-gray-100' : 'text-gray-900'
-              }`}>Không có trận đấu</h3>
-              <p className={`mb-4 ${
-                isDarkMode ? 'text-gray-300' : 'text-gray-600'
-              }`}>Không tìm thấy trận đấu nào trong khoảng thời gian này.</p>
-              <Button variant="primary" isDarkMode={isDarkMode} onClick={refetch}>
-                <RefreshCw className="h-4 w-4" />
-                Làm mới dữ liệu
-              </Button>
-            </div>
-          )}
-
-          {/* Match Groups by Status */}
-          {groupedData.map(([status, matches]) => {
-            // Define status-specific styling and labels
-            const statusConfig = {
-              live: {
-                title: '🔴 Đang LIVE',
-                gradient: 'from-red-500 to-red-600',
-                bgColor: 'bg-red-50',
-                borderColor: 'border-red-200',
-                textColor: 'text-red-800',
-                icon: '🔴',
-                description: 'Các trận đấu đang diễn ra'
-              },
-              upcoming: {
-                title: '📅 Sắp tới',
-                gradient: 'from-blue-500 to-blue-600',
-                bgColor: 'bg-blue-50',
-                borderColor: 'border-blue-200',
-                textColor: 'text-blue-800',
-                icon: '🕒',
-                description: 'Các trận đấu sắp diễn ra'
-              },
-              finished: {
-                title: '🏆 Diễn ra rồi',
-                gradient: 'from-green-500 to-green-600',
-                bgColor: 'bg-green-50',
-                borderColor: 'border-green-200',
-                textColor: 'text-green-800',
-                icon: '✅',
-                description: 'Các trận đấu đã kết thúc'
-              }
-            }
-            
-            const config = statusConfig[status]
-            const isCollapsed = collapsedSections[status]
-            
-            // Get appropriate ref for this section
-            const getSectionRef = (status) => {
-              switch(status) {
-                case 'live': return liveRef
-                case 'upcoming': return upcomingRef
-                case 'finished': return finishedRef
-                default: return null
-              }
-            }
-            
-            return (
-              <motion.section
-                key={status}
-                ref={getSectionRef(status)}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-4"
-              >
-                <div className={`${isDarkMode ? 'bg-gray-800/90 border-gray-600/60' : `${config.bgColor} ${config.borderColor}`} border rounded-2xl p-4`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={`bg-gradient-to-r ${config.gradient} text-white rounded-xl px-4 py-2 ${status === 'live' ? 'animate-pulse' : ''}`}>
-                        <h2 className="text-lg font-bold">
-                          {config.title}
-                        </h2>
-                      </div>
-                      <span className={`text-sm font-medium ${
-                        isDarkMode ? 'text-gray-300' : config.textColor
-                      }`}>
-                        {config.description}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold px-3 py-1 rounded-full border ${
-                        isDarkMode 
-                          ? 'bg-gray-700/80 border-gray-500/60 text-gray-200' 
-                          : `${config.textColor} ${config.bgColor} ${config.borderColor}`
-                      }`}>
-                        {matches.length} trận đấu
-                      </span>
-                      
-                      {/* Collapse/Expand Button */}
-                      <button
-                        onClick={() => toggleSectionCollapse(status)}
-                        className={`p-2 rounded-lg transition-all duration-200 hover:scale-105 ${
-                          isDarkMode 
-                            ? 'bg-gray-700/60 hover:bg-gray-600/80 text-gray-300 border border-gray-600/60' 
-                            : `${config.bgColor} hover:bg-opacity-80 ${config.textColor} ${config.borderColor} border`
-                        }`}
-                        title={isCollapsed ? 'Mở rộng' : 'Thu nhỏ'}
-                      >
-                        {isCollapsed ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronUp className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Content with collapse animation */}
-                  <AnimatePresence>
-                    {!isCollapsed && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="overflow-hidden"
-                      >
-                        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                          <AnimatePresence>
-                            {matches.map((match) => (
-                              <MatchCard
-                                key={match.id}
-                                match={match}
-                                isDarkMode={isDarkMode}
-                              />
-                            ))}
-                          </AnimatePresence>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </motion.section>
-            )
-          })}
+          </div>
         </div>
 
-        {/* Footer */}
-        <footer className="mt-16 pt-8 border-t border-gray-200">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-sm text-gray-500">
-              <p>© 2025 Esports Calendar. Dữ liệu từ các API chính thức.</p>
-            </div>
-            
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span>Nguồn dữ liệu:</span>
-              <Badge variant="valorant">VLR.gg</Badge>
-              <Badge variant="lol">LoL Esports</Badge>
-              <Badge variant="football">Football-data.org</Badge>
-            </div>
-          </div>
-        </footer>
+        {/* Matches Grid */}
+        <AnimatePresence mode="wait">
+          {isLoading && !matches.length ? (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center justify-center py-20"
+            >
+              <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+              <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Đang tải dữ liệu...</p>
+            </motion.div>
+          ) : error ? (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-20"
+            >
+              <div className="mb-4 text-red-500 bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto">
+                <X className="w-8 h-8" />
+              </div>
+              <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                Đã có lỗi xảy ra
+              </h3>
+              <p className={`mb-6 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {error.message || 'Không thể tải dữ liệu trận đấu'}
+              </p>
+              <Button onClick={refetch} variant="primary">
+                Thử lại
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-8"
+            >
+              {Object.keys(groupedMatches).length === 0 ? (
+                <div className="text-center py-20">
+                  <div className={`mb-4 w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
+                    isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    <CalendarIcon className="w-8 h-8" />
+                  </div>
+                  <h3 className={`text-xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Không có trận đấu nào
+                  </h3>
+                  <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                    Không tìm thấy trận đấu nào trong khoảng thời gian này
+                  </p>
+                </div>
+              ) : (
+                Object.entries(groupedMatches).map(([date, matches]) => (
+                  <div key={date} className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {fmtDay(date)}
+                      </h2>
+                      <div className={`h-px flex-1 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {matches.map((match) => (
+                        <MatchCard 
+                          key={match.id} 
+                          match={match} 
+                          isDarkMode={isDarkMode} 
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
 }
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MainContent />
+    </QueryClientProvider>
+  )
+}
+
+export default App

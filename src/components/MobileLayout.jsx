@@ -23,6 +23,11 @@ import '../styles/mobile.css'
 // Import mobile configuration
 import { getConfig, getGameConfig } from '../config/mobileConfig'
 
+// Import common components and utils
+import { Button, Badge, getStatusInfo, getGameInfo, LazyImage } from './common/UI'
+import { fmtTime, shortenTeamName, fmtDay } from '../utils/formatters'
+import { MatchCard, WatchLiveButton } from './features/MatchCard'
+
 
 // Import icons
 import valorantIcon from '../images/valorant.png'
@@ -33,259 +38,16 @@ import tftIcon from '../images/tft.png'
 
 
 
-function WatchLiveButton({ match }) {
-  const [isSearching, setIsSearching] = useState(false)
-  const [foundStream, setFoundStream] = useState(null)
-  if(match.game === 'football' || match.game === 'lol' || match.game === 'valorant' ) {
-    if(match.status !== 'live') {
-      return null
-    }
-  }
-  const handleWatchLive = async () => {
-    // If match already has stream, use it
-    if (match.stream) {
-      window.open(match.stream, '_blank')
-      return
-    }
 
-    if (match.videoId) {
-      const youtubeUrl = `https://www.youtube.com/watch?v=${match.videoId}`
-      window.open(youtubeUrl, '_blank')
-      return
-    }
-    
-    // If we already found a stream, use it
-    if (foundStream) {
-      window.open(foundStream, '_blank')
-      return
-    }
-    
-    // Special handling for football matches
-    if (match.game === 'football') {
-      window.open('https://bit.ly/tiengruoi', '_blank')
-      return
-    }
-    
-    // Search for YouTube live stream for other sports
-    setIsSearching(true)
-    try {
-      const youtubeUrl = await searchYouTubeLiveStream(match)
-      if (youtubeUrl) {
-        setFoundStream(youtubeUrl)
-        window.open(youtubeUrl, '_blank')
-      } else {
-        alert('Không tìm thấy live stream cho trận đấu này trên YouTube')
-      }
-    } catch (error) {
-      alert('Lỗi khi tìm kiếm live stream')
-    } finally {
-      setIsSearching(false)
-    }
-  }
-  
-  return (
-    <Button
-      variant={match.status === 'upcoming' ? "primary" : "danger"}
-      size="sm"
-      onClick={handleWatchLive}
-      className={`text-xs px-2 py-1 ${match.status === 'live' ? 'animate-pulse' : ''}`}
-      disabled={isSearching}
-    >
-      <Play className="h-2.5 w-2.5" />
-      {match.status === 'upcoming' && (match.game === 'tft' || match.game === 'pubg') ? 'Đặt nhắc nhở' : 
-       match.status === 'finished' ? 'Xem lại' :
-       match.status === 'live' ? (isSearching ? 'Đang tìm...' : 'Xem Live') : null  }
-    </Button>
-  )
-}
 
-const Button = ({ className = '', children, variant = 'default', size = 'default', isDarkMode = false, ...props }) => {
-  const variants = {
-    default: isDarkMode 
-      ? 'bg-gray-700/80 hover:bg-gray-600/80 border border-gray-600 text-gray-200 hover:text-white'
-      : 'bg-white/80 hover:bg-white border border-gray-200 text-gray-700 hover:text-gray-900',
-    primary: 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0',
-    secondary: isDarkMode
-      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600'
-      : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200',
-    outline: 'border-2 border-current bg-transparent hover:bg-current/10',
-    ghost: isDarkMode
-      ? 'bg-transparent hover:bg-gray-700/50 text-gray-300 hover:text-white border-0'
-      : 'bg-transparent hover:bg-gray-100 text-gray-600 hover:text-gray-900 border-0',
-    danger: 'bg-red-600 hover:bg-red-700 text-white border-0'
-  }
-  
-  const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    default: 'px-4 py-2',
-    lg: 'px-6 py-3 text-lg'
-  }
-  
-  return (
-    <button
-      className={`
-        inline-flex items-center justify-center gap-2 rounded-lg font-medium
-        transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 
-        focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed
-        ${variants[variant]} ${sizes[size]} ${className}
-      `}
-      {...props}
-    >
-      {children}
-    </button>
-  )
-}
 
-// Badge Component  
-const Badge = ({ variant = 'default', className = '', children, ...props }) => {
-  const variants = {
-    default: 'bg-gray-100 text-gray-800',
-    primary: 'bg-blue-100 text-blue-800',
-    secondary: 'bg-purple-100 text-purple-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    danger: 'bg-red-100 text-red-800',
-    valorant: 'bg-red-100 text-red-800',
-    lol: 'bg-blue-100 text-blue-800',
-    football: 'bg-green-100 text-green-800',
-    pubg: 'bg-orange-100 text-orange-800',
-    tft: 'bg-purple-100 text-purple-800'
-  }
-  
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${variants[variant]} ${className}`}
-      {...props}
-    >
-      {children}
-    </span>
-  )
-}
+
+
+
+
 
 // Helper functions
-const getStatusInfo = (status) => {
-  switch (status) {
-    case 'live':
-      return { variant: 'danger', label: 'LIVE', icon: Play }
-    case 'upcoming':
-      return { variant: 'primary', label: 'Sắp tới', icon: Clock }
-    case 'finished':
-      return { variant: 'success', label: 'Kết thúc', icon: Trophy }
-    default:
-      return { variant: 'default', label: 'Unknown', icon: Clock }
-  }
-}
 
-const getGameInfo = (game) => {
-  switch (game) {
-    case 'valorant':
-      return { label: 'Valorant', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true }
-    case 'pubg':
-      return { label: 'PUBG', icon: pubgIcon, color: 'from-orange-500 to-yellow-500', isImage: true }
-    case 'tft':
-      return { label: 'TFT', icon: tftIcon, color: 'from-purple-500 to-indigo-500', isImage: true }
-    case 'lol':
-      return { label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true }
-    case 'football':
-      return { label: 'Bóng Đá', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true }
-    default:
-      return { label: 'Unknown', icon: TrendingUp, color: 'from-gray-500 to-gray-600', isImage: false }
-  }
-}
-
-const fmtTime = (date) => {
-  const now = new Date()
-  const matchDate = new Date(date)
-  
-  // Check if match is today
-  const isToday = now.toDateString() === matchDate.toDateString()
-  
-  // Check if match is tomorrow
-  const tomorrow = new Date(now)
-  tomorrow.setDate(now.getDate() + 1)
-  const isTomorrow = tomorrow.toDateString() === matchDate.toDateString()
-  
-  // Check if match is yesterday
-  const yesterday = new Date(now)
-  yesterday.setDate(now.getDate() - 1)
-  const isYesterday = yesterday.toDateString() === matchDate.toDateString()
-  
-  const timeStr = matchDate.toLocaleTimeString('vi-VN', {
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-  
-  if (isToday) {
-    return `Hôm nay ${timeStr}`
-  } else if (isTomorrow) {
-    return `Ngày mai ${timeStr}`
-  } else if (isYesterday) {
-    return `Hôm qua ${timeStr}`
-  } else {
-    // For other days, show date and time
-    const dateStr = matchDate.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit'
-    })
-    return `${dateStr} ${timeStr}`
-  }
-}
-
-const shortenTeamName = (teamName) => {
-  if (!teamName || teamName === 'TBD') return teamName
-  
-  // Words to remove from team names
-  const wordsToRemove = [
-    'FC', 'CF', 'AC', 'SC', 'AS', 'RC', 'CD', 'CD.', 'C.D.',
-    'Esports', 'Esport', 'E-sports', 'Gaming', 'Team',
-    'Club', 'Football Club', 'Soccer Club',
-     'Athletic', 'Atletico',
-     'Town', 'County', 'Sport', 'de', 'Fútbol', 'Fútbol', 'Fútbol Club', 'F.C.', 'C.F.', 'A.C.', 'S.C.', 'A.S.', 'R.C.', 'C.D.', 'C.D',
-  ]
-  
-  // Split team name into words
-  let words = teamName.split(' ')
-  
-  // Remove unnecessary words (case insensitive)
-  words = words.filter(word => {
-    const wordLower = word.toLowerCase().replace(/[.,]/g, '')
-    return !wordsToRemove.some(removeWord => 
-      removeWord.toLowerCase() === wordLower
-    )
-  })
-  
-  // If all words were removed, return original name
-  if (words.length === 0) {
-    return teamName
-  }
-  
-  // Join remaining words
-  let cleanName = words.join(' ')
-  
-  // Special cases for common abbreviations
-  const specialCases = {
-    'Manchester Utd': 'Manchester United',
-    'Man Utd': 'Manchester United',
-    'Barcelona': 'Barça',
-    'Bayern München': 'Bayern Munich',
-    'Inter Milan': 'Inter',
-    'AC Milan': 'Milan'
-  }
-  
-  // Check if cleaned name matches any special case
-  for (const [key, value] of Object.entries(specialCases)) {
-    if (cleanName === key) {
-      return value
-    }
-  }
-  
-  // Mobile-specific: If name is still too long, truncate
-  if (cleanName.length > 25) {
-    return cleanName.substring(0, 22) + '...'
-  }
-  
-  return cleanName
-}
 
 // Mobile-optimized Match Card Component
 function MobileMatchCard({ match, isDarkMode }) {
@@ -836,3 +598,4 @@ export default function MobileLayout({
     </div>
   )
 }
+
