@@ -12,6 +12,7 @@ export const LolAdapter = {
         { id: '98767991332355509', name: 'VCS' }, // Vietnam
         { id: '98767991310872058', name: 'LCK' }, // Korea
         { id: '98767991314006698', name: 'LPL' }, // China
+        { id: '113476371197627891', name: 'LCP' }, // Pacific
         { id: '98767991302996019', name: 'LEC' }, // EMEA
         { id: '98767991299243165', name: 'LCS' }, // Americas
         { id: '98767991325878492', name: 'MSI' }, 
