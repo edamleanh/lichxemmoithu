@@ -167,25 +167,8 @@ function MainContent() {
     )
   }, [matches, searchQuery])
 
-  // Group matches by date
-  const groupedMatches = useMemo(() => {
-    const groups = {}
-    filteredMatches.forEach(match => {
-      const date = new Date(match.start)
-      const dateKey = date.toISOString().split('T')[0]
-      if (!groups[dateKey]) {
-        groups[dateKey] = []
-      }
-      groups[dateKey].push(match)
-    })
-    
-    // Sort dates
-    return Object.keys(groups).sort().reduce((acc, key) => {
-      acc[key] = groups[key]
-      return acc
-    }, {})
-  }, [filteredMatches])
-
+  // Group matches by date - REMOVED
+  
   // Mobile Layout Render
   if (isMobile) {
     return (
@@ -343,7 +326,7 @@ function MainContent() {
               exit={{ opacity: 0 }}
               className="space-y-8"
             >
-              {Object.keys(groupedMatches).length === 0 ? (
+              {filteredMatches.length === 0 ? (
                 <div className="text-center py-20">
                   <div className={`mb-4 w-16 h-16 rounded-full flex items-center justify-center mx-auto ${
                     isDarkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
@@ -358,26 +341,15 @@ function MainContent() {
                   </p>
                 </div>
               ) : (
-                Object.entries(groupedMatches).map(([date, matches]) => (
-                  <div key={date} className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <h2 className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {fmtDay(date)}
-                      </h2>
-                      <div className={`h-px flex-1 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'}`} />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {matches.map((match) => (
-                        <MatchCard 
-                          key={match.id} 
-                          match={match} 
-                          isDarkMode={isDarkMode} 
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ))
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredMatches.map((match) => (
+                    <MatchCard 
+                      key={match.id} 
+                      match={match} 
+                      isDarkMode={isDarkMode} 
+                    />
+                  ))}
+                </div>
               )}
             </motion.div>
           )}

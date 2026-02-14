@@ -291,8 +291,7 @@ function MobileNavigation({
   onSportChange, 
   isDarkMode, 
   onThemeToggle,
-  groupedData,
-  onSectionScroll 
+  onThemeToggle
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
@@ -314,33 +313,7 @@ function MobileNavigation({
             
             <div className="flex items-center gap-2">
               {/* Quick Jump Buttons - Mobile */}
-              {groupedData.length > 0 && (
-                <div className="flex gap-1">
-                  {groupedData.map(([status, matches]) => {
-                    const sectionConfig = {
-                      live: { icon: Play, color: 'bg-red-500', count: matches.length },
-                      upcoming: { icon: Clock, color: 'bg-blue-500', count: matches.length },
-                      finished: { icon: Trophy, color: 'bg-green-500', count: matches.length }
-                    }
-                    
-                    const config = sectionConfig[status]
-                    if (!config) return null
-                    
-                    const SectionIcon = config.icon
-                    
-                    return (
-                      <button
-                        key={status}
-                        onClick={() => onSectionScroll(status)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded ${config.color} text-white text-xs font-medium ${status === 'live' ? 'animate-pulse' : ''}`}
-                      >
-                        <SectionIcon className="h-3 w-3" />
-                        <span>{config.count}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+
               
               <Button
                 variant="ghost"
@@ -419,13 +392,10 @@ export default function MobileLayout({
   setIsDarkMode,
   activeSport,
   setActiveSport,
-  groupedData,
+  matches, // Changed from groupedData to matches
   loading,
   error,
   refetch,
-  collapsedSections,
-  toggleSectionCollapse,
-  scrollToSection,
   liveRef,
   upcomingRef,
   finishedRef
@@ -452,8 +422,8 @@ export default function MobileLayout({
         onSportChange={setActiveSport}
         isDarkMode={isDarkMode}
         onThemeToggle={() => setIsDarkMode(!isDarkMode)}
-        groupedData={groupedData}
-        onSectionScroll={scrollToSection}
+        // groupedData removed
+        onSectionScroll={() => {}} // Disabled as sections are gone
       />
 
       {/* Mobile Content */}
@@ -487,7 +457,7 @@ export default function MobileLayout({
         )}
 
         {/* No Data State */}
-        {!loading && !error && groupedData.length === 0 && (
+        {!loading && !error && matches.length === 0 && (
           <div className={`rounded-xl border p-8 text-center ${
             isDarkMode 
               ? 'border-gray-600 bg-gray-800/50' 
@@ -509,91 +479,20 @@ export default function MobileLayout({
           </div>
         )}
 
-        {/* Mobile Match Groups */}
-        <div className="space-y-4">
-          {groupedData.map(([status, matches]) => {
-            const statusConfig = {
-              live: {
-                title: '🔴 LIVE',
-                gradient: 'from-red-500 to-red-600',
-                bgColor: 'bg-red-50',
-                borderColor: 'border-red-200',
-                textColor: 'text-red-800'
-              },
-              upcoming: {
-                title: '📅 Sắp tới',
-                gradient: 'from-blue-500 to-blue-600',
-                bgColor: 'bg-blue-50',
-                borderColor: 'border-blue-200',
-                textColor: 'text-blue-800'
-              },
-              finished: {
-                title: '🏆 Diễn ra rồi',
-                gradient: 'from-green-500 to-green-600',
-                bgColor: 'bg-green-50',
-                borderColor: 'border-green-200',
-                textColor: 'text-green-800'
-              }
-            }
-            
-            const config = statusConfig[status]
-            const isCollapsed = collapsedSections[status]
-            
-            // Get appropriate ref for this section
-            const getSectionRef = (status) => {
-              switch(status) {
-                case 'live': return liveRef
-                case 'upcoming': return upcomingRef
-                case 'finished': return finishedRef
-                default: return null
-              }
-            }
-            
-            return (
-              <motion.section
-                key={status}
-                ref={getSectionRef(status)}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-3"
-              >
-                <MobileSectionHeader
-                  title={config.title}
-                  count={matches.length}
-                  isCollapsed={isCollapsed}
-                  onToggle={() => toggleSectionCollapse(status)}
-                  config={config}
+        {/* Matches List (Flat) */}
+        {!loading && !error && matches.length > 0 && (
+          <div className="space-y-3">
+             <AnimatePresence>
+              {matches.map((match) => (
+                <MobileMatchCard
+                  key={match.id}
+                  match={match}
                   isDarkMode={isDarkMode}
                 />
-
-                {/* Mobile Match Cards */}
-                <AnimatePresence>
-                  {!isCollapsed && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: 'easeInOut' }}
-                      className="overflow-hidden"
-                    >
-                      <div className="space-y-3">
-                        <AnimatePresence>
-                          {matches.map((match) => (
-                            <MobileMatchCard
-                              key={match.id}
-                              match={match}
-                              isDarkMode={isDarkMode}
-                            />
-                          ))}
-                        </AnimatePresence>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.section>
-            )
-          })}
-        </div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     </div>
   )
