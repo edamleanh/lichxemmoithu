@@ -34,14 +34,15 @@ export function WatchLiveButton({ match }) {
       return
     }
     
-    // Search for YouTube live stream for other sports
+    // Search for YouTube live stream for other sports (LoL, Valorant, etc.)
     setIsSearching(true)
     try {
-      // NOTE: This function needs to be passed down or imported from a service
-      // For now we'll alert as we refactor
-      alert('Chức năng tìm kiếm stream đang được cập nhật...')
+      const searchQuery = `${match.home?.name || ''} vs ${match.away?.name || ''} ${match.league || ''} live`
+      const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+      window.open(youtubeSearchUrl, '_blank')
     } catch (error) {
-      alert('Lỗi khi tìm kiếm live stream')
+      console.error('Error opening search:', error)
+      alert('Không thể mở trang tìm kiếm')
     } finally {
       setIsSearching(false)
     }
