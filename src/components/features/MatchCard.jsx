@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Clock, Eye, Play } from 'lucide-react'
 import { Button, Badge, getStatusInfo, getGameInfo, LazyImage } from '../common/UI.jsx'
 import { fmtTime, shortenTeamName } from '../../utils/formatters.js'
+import { youtubeApiManager } from '../../services/youtube.js'
 
 // --- Watch Live Button Component ------------------------------------------
 export function WatchLiveButton({ match }) {
@@ -38,11 +39,26 @@ export function WatchLiveButton({ match }) {
     setIsSearching(true)
     try {
       const searchQuery = `${match.home?.name || ''} vs ${match.away?.name || ''} ${match.league || ''} live`
+            
+      // Call YouTube API to find the stream
+      const response = await youtubeApiManager.makeRequest(
+        `https://www.googleapis.com/youtube/v3/search?part=id&q=${encodeURIComponent(searchQuery)}&type=video&eventType=live&maxResults=1`
+      )
+
+      if (response?.items?.[0]?.id?.videoId) {
+        const videoId = response.items[0].id.videoId
+        window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank')
+      } else {
+        // Fallback to search result page if no specific live video found
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+        window.open(youtubeSearchUrl, '_blank')
+      }
+    } catch (error) {
+      console.error('Error searching for stream:', error)
+      // Fallback to search page on error
+      const searchQuery = `${match.home?.name || ''} vs ${match.away?.name || ''} ${match.league || ''} live`
       const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
       window.open(youtubeSearchUrl, '_blank')
-    } catch (error) {
-      console.error('Error opening search:', error)
-      alert('Không thể mở trang tìm kiếm')
     } finally {
       setIsSearching(false)
     }
