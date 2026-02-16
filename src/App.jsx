@@ -57,21 +57,18 @@ function MainContent() {
     }
   }, [isDarkMode])
 
-  // Date range calculation - Always Today
+  // Date range calculation - 24h before and after NOW
   const dateRange = useMemo(() => {
     const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const from = new Date(now.getTime() - 24 * 60 * 60 * 1000) // 24h ago
+    const to = new Date(now.getTime() + 24 * 60 * 60 * 1000)   // 24h from now
     
-    return { 
-      from: today, 
-      // End of today
-      to: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1) 
-    }
+    return { from, to }
   }, [])
 
   // Fetch matches using TanStack Query
   const { data: matches = [], isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ['matches', activeSport, 'today'], // Hardcoded 'today'
+    queryKey: ['matches', activeSport, '24h-range'], // Updated key
     queryFn: async () => {
       let allMatches = []
       
