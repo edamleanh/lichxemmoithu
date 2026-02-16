@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Clock, Eye, Play } from 'lucide-react'
 import { Button, Badge, getStatusInfo, getGameInfo, LazyImage } from '../common/UI.jsx'
-import { Button, Badge, getStatusInfo, getGameInfo, LazyImage } from '../common/UI.jsx'
+
 import { fmtTime, shortenTeamName, getTeamSearchName } from '../../utils/formatters.js'
 import { youtubeApiManager } from '../../services/youtube.js'
 

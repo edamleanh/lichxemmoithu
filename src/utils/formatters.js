@@ -89,7 +89,7 @@ export const TEAM_ACRONYMS = {
   'Royal Never Give Up': 'RNG',
   'LGD Gaming': 'LGD',
   'Rare Atom': 'RA',
-  'Anyone''s Legend': 'AL',
+  'Anyone\'s Legend': 'AL',
   'Invictus Gaming': 'IG',
   'Team WE': 'WE',
   'ThunderTalk Gaming': 'TT',
