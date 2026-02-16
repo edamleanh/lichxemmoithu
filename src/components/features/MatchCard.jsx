@@ -41,8 +41,9 @@ export function WatchLiveButton({ match }) {
       const searchQuery = `${match.home?.name || ''} vs ${match.away?.name || ''} ${match.league || ''} live`
             
       // Call YouTube API to find the stream
+      // Added regionCode=VN and relevanceLanguage=vi to prioritize Vietnamese content
       const response = await youtubeApiManager.makeRequest(
-        `https://www.googleapis.com/youtube/v3/search?part=id&q=${encodeURIComponent(searchQuery)}&type=video&eventType=live&maxResults=1`
+        `https://www.googleapis.com/youtube/v3/search?part=id&q=${encodeURIComponent(searchQuery)}&type=video&eventType=live&regionCode=VN&relevanceLanguage=vi&maxResults=1`
       )
 
       if (response?.items?.[0]?.id?.videoId) {
@@ -50,7 +51,7 @@ export function WatchLiveButton({ match }) {
         window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank')
       } else {
         // Fallback to search result page if no specific live video found
-        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+        const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery + ' tiếng việt')}`
         window.open(youtubeSearchUrl, '_blank')
       }
     } catch (error) {
