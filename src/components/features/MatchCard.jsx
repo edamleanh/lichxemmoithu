@@ -41,13 +41,28 @@ export function WatchLiveButton({ match }) {
       const searchQuery = `${match.home?.name || ''} vs ${match.away?.name || ''} ${match.league || ''} live`
             
       // Call YouTube API to find the stream
-      // Added regionCode=VN and relevanceLanguage=vi to prioritize Vietnamese content
+      // Added maxResults=10 and part=snippet to check channel names
       const response = await youtubeApiManager.makeRequest(
-        `https://www.googleapis.com/youtube/v3/search?part=id&q=${encodeURIComponent(searchQuery)}&type=video&eventType=live&regionCode=VN&relevanceLanguage=vi&maxResults=1`
+        `https://www.googleapis.com/youtube/v3/search?part=id,snippet&q=${encodeURIComponent(searchQuery)}&type=video&eventType=live&regionCode=VN&relevanceLanguage=vi&maxResults=10`
       )
 
-      if (response?.items?.[0]?.id?.videoId) {
-        const videoId = response.items[0].id.videoId
+      if (response?.items?.length > 0) {
+        // List of priority channels to prefer (Vietnamese broadcasts)
+        const PRIORITY_CHANNELS = [
+          'VCS LMHT', 'LCK Tiếng Việt', 'LPL Vietnam', 
+          'VALORANT Esports Vietnam', 'VALORANT Champions Tour Vietnam',
+          'Vietnam Championship Series', 'Riot Games Vietnam'
+        ]
+
+        // Find if any result matches our priority channels
+        const priorityVideo = response.items.find(item => 
+          PRIORITY_CHANNELS.some(channel => 
+            item.snippet?.channelTitle?.toLowerCase().includes(channel.toLowerCase())
+          )
+        )
+
+        // Use priority video if found, otherwise use the first one (most relevant)
+        const videoId = priorityVideo?.id?.videoId || response.items[0].id.videoId
         window.open(`https://www.youtube.com/watch?v=${videoId}`, '_blank')
       } else {
         // Fallback to search result page if no specific live video found
@@ -58,7 +73,7 @@ export function WatchLiveButton({ match }) {
       console.error('Error searching for stream:', error)
       // Fallback to search page on error
       const searchQuery = `${match.home?.name || ''} vs ${match.away?.name || ''} ${match.league || ''} live`
-      const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`
+      const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery + ' tiếng việt')}`
       window.open(youtubeSearchUrl, '_blank')
     } finally {
       setIsSearching(false)
