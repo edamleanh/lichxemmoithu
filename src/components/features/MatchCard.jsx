@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Clock, Eye, Play } from 'lucide-react'
 import { Button, Badge, getStatusInfo, getGameInfo, LazyImage } from '../common/UI.jsx'
-import { fmtTime, shortenTeamName } from '../../utils/formatters.js'
+import { Button, Badge, getStatusInfo, getGameInfo, LazyImage } from '../common/UI.jsx'
+import { fmtTime, shortenTeamName, getTeamSearchName } from '../../utils/formatters.js'
 import { youtubeApiManager } from '../../services/youtube.js'
 
 // --- Watch Live Button Component ------------------------------------------
@@ -38,7 +39,11 @@ export function WatchLiveButton({ match }) {
     // Search for YouTube live stream for other sports (LoL, Valorant, etc.)
     setIsSearching(true)
     try {
-      const searchQuery = `${match.home?.name || ''} vs ${match.away?.name || ''} ${match.league || ''} live`
+      // Use short names/acronyms for better search results (e.g. "Gen.G Esports" -> "GEN")
+      const homeName = getTeamSearchName(match.home?.name)
+      const awayName = getTeamSearchName(match.away?.name)
+      
+      const searchQuery = `${homeName} vs ${awayName} ${match.league || ''} live`
             
       // Call YouTube API to find the stream
       // Added maxResults=10 and part=snippet to check channel names
@@ -72,7 +77,9 @@ export function WatchLiveButton({ match }) {
     } catch (error) {
       console.error('Error searching for stream:', error)
       // Fallback to search page on error
-      const searchQuery = `${match.home?.name || ''} vs ${match.away?.name || ''} ${match.league || ''} live`
+      const homeName = getTeamSearchName(match.home?.name)
+      const awayName = getTeamSearchName(match.away?.name)
+      const searchQuery = `${homeName} vs ${awayName} ${match.league || ''} live`
       const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery + ' tiếng việt')}`
       window.open(youtubeSearchUrl, '_blank')
     } finally {
