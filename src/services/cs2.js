@@ -4,7 +4,7 @@ export const Cs2Adapter = {
   isValidLeague(tier) {
     if (!tier) return false
     // PandaScore tiers: 's', 'a', 'b', 'c', 'd', 'unranked'
-    return ['s', 'a'].includes(tier.toLowerCase())
+    return ['s', 'a', 'b'].includes(tier.toLowerCase())
   },
 
   async fetch({ from, to }) {
@@ -65,13 +65,18 @@ export const Cs2Adapter = {
         }
       })
 
-      // Try to filter for major tournaments (S and A tier)
-      // If a match doesn't have a tier but looks important, we might miss it.
-      // Alternatively, we can just return all matches if filtering by tier returns nothing.
-      const sAndATierMatches = matches.filter(match => this.isValidLeague(match.tier))
+      // Filter for major tournaments (S, A, B tier)
+      const majorMatches = matches.filter(match => this.isValidLeague(match.tier))
       
-      // Fallback: If no S/A tier matches found in this timeframe, maybe show B tier
-      let filteredMatches = sAndATierMatches.length > 0 ? sAndATierMatches : matches
+      // Fallback: If no major matches, show any match that at least has a tier (C, D)
+      const minorMatches = matches.filter(match => ['c', 'd'].includes((match.tier || '').toLowerCase()))
+      
+      let filteredMatches = matches
+      if (majorMatches.length > 0) {
+        filteredMatches = majorMatches
+      } else if (minorMatches.length > 0) {
+        filteredMatches = minorMatches
+      }
 
       // Enhance matches with team logos if missing
       const enhancedMatches = await Promise.all(
