@@ -51,6 +51,23 @@ export default defineConfig({
             console.log('Proxying LoL request to:', proxyReq.path);
           });
         }
+      },
+      '/api/cs2': {
+        target: 'https://api.pandascore.co/csgo/matches',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/cs2/, ''),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer YYuIsgt7LShLjwAKkERoW0HJqLtw0BcsAxVRr2NHHsk6BzcEqZM'
+        },
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('CS2 proxy error:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('Proxying CS2 request to:', proxyReq.path);
+          });
+        }
       }
     }
   }
