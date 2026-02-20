@@ -16,6 +16,7 @@ import { LolAdapter } from './services/lol'
 import { FootballAdapter } from './services/football'
 import { PubgAdapter } from './services/pubg'
 import { TftAdapter } from './services/tft'
+import { Cs2Adapter } from './services/cs2'
 import { fmtDay } from './utils/formatters'
 
 import './App.css'
@@ -37,6 +38,7 @@ const adapters = {
   football: FootballAdapter,
   pubg: PubgAdapter,
   tft: TftAdapter,
+  cs2: Cs2Adapter,
 }
 
 // --- Main Content Component -----------------------------------------------
@@ -89,6 +91,7 @@ function MainContent() {
           adapters.tft.fetch({ from: extendedFrom, to: extendedTo }),
           adapters.lol.fetch({ from: standardFrom, to: standardTo }),
           adapters.football.fetch({ from: standardFrom, to: standardTo }),
+          adapters.cs2.fetch({ from: standardFrom, to: standardTo }),
         ])
         
         results.forEach((result) => {

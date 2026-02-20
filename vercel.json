@@ -28,6 +28,14 @@
     {
       "source": "/api/valorant/(.*)",
       "destination": "/api/valorant"
+    },
+    {
+      "source": "/api/cs2",
+      "destination": "/api/cs2"
+    },
+    {
+      "source": "/api/cs2/(.*)",
+      "destination": "/api/cs2"
     }
   ],
   "headers": [

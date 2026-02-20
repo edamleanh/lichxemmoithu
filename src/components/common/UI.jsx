@@ -152,6 +152,7 @@ export const getGameInfo = (game) => {
     case 'lol': return { variant: 'lol', label: 'LOL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true }
     case 'tft': return { variant: 'tft', label: 'TFT', icon: tftIcon, color: 'from-purple-500 to-indigo-500', isImage: true }
     case 'football': return { variant: 'football', label: 'BÓNG ĐÁ', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true }
+    case 'cs2': return { variant: 'cs2', label: 'CS2', icon: Gamepad2, color: 'from-slate-600 to-gray-700', isImage: false }
     default: return { variant: 'default', label: game.toUpperCase(), icon: Gamepad2, color: 'from-gray-500 to-gray-600', isImage: false }
   }
 }
