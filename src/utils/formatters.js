@@ -59,14 +59,20 @@ export const withinRange = (d, from, to) => {
 export const TEAM_ACRONYMS = {
   // LCK
   'Gen.G Esports': 'GEN',
+  'Gen.G': 'GEN',
   'Hanwha Life Esports': 'HLE',
   'Dplus KIA': 'DK',
   'KT Rolster': 'KT',
   'Kwangdong Freecs': 'KDF',
+  'DN SOOPers': 'SOOP',
+  'SOOPers': 'SOOP',
   'FearX': 'FOX',
+  'BNK FearX': 'FOX',
   'Nongshim RedForce': 'NS',
   'OKSavingsBank BRION': 'BRO',
+  'Hanjin Brion': 'BRO',
   'T1': 'T1',
+  'DRX': 'DRX',
   
   // VCS
   'GAM Esports': 'GAM',
