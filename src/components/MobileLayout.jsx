@@ -79,8 +79,8 @@ function MobileMatchCard({ match, isDarkMode }) {
       }}
     >
       {/* Mobile Header - Compact */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
+      <div className="grid grid-cols-3 items-center mb-2">
+        <div className="flex items-center gap-2 justify-start">
           <div className={`p-1.5 rounded-lg bg-gradient-to-br ${gameInfo.color}`}>
             {gameInfo.isImage ? (
               <img src={gameInfo.icon} alt={gameInfo.label} className="h-3 w-3 object-contain" />
@@ -91,11 +91,11 @@ function MobileMatchCard({ match, isDarkMode }) {
         </div>
         
         {/* League info in center */}
-        <div className={`text-xs font-medium truncate px-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+        <div className={`text-xs font-medium truncate px-1 text-center ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
           {match.league}
         </div>
         
-        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+        <div className={`text-xs text-right ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
           {fmtTime(match.start)}
         </div>
       </div>
