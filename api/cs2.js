@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     const response = await fetch(targetUrl, {
       headers: {
         'Accept': 'application/json',
-        'Authorization': `Bearer ${process.env.VITE_PANDASCORE_API_KEY || ''}`
+        'Authorization': `Bearer ${process.env.VITE_PANDASCORE_API_KEY || 'YYuIsgt7LShLjwAKkERoW0HJqLtw0BcsAxVRr2NHHsk6BzcEqZM'}`
       },
     })
     
