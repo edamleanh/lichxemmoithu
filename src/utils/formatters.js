@@ -27,23 +27,18 @@ export const fmtTime = (date, opts = {}) => {
     
   const timeStr = new Intl.DateTimeFormat('vi-VN', {
     hour: '2-digit', minute: '2-digit', ...opts
-  }).format(d)
+  }).format(d);
   
-  if (isToday) return `Hôm nay, ${timeStr}`
-  if (isTomorrow) return `Ngày mai, ${timeStr}`
-  if (isYesterday) return `Hôm qua, ${timeStr}`
+  if (isToday) return `Hôm nay, ${timeStr}`;
+  if (isTomorrow) return `Ngày mai, ${timeStr}`;
+  if (isYesterday) return `Hôm qua, ${timeStr}`;
   
-  // Default format for other days
-  // If opts contains day/month overrides, use them, otherwise default to day/month
-  const dateOpts = { day: '2-digit', month: '2-digit', ...opts }
-  // Remove hour/minute from date part if they are already in timeStr (but here we want full string)
-  
-  // Actually, we want "DD/MM, HH:mm" for other days
+  // Format for other days
   const dateStr = new Intl.DateTimeFormat('vi-VN', { 
-    day: '2-digit', month: '2-digit' 
-  }).format(d)
+    day: '2-digit', month: '2-digit', ...opts 
+  }).format(d);
   
-  return `${dateStr}, ${timeStr}`
+  return `${dateStr}, ${timeStr}`;
 }
 
 export const fmtDay = (d) => new Intl.DateTimeFormat('vi-VN', { 
