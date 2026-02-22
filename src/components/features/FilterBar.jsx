@@ -8,13 +8,14 @@ import lolIcon from '../../images/lol.png'
 import footballIcon from '../../images/football.png'
 import pubgIcon from '../../images/pubg.png'
 import tftIcon from '../../images/tft.png'
+import cs2Icon from '../../images/csgo-4.svg'
 
 export function FilterBar({ activeSport, setActiveSport, isDarkMode }) {
   const sports = [
     { id: 'all', label: 'Tất cả', icon: Gamepad2, color: 'from-gray-500 to-gray-600', isImage: false },
     { id: 'valorant', label: 'Valorant', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true },
     { id: 'lol', label: 'LoL', icon: lolIcon, color: 'from-blue-500 to-cyan-500', isImage: true },
-    { id: 'cs2', label: 'CS2', icon: Gamepad2, color: 'from-slate-600 to-gray-700', isImage: false },
+    { id: 'cs2', label: 'CS2', icon: cs2Icon, color: 'from-slate-600 to-gray-700', isImage: true },
     { id: 'football', label: 'Bóng đá', icon: footballIcon, color: 'from-green-500 to-emerald-500', isImage: true },
     { id: 'pubg', label: 'PUBG', icon: pubgIcon, color: 'from-orange-500 to-yellow-500', isImage: true },
     { id: 'tft', label: 'TFT', icon: tftIcon, color: 'from-purple-500 to-indigo-500', isImage: true },
