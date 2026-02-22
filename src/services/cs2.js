@@ -9,8 +9,14 @@ export const Cs2Adapter = {
 
   async fetch({ from, to }) {
     try {
-      const fromStr = from.toISOString()
-      const toStr = to.toISOString()
+      // Round dates to start of the day to ensure static query params for better caching
+      const roundedFrom = new Date(from)
+      roundedFrom.setHours(0, 0, 0, 0)
+      const roundedTo = new Date(to)
+      roundedTo.setHours(23, 59, 59, 999)
+      
+      const fromStr = roundedFrom.toISOString()
+      const toStr = roundedTo.toISOString()
       
       // Fetch matches from PandaScore API via our proxy
       const response = await fetch(`/api/cs2?sort=begin_at&range[begin_at]=${fromStr},${toStr}&per_page=50`)
