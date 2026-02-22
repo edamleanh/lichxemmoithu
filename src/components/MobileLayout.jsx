@@ -400,6 +400,15 @@ export default function MobileLayout({
   upcomingRef,
   finishedRef
 }) {
+  const [visibleCount, setVisibleCount] = useState(20)
+
+  // Reset visible count when sport filter changes
+  useEffect(() => {
+    setVisibleCount(20)
+  }, [activeSport])
+  
+  const visibleMatches = matches.slice(0, visibleCount)
+  const hasMore = visibleCount < matches.length
   const sports = [
     { id: 'all', label: 'Tất cả', icon: TrendingUp, color: 'from-purple-500 to-pink-500', isImage: false },
     { id: 'valorant', label: 'Valorant', icon: valorantIcon, color: 'from-red-500 to-pink-500', isImage: true },
@@ -484,7 +493,7 @@ export default function MobileLayout({
         {!loading && !error && matches.length > 0 && (
           <div className="space-y-3">
              <AnimatePresence>
-              {matches.map((match) => (
+              {visibleMatches.map((match) => (
                 <MobileMatchCard
                   key={match.id}
                   match={match}
@@ -492,6 +501,19 @@ export default function MobileLayout({
                 />
               ))}
             </AnimatePresence>
+            
+            {hasMore && (
+              <div className="pt-4 pb-8 flex justify-center w-full">
+                <Button 
+                  variant="secondary" 
+                  isDarkMode={isDarkMode}
+                  onClick={() => setVisibleCount(prev => prev + 20)}
+                  className="w-full sm:w-auto"
+                >
+                  Hiển thị thêm
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

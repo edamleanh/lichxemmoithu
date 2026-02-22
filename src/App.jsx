@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Filter, Search, Sun, Moon, RefreshCw, Menu, X, Calendar as CalendarIcon, ChevronDown, ChevronUp } from 'lucide-react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 
 // Import components
-import MobileLayout from './components/MobileLayout'
+const MobileLayout = lazy(() => import('./components/MobileLayout'))
 import { Button, Input, Select, Badge } from './components/common/UI'
 import { MatchCard } from './components/features/MatchCard'
 import { FilterBar } from './components/features/FilterBar'
@@ -137,16 +137,22 @@ function MainContent() {
   // Mobile Layout Render
   if (isMobile) {
     return (
-      <MobileLayout 
-        matches={matches} 
-        loading={isLoading} 
-        error={error} 
-        refetch={refetch}
-        activeSport={activeSport}
-        setActiveSport={setActiveSport}
-        isDarkMode={isDarkMode}
-        setIsDarkMode={setIsDarkMode}
-      />
+      <Suspense fallback={
+        <div className={`flex h-screen items-center justify-center ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4" />
+        </div>
+      }>
+        <MobileLayout 
+          matches={matches} 
+          loading={isLoading} 
+          error={error} 
+          refetch={refetch}
+          activeSport={activeSport}
+          setActiveSport={setActiveSport}
+          isDarkMode={isDarkMode}
+          setIsDarkMode={setIsDarkMode}
+        />
+      </Suspense>
     )
   }
 
