@@ -41,8 +41,8 @@ export const FootballAdapter = {
       const dateFrom = formatDate(from || new Date())
       const dateTo = formatDate(to || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
       
-      // Fetch matches from football-data.org
-      for (const league of leagues) {
+      // Fetch matches from football-data.org in parallel
+      const leaguePromises = leagues.map(async (league) => {
         try {
           // Use proxy endpoint with correct URL structure
           const response = await fetch(
@@ -50,11 +50,7 @@ export const FootballAdapter = {
           )
           
           if (!response.ok) {
-            // If it's a 400 error (bad request), likely API key issue
-            if (response.status === 400) {
-              continue 
-            }
-            continue
+            return []
           }
           
           const data = await response.json()
@@ -120,12 +116,16 @@ export const FootballAdapter = {
               })
             )
             
-            allMatches = [...allMatches, ...enhancedMatches]
+            return enhancedMatches
           }
+          return []
         } catch (err) {
-          // console.warn(`Failed to fetch Football schedule for ${league.name}`, err)
+          return []
         }
-      }
+      })
+      
+      const results = await Promise.all(leaguePromises)
+      allMatches = results.flat()
       
       // Remove duplicates
       const uniqueMatches = allMatches.filter((match, index, self) => 
