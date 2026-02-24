@@ -9,17 +9,17 @@ export const Cs2Adapter = {
 
   async fetch({ from, to }) {
     try {
-      // Round dates to start of the day to ensure static query params for better caching
-      const roundedFrom = new Date(from)
-      roundedFrom.setHours(0, 0, 0, 0)
-      const roundedTo = new Date(to)
-      roundedTo.setHours(23, 59, 59, 999)
+      // Round to UTC midnights to ensure perfectly identical query params across all timezones
+      // This allows Vercel Edge Cache to hit 100% of the time for a given UTC day
+      const roundedFrom = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate(), 0, 0, 0))
+      const roundedTo = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate(), 23, 59, 59, 999))
       
       const fromStr = roundedFrom.toISOString()
       const toStr = roundedTo.toISOString()
       
-      // Fetch matches from PandaScore API via our proxy
-      const response = await fetch(`/api/cs2?sort=begin_at&range[begin_at]=${fromStr},${toStr}&per_page=50`)
+      // Fetch 100 matches to avoid truncating today's/tomorrow's matches 
+      // when there are many lower-tier games yesterday.
+      const response = await fetch(`/api/cs2?sort=begin_at&range[begin_at]=${fromStr},${toStr}&per_page=100`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch CS2 matches')

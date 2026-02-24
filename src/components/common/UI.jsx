@@ -31,15 +31,16 @@ export const LazyImage = ({ src, alt, className = '', placeholder = null }) => {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            // Load image when it enters viewport
+            // Start downloading image by setting real source
             setImageSrc(src)
-            setIsLoading(false)
             observer.unobserve(entry.target)
           }
         })
       },
       {
-        rootMargin: '50px', // Start loading 50px before entering viewport
+        // 400px margin means images will start loading well before they become visible,
+        // making them appear instantly when scrolled into view.
+        rootMargin: '400px', 
         threshold: 0.01,
       }
     )
@@ -55,15 +56,21 @@ export const LazyImage = ({ src, alt, className = '', placeholder = null }) => {
     }
   }, [src])
 
-  if (!src) return null
+  if (!src) return <div className={`${className} bg-gray-500/10 rounded-full`} />
+
+  const transparentGif = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw=='
 
   return (
     <img
       ref={imgRef}
-      src={imageSrc}
+      src={imageSrc || transparentGif}
       alt={alt}
-      className={`${className} ${isLoading ? 'opacity-50' : 'opacity-100'} transition-opacity duration-300`}
-      loading="lazy"
+      onLoad={() => {
+        // Only mark as loaded if we aren't displaying the transparent gif
+        if (imageSrc) setIsLoading(false)
+      }}
+      onError={() => setIsLoading(false)}
+      className={`${className} ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} transition-all duration-300`}
     />
   )
 }
