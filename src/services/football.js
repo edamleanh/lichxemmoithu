@@ -87,7 +87,7 @@ export const FootballAdapter = {
                 start: new Date(match.utcDate),
                 venue: match.venue || '',
                 region: match.area?.name || match.competition?.area?.name || 'International',
-                stream: 'https://www.xaycon.live', // Hardcoded stream link
+                stream: 'https://sv2.xaycon1.live/trang-chu', // Hardcoded stream link
                 status: match.status === 'FINISHED' ? 'finished' :
                         match.status === 'IN_PLAY' || match.status === 'PAUSED' ? 'live' : 'upcoming',
                 // Live-specific data for Football
