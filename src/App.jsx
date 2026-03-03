@@ -17,6 +17,7 @@ import { FootballAdapter } from './services/football'
 import { PubgAdapter } from './services/pubg'
 import { TftAdapter } from './services/tft'
 import { Cs2Adapter } from './services/cs2'
+import { teamTelemetryService } from './services/teamTelemetry'
 import { fmtDay } from './utils/formatters'
 
 import './App.css'
@@ -59,23 +60,16 @@ function MainContent() {
     }
   }, [isDarkMode])
 
-  // Date range calculation - 24h before and after NOW
-  const dateRange = useMemo(() => {
-    const now = new Date()
-    const from = new Date(now.getTime() - 24 * 60 * 60 * 1000) // 24h ago
-    const to = new Date(now.getTime() + 24 * 60 * 60 * 1000)   // 24h from now
-    
-    return { from, to }
-  }, [])
-
   // Fetch matches using TanStack Query
   const { data: matches = [], isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ['matches', activeSport, '24h-range'], // Updated key
     queryFn: async () => {
+      // Calculate date range per fetch so that manual re-fetches use current time
+      const now = new Date()
+      const standardFrom = new Date(now.getTime() - 24 * 60 * 60 * 1000) // 24h ago
+      const standardTo = new Date(now.getTime() + 24 * 60 * 60 * 1000)   // 24h from now
+
       let allMatches = []
-      
-      const standardFrom = dateRange.from
-      const standardTo = dateRange.to
       
       // Extended range for YouTube-based games (PUBG, TFT)
       // because they might not have exact schedule data often
@@ -86,12 +80,24 @@ function MainContent() {
 
       if (activeSport === 'all') {
         const results = await Promise.allSettled([
-          adapters.valorant.fetch({ from: standardFrom, to: standardTo }),
-          adapters.pubg.fetch({ from: extendedFrom, to: extendedTo }),
-          adapters.tft.fetch({ from: extendedFrom, to: extendedTo }),
-          adapters.lol.fetch({ from: standardFrom, to: standardTo }),
-          adapters.football.fetch({ from: standardFrom, to: standardTo }),
-          adapters.cs2.fetch({ from: standardFrom, to: standardTo }),
+          adapters.valorant.fetch({ from: standardFrom, to: standardTo }).then(m => {
+            teamTelemetryService.scanAndLogUnknownTeams(m, 'valorant')
+            return m
+          }),
+          adapters.pubg.fetch({ from: extendedFrom, to: extendedTo }), // PUBG teams vary too much
+          adapters.tft.fetch({ from: extendedFrom, to: extendedTo }),  // TFT is individual players
+          adapters.lol.fetch({ from: standardFrom, to: standardTo }).then(m => {
+            teamTelemetryService.scanAndLogUnknownTeams(m, 'lol')
+            return m
+          }),
+          adapters.football.fetch({ from: standardFrom, to: standardTo }).then(m => {
+            teamTelemetryService.scanAndLogUnknownTeams(m, 'football')
+            return m
+          }), // Football has standard mapping
+          adapters.cs2.fetch({ from: standardFrom, to: standardTo }).then(m => {
+            teamTelemetryService.scanAndLogUnknownTeams(m, 'cs2')
+            return m
+          }),
         ])
         
         results.forEach((result) => {
@@ -105,6 +111,10 @@ function MainContent() {
           const from = (activeSport === 'pubg' || activeSport === 'tft') ? extendedFrom : standardFrom
           const to = (activeSport === 'pubg' || activeSport === 'tft') ? extendedTo : standardTo
           allMatches = await adapter.fetch({ from, to })
+          
+          if (activeSport !== 'pubg' && activeSport !== 'tft') {
+             teamTelemetryService.scanAndLogUnknownTeams(allMatches, activeSport)
+          }
         }
       }
       

@@ -209,6 +209,21 @@ export const TEAM_ACRONYMS = {
   'SL Benfica': 'SLB',
   'PSV': 'PSV',
   'Feyenoord Rotterdam': 'FEY',
+  
+  // CS2 & Others Found in API
+  'PARIVISION': 'PRV',
+  'Passion UA': 'PUA',
+  'Gaimin Gladiators': 'GG',
+  '3DMAX': '3D',
+  'paiN': 'paiN',
+  'Legacy': 'LGC',
+  'M80': 'M80',
+  'SemperFi': 'SFE',
+  'Heroic': 'HERO',
+  'Monte': 'MNTE',
+  'Astralis': 'AST',
+  'FUT': 'FUT',
+  'Gentle Mates': 'M8',
 }
 
 // Helper to get search-friendly name (Acronym > Shortened > Original)
@@ -272,7 +287,14 @@ export const shortenTeamName = (teamName, maxLength = 25) => {
     'Barcelona': 'Barça',
     'Bayern München': 'Bayern Munich',
     'Inter Milan': 'Inter',
-    'AC Milan': 'Milan'
+    'AC Milan': 'Milan',
+    'Weibo': 'WBG',
+    'WeiboGaming': 'WBG',
+    'Weibo Gaming': 'WBG',
+    'Top Esports': 'TES',
+    'Invictus Gaming': 'IG',
+    'Invictus': 'IG',
+    'Anyone\'s Legend': 'AL'
   }
   
   // Check if cleaned name matches any special case

@@ -388,16 +388,16 @@ export function MatchCard({ match, isDarkMode }) {
 
       {/* Teams */}
       <div className="mb-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0 min-h-[32px]">
             {match.home?.logo && (
               <LazyImage 
                 src={match.home.logo} 
                 alt={match.home.name} 
-                className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" 
+                className="h-8 w-8 rounded-lg object-cover flex-shrink-0" 
               />
             )}
-            <span className={`font-semibold break-words leading-tight ${
+            <span className={`font-semibold break-words leading-none self-center ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
             }`}>{shortenTeamName(match.home?.name) || 'TBD'}</span>
           </div>
@@ -430,15 +430,15 @@ export function MatchCard({ match, isDarkMode }) {
             )}
           </div>
           
-          <div className="flex items-start gap-3 flex-1 justify-end min-w-0">
-            <span className={`font-semibold break-words leading-tight text-right ${
+          <div className="flex items-center gap-3 flex-1 justify-end min-w-0 min-h-[32px]">
+            <span className={`font-semibold break-words leading-none text-right self-center ${
               isDarkMode ? 'text-gray-100' : 'text-gray-900'
             }`}>{shortenTeamName(match.away?.name) || 'TBD'}</span>
             {match.away?.logo && (
               <LazyImage 
                 src={match.away.logo} 
                 alt={match.away.name} 
-                className="h-8 w-8 rounded-lg object-cover flex-shrink-0 mt-1" 
+                className="h-8 w-8 rounded-lg object-cover flex-shrink-0" 
               />
             )}
           </div>
