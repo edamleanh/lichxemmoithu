@@ -83,12 +83,12 @@ const VALORANT_LOGOS = {
 }
 
 const DEFAULT_SPORT_LOGOS = {
-  valorant: require('../../assets/valorant.png'),
-  lol: require('../../assets/lol.png'),
-  cs2: require('../../assets/csgo-4.svg'),
-  football: require('../../assets/football.png'),
-  pubg: require('../../assets/pubg.png'),
-  tft: require('../../assets/tft.png')
+  valorant: require('../../../src/images/valorant.png'),
+  lol: require('../../../src/images/lol.png'),
+  cs2: require('../../../src/images/csgo-4.svg'),
+  football: require('../../../src/images/football.png'),
+  pubg: require('../../../src/images/pubg.png'),
+  tft: require('../../../src/images/tft.png')
 }
 
 // Generate an array of 2-character pairs to compare similarity
