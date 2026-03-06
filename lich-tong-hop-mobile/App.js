@@ -106,6 +106,7 @@ const MatchCard = React.memo(function MatchCard({ match, isDarkMode }) {
                   <Image 
                     source={typeof match.home.logo === 'string' ? { uri: match.home.logo } : match.home.logo} 
                     style={styles.teamLogo} 
+                    resizeMode="contain"
                   />
                 ) : (
                   <View style={styles.logoPlaceholder} />
@@ -126,6 +127,7 @@ const MatchCard = React.memo(function MatchCard({ match, isDarkMode }) {
                   <Image 
                     source={typeof match.away.logo === 'string' ? { uri: match.away.logo } : match.away.logo} 
                     style={styles.teamLogo} 
+                    resizeMode="contain"
                   />
                 ) : (
                   <View style={styles.logoPlaceholder} />
@@ -422,13 +424,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   teamLogo: {
-    width: 24,
+    width: 32,
     height: 24,
-    borderRadius: 4,
     marginRight: 8,
   },
   logoPlaceholder: {
-    width: 24,
+    width: 32,
     height: 24,
     borderRadius: 4,
     backgroundColor: '#9CA3AF',
