@@ -82,6 +82,12 @@ const MatchCard = React.memo(function MatchCard({ match, isDarkMode }) {
         <Text style={[styles.timeText, { color: textSecondary }]}>
           {fmtTime(match.start)}
         </Text>
+        {match.status === 'live' && (
+          <View style={styles.liveIndicator}>
+            <Play size={10} fill="#EF4444" color="#EF4444" />
+            <Text style={styles.liveText}>LIVE</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.cardBody}>
@@ -144,12 +150,6 @@ const MatchCard = React.memo(function MatchCard({ match, isDarkMode }) {
         )}
       </View>
 
-      {match.status === 'live' && (
-        <View style={styles.liveIndicator}>
-          <Play size={12} fill="#EF4444" color="#EF4444" />
-          <Text style={styles.liveText}>LIVE</Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 });
@@ -446,15 +446,13 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   liveIndicator: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FEE2E2',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    marginLeft: 8,
   },
   liveText: {
     color: '#EF4444',
