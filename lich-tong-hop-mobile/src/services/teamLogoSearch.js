@@ -164,8 +164,14 @@ export const TeamLogoSearchService = {
       
       // If we found a match above 55% threshold, return its logo
       if (highestScore >= this.config.matchingThreshold) {
-        console.log(`[FuzzyMatch] '${teamName}' -> matched DICT '${bestMatch.dictName}' with ${Math.round(bestMatch.score*100)}%`)
-        return bestMatch.logoUrl
+        console.log(`[FuzzyMatch] '${teamName}' -> matched '${bestMatch.dictName}'`)
+        
+        // Fix hotlink 403 Forbidden errors from owcdn.net by using an image proxy
+        const proxiedUrl = bestMatch.logoUrl.includes('owcdn.net') 
+          ? `https://wsrv.nl/?url=${bestMatch.logoUrl.replace('https://', '')}` 
+          : bestMatch.logoUrl;
+          
+        return proxiedUrl
       } else {
         console.log(`[FuzzyMatch] '${teamName}' -> No strong match (best was ${Math.round(highestScore*100)}%). Using Fallback.`)
       }
