@@ -1,130 +1,196 @@
+// --- Team Logo Offline Dictionary & Fuzzy Search Service ---
+// Uses Dice's Coefficient percentage matching instead of Google Image Search
 
-// --- Team Logo Search Service --------------------------------------------
-export const TeamLogoSearchService = {
-  // Cache to store team logo search results to avoid repeated API calls
-  cache: new Map(),
+const VALORANT_LOGOS = {
+  "sentinels": "https://owcdn.net/img/60cedbff184c0.png",
+  "paper rex": "https://owcdn.net/img/620023ee45c71.png",
+  "prx": "https://owcdn.net/img/620023ee45c71.png",
+  "gen.g": "https://owcdn.net/img/63e1d163e79bd.png",
+  "geng": "https://owcdn.net/img/63e1d163e79bd.png",
+  "team heretics": "https://owcdn.net/img/63de5eedac14e.png",
+  "heretics": "https://owcdn.net/img/63de5eedac14e.png",
+  "fnatic": "https://owcdn.net/img/63d21ebdeeee4.png",
+  "fnc": "https://owcdn.net/img/63d21ebdeeee4.png",
+  "loud": "https://owcdn.net/img/6211cb73f1dcb.png",
+  "karmine corp": "https://owcdn.net/img/63d414902ec28.png",
+  "kc": "https://owcdn.net/img/63d414902ec28.png",
+  "natus vincere": "https://owcdn.net/img/63de656f71d18.png",
+  "navi": "https://owcdn.net/img/63de656f71d18.png",
+  "drx": "https://owcdn.net/img/627fdb962ffab.png",
+  "t1": "https://owcdn.net/img/63de801b65e9d.png",
+  "100 thieves": "https://owcdn.net/img/6056d0bd192c7.png",
+  "nrg": "https://owcdn.net/img/63def07de0044.png",
+  "nrg esports": "https://owcdn.net/img/63def07de0044.png",
+  "cloud9": "https://owcdn.net/img/5f480393f0b2f.png",
+  "c9": "https://owcdn.net/img/5f480393f0b2f.png",
+  "leviatan": "https://owcdn.net/img/61fc37c4d57fe.png",
+  "bilibili gaming": "https://owcdn.net/img/64620f4ae91ca.png",
+  "blg": "https://owcdn.net/img/64620f4ae91ca.png",
+  "edward gaming": "https://owcdn.net/img/63def55938d87.png",
+  "edg": "https://owcdn.net/img/63def55938d87.png",
+  "fpx": "https://owcdn.net/img/663c780df2446.png",
+  "funplus phoenix": "https://owcdn.net/img/663c780df2446.png",
+  "zeta division": "https://owcdn.net/img/6122d21bc699b.png",
+  "zeta": "https://owcdn.net/img/6122d21bc699b.png",
+  "team liquid": "https://owcdn.net/img/63de5fc442971.png",
+  "liquid": "https://owcdn.net/img/63de5fc442971.png",
+  "tl": "https://owcdn.net/img/63de5fc442971.png",
+  "kru esports": "https://owcdn.net/img/601878d65cfc1.png",
+  "kru": "https://owcdn.net/img/601878d65cfc1.png",
+  "team secret": "https://owcdn.net/img/613ba249f05ac.png",
+  "secret": "https://owcdn.net/img/613ba249f05ac.png",
+  "talon esports": "https://owcdn.net/img/64299b8206152.png",
+  "talon": "https://owcdn.net/img/64299b8206152.png",
+  "rex regum qeon": "https://owcdn.net/img/63de816db73cc.png",
+  "rrq": "https://owcdn.net/img/63de816db73cc.png",
+  "global esports": "https://owcdn.net/img/63de7f3b890a8.png",
+  "ge": "https://owcdn.net/img/63de7f3b890a8.png",
+  "bleed esports": "https://owcdn.net/img/63870e28d9c2f.png",
+  "bleed": "https://owcdn.net/img/63870e28d9c2f.png",
+  "detonation focusme": "https://owcdn.net/img/63def21a4f005.png",
+  "dfm": "https://owcdn.net/img/63def21a4f005.png",
+  "furia": "https://owcdn.net/img/63dbf1cdd7d29.png",
+  "mibr": "https://owcdn.net/img/63deeda20efac.png",
+  "evil geniuses": "https://owcdn.net/img/63deef898f7e2.png",
+  "eg": "https://owcdn.net/img/63deef898f7e2.png",
+  "g2 esports": "https://owcdn.net/img/656e1b6f0e9b9.png",
+  "g2": "https://owcdn.net/img/656e1b6f0e9b9.png",
+  "team vitality": "https://owcdn.net/img/63de60c0420df.png",
+  "vitality": "https://owcdn.net/img/63de60c0420df.png",
+  "vit": "https://owcdn.net/img/63de60c0420df.png",
+  "bbl esports": "https://owcdn.net/img/60cf532788eeb.png",
+  "bbl": "https://owcdn.net/img/60cf532788eeb.png",
+  "fut esports": "https://owcdn.net/img/63de635fd4ab1.png",
+  "fut": "https://owcdn.net/img/63de635fd4ab1.png",
+  "tbg": "https://owcdn.net/img/63de64619b0ce.png",
+  "koi": "https://owcdn.net/img/63df3cc77f394.png",
+  "trace esports": "https://owcdn.net/img/66881bcdeb5b0.png",
+  "teg": "https://owcdn.net/img/66881bcdeb5b0.png",
+  "nova esports": "https://owcdn.net/img/651f8a7eacd45.png",
+  "nova": "https://owcdn.net/img/651f8a7eacd45.png",
+  "wolves esports": "https://owcdn.net/img/651f8a8bb231b.png",
+  "jd gaming": "https://owcdn.net/img/6632f1737eaaa.png",
+  "jdg": "https://owcdn.net/img/6632f1737eaaa.png",
+  "all gamers": "https://owcdn.net/img/660c1844e13cd.png",
+  "ag": "https://owcdn.net/img/660c1844e13cd.png",
+  "titan esports club": "https://owcdn.net/img/660a9f0ee2d77.png",
+  "tec": "https://owcdn.net/img/660a9f0ee2d77.png",
+  "dragon ranger gaming": "https://owcdn.net/img/660c18544f8f4.png",
+  "drg": "https://owcdn.net/img/660c18544f8f4.png",
+  "gentle mates": "https://owcdn.net/img/6561dbba6e665.png",
+  "m8": "https://owcdn.net/img/6561dbba6e665.png",
+  "rogue": "https://owcdn.net/img/656cd61a8f9df.png",
+}
+
+const DEFAULT_SPORT_LOGOS = {
+  valorant: 'https://seeklogo.com/images/V/valorant-logo-FAB2CA0E55-seeklogo.com.png',
+  lol: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/League_of_Legends_2019_vector.svg/1200px-League_of_Legends_2019_vector.svg.png',
+  cs2: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Counter-Strike_2_logo.svg/1200px-Counter-Strike_2_logo.svg.png',
+  football: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Football_%28soccer_ball%29.svg/1024px-Football_%28soccer_ball%29.svg.png',
+  pubg: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/52/PUBG_Battlegrounds_logo.svg/1200px-PUBG_Battlegrounds_logo.svg.png',
+  tft: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f3/Teamfight_Tactics_logo.svg/1200px-Teamfight_Tactics_logo.svg.png'
+}
+
+// Generate an array of 2-character pairs to compare similarity
+function getBigrams(str) {
+  const bigrams = []
+  for (let i = 0; i < str.length - 1; i++) {
+    bigrams.push(str.substring(i, i + 2))
+  }
+  return bigrams
+}
+
+// Dice's Coefficient calculating percentage of string similarity
+function calculateSimilarity(s1, s2) {
+  s1 = s1.toLowerCase().replace(/[^a-z0-9]/g, '')
+  s2 = s2.toLowerCase().replace(/[^a-z0-9]/g, '')
   
-  // Configuration
+  // Exact match
+  if (s1 === s2) return 1.0
+  
+  // High confidence if one string perfectly contains the other 
+  // e.g. "geng" inside "gengesports"
+  if (s1.includes(s2) || s2.includes(s1)) {
+     return 0.8; 
+  }
+  
+  if (s1.length < 2 || s2.length < 2) return 0.0
+
+  const bigrams1 = getBigrams(s1)
+  const bigrams2 = getBigrams(s2)
+
+  let intersection = 0
+  const bigrams1Copy = [...bigrams1]
+  
+  for (const bigram of bigrams2) {
+    const index = bigrams1Copy.indexOf(bigram)
+    if (index !== -1) {
+      intersection++
+      bigrams1Copy.splice(index, 1)
+    }
+  }
+
+  // Returns score between 0.0 and 1.0
+  return (2.0 * intersection) / (bigrams1.length + bigrams2.length)
+}
+
+export const TeamLogoSearchService = {
   config: {
-    enabled: false, // TẮT tính năng tìm logo tạm thời
-    maxCacheSize: 100, // Maximum number of cached results
-    searchTimeout: 10000, // 10 seconds timeout for search requests
+    enabled: true, 
+    matchingThreshold: 0.55 // Accept logos with >= 55% similarity
   },
   
-  // Search for team logo using Google Custom Search API
   async searchTeamLogo(teamName, sport) {
     if (!teamName || !this.config.enabled) return null
     
-    // Create cache key
-    const cacheKey = `${sport}-${teamName.toLowerCase().trim()}`
-    
-    // Check cache first
-    if (this.cache.has(cacheKey)) {
-      const cachedResult = this.cache.get(cacheKey)
-      return cachedResult
-    }
-    
-    try {
+    // Only apply the dictionary for Valorant
+    if (sport === 'valorant') {
+      let bestMatch = null
+      let highestScore = 0
       
-      // Clean team name for better search results
+      // Clean noise keywords from the API provided name
       const cleanTeamName = teamName
-        .replace(/\s*(Gaming|Esports|E-sports|Team|Club|FC|United)$/i, '')
+        .replace(/\s*(Gaming|Esports|E-sports|Team|Club|FC|United|Esport)$/i, '')
         .trim()
-      
-      // Call our image search API with timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), this.config.searchTimeout)
-      
-      const response = await fetch(`/api/image-search?teamName=${encodeURIComponent(cleanTeamName)}&sport=${encodeURIComponent(sport)}`, {
-        signal: controller.signal
-      })
-      
-      clearTimeout(timeoutId)
-      
-      if (!response.ok) {
-        throw new Error(`Search API error: ${response.status}`)
-      }
-      
-      const data = await response.json()
-      
-      // Extract the best logo URL from search results
-      let logoUrl = null
-      if (data.images && data.images.length > 0) {
-        // Prefer images with smaller dimensions (likely logos) and from official sources
-        const bestImage = data.images.find(img => {
-          const domain = img.displayLink?.toLowerCase() || ''
-          const isOfficialSource = domain.includes('liquipedia') || 
-                                 domain.includes('vlr.gg') || 
-                                 domain.includes('leaguepedia') ||
-                                 domain.includes('lolesports') ||
-                                 domain.includes('valorant') ||
-                                 domain.includes('riotgames') ||
-                                 domain.includes('fifa.com') ||
-                                 domain.includes('uefa.com')
-          
-          const hasGoodDimensions = img.width && img.height && 
-                                  img.width >= 64 && img.height >= 64 &&
-                                  img.width <= 512 && img.height <= 512
-          
-          return isOfficialSource || hasGoodDimensions
-        }) || data.images[0] // Fall back to first result
         
-        logoUrl = bestImage.url
+      // Loop through our hardcoded dictionary
+      for (const [dictName, logoUrl] of Object.entries(VALORANT_LOGOS)) {
+        const score = calculateSimilarity(cleanTeamName, dictName)
+        if (score > highestScore) {
+          highestScore = score
+          bestMatch = { logoUrl, dictName, score }
+        }
       }
       
-      // Cache the result (even if null to avoid repeated failed searches)
-      this.addToCache(cacheKey, logoUrl)
-      
-      return logoUrl
-      
-    } catch (error) {
-      
-      // Cache null result to avoid repeated failed searches
-      this.addToCache(cacheKey, null)
-      return null
-    }
-  },
-  
-  // Enhanced cache management with size limit
-  addToCache(key, value) {
-    // Remove oldest entries if cache is full
-    if (this.cache.size >= this.config.maxCacheSize) {
-      const firstKey = this.cache.keys().next().value
-      this.cache.delete(firstKey)
+      // If we found a match above 55% threshold, return its logo
+      if (highestScore >= this.config.matchingThreshold) {
+        console.log(`[FuzzyMatch] '${teamName}' -> matched DICT '${bestMatch.dictName}' with ${Math.round(bestMatch.score*100)}%`)
+        return bestMatch.logoUrl
+      } else {
+        console.log(`[FuzzyMatch] '${teamName}' -> No strong match (best was ${Math.round(highestScore*100)}%). Using Fallback.`)
+      }
     }
     
-    this.cache.set(key, value)
+    // Return a default logo placeholder instead of broken image
+    return DEFAULT_SPORT_LOGOS[sport] || null
   },
   
-  // Enhance team object with logo if missing
   async enhanceTeamWithLogo(team, sport) {
-    // Return early if feature is disabled
-    if (!this.config.enabled) {
+    if (!this.config.enabled || !team || !team.name) {
       return team
     }
     
-    if (!team || !team.name || team.logo) {
-      return team // Already has logo or no team name
+    // Always use the official logo from API if it exists and is a valid URL length
+    if (team.logo && team.logo.length > 5) {
+       return team
     }
     
+    // Fallback offline fuzzy matching dictionary
     const logoUrl = await this.searchTeamLogo(team.name, sport)
+    
     return {
       ...team,
       logo: logoUrl || team.logo
-    }
-  },
-  
-  // Clear cache (useful for testing or memory management)
-  clearCache() {
-    this.cache.clear()
-  },
-  
-  // Get cache statistics
-  getCacheStats() {
-    return {
-      size: this.cache.size,
-      maxSize: this.config.maxCacheSize,
-      enabled: this.config.enabled
     }
   }
 }
