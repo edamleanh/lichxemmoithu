@@ -24,7 +24,8 @@ import { PubgAdapter } from './src/services/pubg';
 import { TftAdapter } from './src/services/tft';
 import { Cs2Adapter } from './src/services/cs2';
 import { teamTelemetryService } from './src/services/teamTelemetry';
-import { fmtTime, shortenTeamName } from './src/utils/formatters';
+import { fmtTime, shortenTeamName, getTeamSearchName } from './src/utils/formatters';
+import { youtubeApiManager } from './src/services/youtube';
 
 const queryClient = new QueryClient();
 
@@ -50,9 +51,65 @@ const SPORTS_CONFIG = [
 
 const MatchCard = React.memo(function MatchCard({ match, isDarkMode }) {
   const isVideo = match.game === 'pubg' || match.game === 'tft';
-  const handlePress = () => {
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handlePress = async () => {
     if (isVideo && match.stream) {
       Linking.openURL(match.stream);
+      return;
+    }
+
+    if (match.game === 'football') {
+      Linking.openURL('https://www.xaycon.live');
+      return;
+    }
+
+    if (match.videoId) {
+      Linking.openURL(`https://www.youtube.com/watch?v=${match.videoId}`);
+      return;
+    }
+
+    if (match.stream) {
+      Linking.openURL(match.stream);
+      return;
+    }
+
+    if (match.status === 'live') {
+      setIsSearching(true);
+      try {
+        const homeName = getTeamSearchName(match.home?.name);
+        const awayName = getTeamSearchName(match.away?.name);
+        const searchQuery = `${homeName} vs ${awayName} ${match.league || ''} live`;
+        
+        const response = await youtubeApiManager.makeRequest(
+          `https://www.googleapis.com/youtube/v3/search?part=id,snippet&q=${encodeURIComponent(searchQuery)}&type=video&eventType=live&regionCode=VN&relevanceLanguage=vi&maxResults=10`
+        );
+
+        if (response?.items?.length > 0) {
+          const PRIORITY_CHANNELS = [
+            'VCS LMHT', 'LCK Tiếng Việt', 'LPL Vietnam', 
+            'VALORANT Esports Vietnam', 'VALORANT Champions Tour Vietnam',
+            'Vietnam Championship Series', 'Riot Games Vietnam'
+          ];
+          const priorityVideo = response.items.find(item => 
+            PRIORITY_CHANNELS.some(channel => 
+              item.snippet?.channelTitle?.toLowerCase().includes(channel.toLowerCase())
+            )
+          );
+          const videoId = priorityVideo?.id?.videoId || response.items[0].id.videoId;
+          Linking.openURL(`https://www.youtube.com/watch?v=${videoId}`);
+        } else {
+          Linking.openURL(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery + ' tiếng việt')}`);
+        }
+      } catch (error) {
+        console.error('Error mobile search:', error);
+        const homeName = getTeamSearchName(match.home?.name);
+        const awayName = getTeamSearchName(match.away?.name);
+        const searchQuery = `${homeName} vs ${awayName} ${match.league || ''} live`;
+        Linking.openURL(`https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery + ' tiếng việt')}`);
+      } finally {
+        setIsSearching(false);
+      }
     }
   };
 
@@ -68,9 +125,10 @@ const MatchCard = React.memo(function MatchCard({ match, isDarkMode }) {
 
   return (
     <TouchableOpacity 
-      activeOpacity={isVideo && match.stream ? 0.7 : 1}
+      activeOpacity={isVideo || match.status === 'live' || match.game === 'football' ? 0.7 : 1}
       onPress={handlePress}
-      style={[styles.card, bgStyle]}
+      disabled={isSearching}
+      style={[styles.card, bgStyle, isSearching && { opacity: 0.7 }]}
     >
       <View style={styles.cardHeader}>
         <Text style={[styles.gameName, { color: textPrimary, fontWeight: 'bold' }]}>
@@ -84,8 +142,12 @@ const MatchCard = React.memo(function MatchCard({ match, isDarkMode }) {
         </Text>
         {match.status === 'live' && (
           <View style={styles.liveIndicator}>
-            <Play size={10} fill="#EF4444" color="#EF4444" />
-            <Text style={styles.liveText}>LIVE</Text>
+            {isSearching ? (
+              <ActivityIndicator size="small" color="#EF4444" style={{ marginRight: 4, transform: [{scale: 0.6}] }} />
+            ) : (
+              <Play size={10} fill="#EF4444" color="#EF4444" />
+            )}
+            <Text style={styles.liveText}>{isSearching ? 'ĐANG TÌM' : 'LIVE'}</Text>
           </View>
         )}
       </View>
