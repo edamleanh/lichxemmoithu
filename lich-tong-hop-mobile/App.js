@@ -103,7 +103,10 @@ const MatchCard = React.memo(function MatchCard({ match, isDarkMode }) {
             <View style={styles.teamRow}>
               <View style={styles.teamInfo}>
                 {match.home?.logo ? (
-                  <Image source={{ uri: match.home.logo }} style={styles.teamLogo} />
+                  <Image 
+                    source={typeof match.home.logo === 'string' ? { uri: match.home.logo } : match.home.logo} 
+                    style={styles.teamLogo} 
+                  />
                 ) : (
                   <View style={styles.logoPlaceholder} />
                 )}
@@ -120,7 +123,10 @@ const MatchCard = React.memo(function MatchCard({ match, isDarkMode }) {
             <View style={[styles.teamRow, { marginTop: 8 }]}>
               <View style={styles.teamInfo}>
                 {match.away?.logo ? (
-                  <Image source={{ uri: match.away.logo }} style={styles.teamLogo} />
+                  <Image 
+                    source={typeof match.away.logo === 'string' ? { uri: match.away.logo } : match.away.logo} 
+                    style={styles.teamLogo} 
+                  />
                 ) : (
                   <View style={styles.logoPlaceholder} />
                 )}
