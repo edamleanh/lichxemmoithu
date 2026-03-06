@@ -79,7 +79,9 @@ const VALORANT_LOGOS = {
   "drg": "/logos/660c18544f8f4.png",
   "gentle mates": "/logos/6561dbba6e665.png",
   "m8": "/logos/6561dbba6e665.png",
-  "rogue": "/logos/656cd61a8f9df.png"
+  "rogue": "/logos/656cd61a8f9df.png",
+  "nongshim redforce": "/logos/nongshim-redforce.png",
+  "ns": "/logos/nongshim-redforce.png"
 }
 
 const DEFAULT_SPORT_LOGOS = {

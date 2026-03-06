@@ -79,7 +79,9 @@ const VALORANT_LOGOS = {
   "drg": require('../../assets/logos/660c18544f8f4.png'),
   "gentle mates": require('../../assets/logos/6561dbba6e665.png'),
   "m8": require('../../assets/logos/6561dbba6e665.png'),
-  "rogue": require('../../assets/logos/656cd61a8f9df.png')
+  "rogue": require('../../assets/logos/656cd61a8f9df.png'),
+  "nongshim redforce": require('../../assets/logos/nongshim-redforce.png'),
+  "ns": require('../../assets/logos/nongshim-redforce.png')
 }
 
 const DEFAULT_SPORT_LOGOS = {
