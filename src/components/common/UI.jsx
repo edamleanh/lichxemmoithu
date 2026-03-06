@@ -65,6 +65,7 @@ export const LazyImage = ({ src, alt, className = '', placeholder = null }) => {
       ref={imgRef}
       src={imageSrc || transparentGif}
       alt={alt}
+      referrerPolicy="no-referrer"
       onLoad={() => {
         // Only mark as loaded if we aren't displaying the transparent gif
         if (imageSrc) setIsLoading(false)
