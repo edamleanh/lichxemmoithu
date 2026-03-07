@@ -12,9 +12,10 @@ import footballIcon from '../../images/football.png'
 import pubgIcon from '../../images/pubg.png'
 import tftIcon from '../../images/tft.png'
 import cs2Icon from '../../images/csgo-4.svg'
+import { TeamLogoSearchService } from '../../services/teamLogoSearch.js'
 
 // --- Lazy Image Component ------------------------------------------------
-export const LazyImage = ({ src, alt, className = '', placeholder = null }) => {
+export const LazyImage = ({ src, alt, className = '', placeholder = null, teamName = null, game = null }) => {
   const [imageSrc, setImageSrc] = useState(placeholder)
   const [isLoading, setIsLoading] = useState(true)
   const imgRef = useRef(null)
@@ -70,7 +71,17 @@ export const LazyImage = ({ src, alt, className = '', placeholder = null }) => {
         // Only mark as loaded if we aren't displaying the transparent gif
         if (imageSrc) setIsLoading(false)
       }}
-      onError={() => setIsLoading(false)}
+      onError={async (e) => {
+        setIsLoading(false)
+        if (teamName && game && imageSrc === src) {
+          // If the original URL failed (likely 403 from owcdn), try offline dictionary fallback
+          const fallbackLogo = await TeamLogoSearchService.searchTeamLogo(teamName, game)
+          if (fallbackLogo && fallbackLogo !== src) {
+            setImageSrc(fallbackLogo)
+            setIsLoading(true) // trigger fade-in again for fallback logo
+          }
+        }
+      }}
       className={`${className} ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'} transition-all duration-300`}
     />
   )

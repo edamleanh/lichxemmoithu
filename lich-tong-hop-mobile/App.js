@@ -295,8 +295,12 @@ function MainContent() {
           <TouchableOpacity onPress={() => setIsDarkMode(!isDarkMode)} style={styles.iconButton}>
             {isDarkMode ? <Sun size={20} color="#FFF" /> : <Moon size={20} color="#000" />}
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => refetch()} style={styles.iconButton}>
-            <RefreshCw size={20} color={headerText} />
+          <TouchableOpacity onPress={() => refetch()} style={styles.iconButton} disabled={isFetching}>
+            {isFetching && !isLoading ? (
+              <ActivityIndicator size="small" color={headerText} />
+            ) : (
+              <RefreshCw size={20} color={headerText} />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -347,6 +351,8 @@ function MainContent() {
             initialNumToRender={10}
             windowSize={5}
             maxToRenderPerBatch={10}
+            refreshing={isFetching && !isLoading}
+            onRefresh={refetch}
             removeClippedSubviews={true}
           />
         )}

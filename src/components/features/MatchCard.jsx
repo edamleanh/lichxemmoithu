@@ -394,6 +394,8 @@ export function MatchCard({ match, isDarkMode }) {
               <LazyImage 
                 src={match.home.logo} 
                 alt={match.home.name} 
+                teamName={match.home.name}
+                game={match.game}
                 className="h-8 w-8 rounded-lg object-cover flex-shrink-0" 
               />
             )}
@@ -438,6 +440,8 @@ export function MatchCard({ match, isDarkMode }) {
               <LazyImage 
                 src={match.away.logo} 
                 alt={match.away.name} 
+                teamName={match.away.name}
+                game={match.game}
                 className="h-8 w-8 rounded-lg object-cover flex-shrink-0" 
               />
             )}
