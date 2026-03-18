@@ -158,7 +158,7 @@ export const TftAdapter = {
       const filteredMatches = allMatches
         .filter(match => withinRange(match.start, from, to))
         .filter((match, index, self) => 
-          index === self.findIndex(m => m.id === match.id)
+          index === self.findIndex(m => m.videoId === match.videoId)
         )
       
       // If no matches found, return empty array (don't show anything)
